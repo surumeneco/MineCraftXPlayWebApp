@@ -6,12 +6,12 @@ XPlayServer の Web アプリケーション用モノレポです。Nuxt フロ�
 
 本リポジトリを VSCode で開き、**[ターミナル] → [新しいターミナル]** を選択します。ローカルは Windows 11 の PowerShell、VPS は Ubuntu のシェルを想定します。特記がなければリポジトリのルートから実行してください。
 
-現在の更新先は `main` です。`develop` は `main` の変更をすべて取り込んだ状態ではないため、まず次を実行します。
+作業対象は `develop` です。`main` の変更は `develop` に取り込み済みです。作業前にリモートのブランチ状況を確認してから更新します。
 
 ```powershell
 git fetch origin --prune
-git switch main
-git pull --ff-only origin main
+git switch develop
+git pull --ff-only origin develop
 git status --short
 ```
 
@@ -108,8 +108,8 @@ cd ~/apps
 git clone https://github.com/surumeneco/MineCraftXPlayWebApp.git
 cd MineCraftXPlayWebApp
 git fetch origin --prune
-git switch main
-git pull --ff-only origin main
+git switch develop
+git pull --ff-only origin develop
 ```
 
 初回は `.env` を作成し、本番の DB パスワードや `FRONTEND_ORIGIN`、`NUXT_PUBLIC_API_BASE` を配置先の構成に応じて設定します。既存の `.env` は更新の際に上書きしないでください。
@@ -131,7 +131,7 @@ docker compose start
 # コンテナの再起動（コードや環境変数の変更は反映しない）
 docker compose restart
 # リポジトリ更新後のビルドと再作成
-git pull --ff-only origin main
+git pull --ff-only origin develop
 docker compose up -d --build
 # ログ
 docker compose logs --tail=100 frontend backend db
