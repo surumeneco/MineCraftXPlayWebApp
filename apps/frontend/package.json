@@ -7,10 +7,23 @@
     "dev": "nuxt dev --host 0.0.0.0 --port 3000",
     "build": "nuxt build",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install"
   },
   "dependencies": {
+    "bootstrap": "^5.3.8",
     "nuxt": "^4.5.2"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "^4.3.2",
+    "@playwright/test": "^1.63.0",
+    "@vue/test-utils": "^2.5.0",
+    "happy-dom": "^20.14.5",
+    "vitest": "^5.0.1"
   },
   "engines": {
     "node": ">=24"
