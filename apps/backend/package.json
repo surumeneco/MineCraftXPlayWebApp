@@ -7,7 +7,9 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main.js"
+    "start:prod": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.3",
@@ -19,8 +21,10 @@
   "devDependencies": {
     "@nestjs/cli": "^12.0.3",
     "@nestjs/schematics": "^12.0.0",
+    "@nestjs/testing": "^12.0.3",
     "@types/node": "^24.0.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
   },
   "engines": {
     "node": ">=24"
