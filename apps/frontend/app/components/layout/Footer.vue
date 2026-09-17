@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import type { FooterExternalLink, FooterInternalLink } from '../../types/footer-links'
+import type {
+  FooterExternalLink,
+  FooterInternalLink,
+} from "../../types/footer-links";
 
-withDefaults(defineProps<{
-  externalLinks?: FooterExternalLink[]
-  internalLinks?: FooterInternalLink[]
-  copyrightHolder?: string
-}>(), {
-  externalLinks: () => [],
-  internalLinks: () => [],
-  copyrightHolder: 'XPlayServer',
-})
+withDefaults(
+  defineProps<{
+    externalLinks?: FooterExternalLink[];
+    internalLinks?: FooterInternalLink[];
+    copyrightHolder?: string;
+  }>(),
+  {
+    externalLinks: () => [],
+    internalLinks: () => [],
+    copyrightHolder: "surumeneco",
+  },
+);
 
-const currentYear = new Date().getFullYear()
+const currentYear = new Date().getFullYear();
 </script>
 
 <template>
@@ -24,7 +30,12 @@ const currentYear = new Date().getFullYear()
           <h2 class="h6">外部リンク</h2>
           <ul class="list-unstyled mb-0">
             <li v-for="link in externalLinks" :key="link.href">
-              <a :href="link.href" target="_blank" rel="noopener noreferrer" class="link-body-emphasis">
+              <a
+                :href="link.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-body-emphasis"
+              >
                 {{ link.label }}
               </a>
             </li>
@@ -43,7 +54,9 @@ const currentYear = new Date().getFullYear()
         </nav>
       </div>
 
-      <small class="text-body-secondary">© {{ currentYear }} {{ copyrightHolder }}</small>
+      <small class="text-body-secondary"
+        >© {{ currentYear }} {{ copyrightHolder }}</small
+      >
     </div>
   </footer>
 </template>
