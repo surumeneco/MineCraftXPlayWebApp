@@ -16,6 +16,9 @@ apps/backend/dist/
 
 # test / coverage
 coverage/
+playwright-report/
+test-results/
+blob-report/
 
 # logs
 *.log
