@@ -8,46 +8,101 @@ withDefaults(defineProps<{
   items: () => [],
 })
 
+const openMobileMenu = ref<'side' | 'navigation' | null>(null)
 const openCategory = ref<number | null>(null)
+
+function toggleMobileMenu(menu: 'side' | 'navigation') {
+  openMobileMenu.value = openMobileMenu.value === menu ? null : menu
+  openCategory.value = null
+}
 
 function toggleCategory(index: number) {
   openCategory.value = openCategory.value === index ? null : index
 }
+
+function closeNavigation() {
+  openMobileMenu.value = null
+  openCategory.value = null
+}
 </script>
 
 <template>
-  <header class="sticky-top border-bottom bg-body">
-    <div class="container d-flex flex-wrap align-items-center gap-3 py-3">
-      <slot name="logo">
-        <span class="fs-3 fw-bold">ここにロゴ</span>
-      </slot>
+  <header class="navbar navbar-expand-lg sticky-top border-bottom bg-body py-3">
+    <div class="container">
+      <div class="row align-items-center w-100 g-2">
+        <div class="col d-lg-none">
+          <button
+            type="button"
+            class="navbar-toggler"
+            aria-label="サイドメニュー"
+            aria-controls="mobile-side-menu"
+            :aria-expanded="openMobileMenu === 'side'"
+            @click="toggleMobileMenu('side')"
+          >
+            <span class="navbar-toggler-icon" aria-hidden="true" />
+          </button>
+        </div>
 
-      <nav class="navbar p-0" aria-label="メインナビゲーション">
-        <ul class="navbar-nav flex-row flex-wrap gap-2">
-          <li v-for="(item, index) in items" :key="item.label" class="nav-item">
-            <div v-if="item.children?.length" class="dropdown position-relative">
-              <button
-                type="button"
-                class="btn btn-outline-secondary dropdown-toggle"
-                :aria-expanded="openCategory === index"
-                @click="toggleCategory(index)"
-              >
+        <div class="col-auto text-center">
+          <slot name="logo">
+            <span class="fs-3 fw-bold">ここにロゴ</span>
+          </slot>
+        </div>
+
+        <div class="col d-lg-none d-flex justify-content-end">
+          <button
+            type="button"
+            class="navbar-toggler"
+            aria-label="ナビゲーションメニュー"
+            aria-controls="header-navigation"
+            :aria-expanded="openMobileMenu === 'navigation'"
+            @click="toggleMobileMenu('navigation')"
+          >
+            <span class="navbar-toggler-icon" aria-hidden="true" />
+          </button>
+        </div>
+
+        <nav
+          id="header-navigation"
+          class="col-12 col-lg justify-content-lg-end pt-3 pt-lg-0"
+          :class="openMobileMenu === 'navigation' ? 'd-flex' : 'd-none d-lg-flex'"
+          aria-label="メインナビゲーション"
+        >
+          <ul class="navbar-nav flex-column flex-lg-row flex-wrap gap-2 w-100 justify-content-lg-end">
+            <li v-for="(item, index) in items" :key="item.label" class="nav-item">
+              <div v-if="item.children?.length" class="dropdown">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary dropdown-toggle"
+                  :aria-expanded="openCategory === index"
+                  @click="toggleCategory(index)"
+                >
+                  {{ item.label }}
+                </button>
+                <ul v-if="openCategory === index" class="dropdown-menu show mt-1">
+                  <li v-for="child in item.children" :key="child.to">
+                    <NuxtLink :to="child.to" class="dropdown-item" @click="closeNavigation">
+                      {{ child.label }}
+                    </NuxtLink>
+                  </li>
+                </ul>
+              </div>
+              <NuxtLink v-else-if="item.to" :to="item.to" class="btn btn-outline-secondary" @click="closeNavigation">
                 {{ item.label }}
-              </button>
-              <ul v-if="openCategory === index" class="dropdown-menu show position-absolute start-0 mt-1">
-                <li v-for="child in item.children" :key="child.to">
-                  <NuxtLink :to="child.to" class="dropdown-item" @click="openCategory = null">
-                    {{ child.label }}
-                  </NuxtLink>
-                </li>
-              </ul>
-            </div>
-            <NuxtLink v-else-if="item.to" :to="item.to" class="btn btn-outline-secondary">
-              {{ item.label }}
-            </NuxtLink>
-          </li>
-        </ul>
-      </nav>
+              </NuxtLink>
+            </li>
+          </ul>
+        </nav>
+
+        <div
+          id="mobile-side-menu"
+          v-show="openMobileMenu === 'side'"
+          class="col-12 d-lg-none border-top mt-3 pt-3"
+          :aria-hidden="openMobileMenu !== 'side'"
+        >
+          <slot name="side-menu" />
+        </div>
+      </div>
     </div>
   </header>
 </template>

@@ -16,6 +16,9 @@ defineProps<{
       <template v-if="$slots.logo" #logo>
         <slot name="logo" />
       </template>
+      <template #side-menu>
+        <LayoutSideMenu />
+      </template>
     </LayoutHeaderMenu>
 
     <LayoutBodyContent class="flex-grow-1">
