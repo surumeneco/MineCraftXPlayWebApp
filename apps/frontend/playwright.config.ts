@@ -3,7 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 import type { ConfigOptions } from '@nuxt/test-utils/playwright'
 
 export default defineConfig<ConfigOptions>({
-  testDir: './test/e2e',
+  testDir: './test',
+  testMatch: '**/*.e2e.spec.ts',
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: 'html',

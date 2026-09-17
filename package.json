@@ -19,6 +19,9 @@
     "docker:prod": "docker compose up --build -d",
     "docker:prod:down": "docker compose down"
   },
+  "devDependencies": {
+    "pict-node": "^1.3.2"
+  },
   "engines": {
     "node": ">=24"
   }

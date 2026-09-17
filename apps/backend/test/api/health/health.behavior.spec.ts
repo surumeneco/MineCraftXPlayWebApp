@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { AppController } from '../src/app.controller.js'
+import { AppController } from '../../../src/app.controller.js'
 
-describe('AppController', () => {
+describe('GET /health behavior', () => {
   let controller: AppController
 
   beforeEach(async () => {
