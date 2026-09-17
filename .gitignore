@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# environment / secrets
+.env
+.env.*
+!.env.example
+
+# Nuxt
+.nuxt/
+.output/
+.data/
+
+# Nest
+apps/backend/dist/
+
+# test / coverage
+coverage/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
