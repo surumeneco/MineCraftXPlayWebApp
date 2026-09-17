@@ -1,11 +1,34 @@
+<script setup lang="ts">
+import type { HeaderNavigationItem } from './types/header-navigation'
+import type { FooterInternalLink } from './types/footer-links'
+
+const navigationItems: HeaderNavigationItem[] = [
+  { label: 'ホーム', to: '/' },
+  {
+    label: '情報',
+    children: [
+      { label: '情報トップ', to: '/info' },
+      { label: 'お知らせ', to: '/info/notice' },
+      { label: 'コミュニティ概要', to: '/info/about' },
+      { label: '運営メンバー紹介', to: '/info/operators' },
+      { label: 'サーバー情報', to: '/info/server' },
+      { label: '運営方針とルール', to: '/info/rules' },
+    ],
+  },
+]
+
+const footerInternalLinks: FooterInternalLink[] = [
+  { label: '運営メンバー紹介', to: '/info/operators' },
+  { label: '運営方針とルール', to: '/info/rules' },
+]
+</script>
+
 <template>
-  <NuxtLayout name="layout">
-    <section class="card shadow-sm mx-auto" style="max-width: 48rem">
-      <div class="card-body p-4 p-md-5">
-        <p class="text-uppercase text-secondary small fw-semibold mb-2">XPlayServer</p>
-        <h1 class="card-title mb-3">MineCraftXPlayWebApp</h1>
-        <p class="card-text mb-0">Nuxt.js フロントエンドの初期構成が起動しています。</p>
-      </div>
-    </section>
+  <NuxtLayout
+    name="layout"
+    :navigation-items="navigationItems"
+    :footer-internal-links="footerInternalLinks"
+  >
+    <NuxtPage />
   </NuxtLayout>
 </template>

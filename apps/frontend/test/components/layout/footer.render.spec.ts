@@ -44,7 +44,7 @@ describe('Footer', () => {
     const wrapper = await mountSuspended(Footer)
 
     expect(wrapper.findAll('nav a')).toHaveLength(0)
-    expect(wrapper.get('small').text()).toBe(`© ${new Date().getFullYear()} XPlayServer`)
+    expect(wrapper.get('small').text()).toBe(`© ${new Date().getFullYear()} surumeneco`)
   })
 })
 
