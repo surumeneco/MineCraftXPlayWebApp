@@ -1,5 +1,5 @@
 <template>
-  <main class="container py-5">
+  <NuxtLayout name="layout">
     <section class="card shadow-sm mx-auto" style="max-width: 48rem">
       <div class="card-body p-4 p-md-5">
         <p class="text-uppercase text-secondary small fw-semibold mb-2">XPlayServer</p>
@@ -7,5 +7,5 @@
         <p class="card-text mb-0">Nuxt.js フロントエンドの初期構成が起動しています。</p>
       </div>
     </section>
-  </main>
+  </NuxtLayout>
 </template>
