@@ -20,7 +20,7 @@ describe('NoticeBanner', () => {
     expect(article.classes()).toContain('w-100')
     expect(article.attributes('style')).toContain('--notice-lines: 2')
     expect(article.attributes('style')).toContain('--notice-preview-height: 3em')
-    expect(wrapper.get('.notice-preview').text()).toBe('長い本文')
+    expect(wrapper.get('.notice-preview').text()).toBe('長い本文…')
   })
 
   it('shows both times in a wrapping row and links to the title route', async () => {
