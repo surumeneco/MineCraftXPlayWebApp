@@ -13,7 +13,7 @@ const preview = computed(() => noticePreview(props.notice.body_delta, props.prev
 </script>
 
 <template>
-  <article class="notice-banner card w-100" :style="{ '--notice-lines': previewLines }">
+  <article class="notice-banner card w-100" :style="{ '--notice-lines': previewLines, '--notice-preview-height': `${previewLines * 1.5}em` }">
     <div class="card-body d-flex flex-column gap-2">
       <h3 class="h5 card-title mb-0 text-break">{{ notice.title }}</h3>
       <div class="d-flex flex-wrap gap-2 small text-body-secondary">
@@ -35,7 +35,7 @@ const preview = computed(() => noticePreview(props.notice.body_delta, props.prev
 .notice-banner { min-width: 0; }
 .notice-preview {
   line-height: 1.5;
-  height: calc(var(--notice-lines) * 1.5em);
+  height: var(--notice-preview-height);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--notice-lines);
