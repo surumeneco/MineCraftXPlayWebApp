@@ -10,7 +10,10 @@ export function deltaToPlainText(delta: NoticeDelta): string {
 
 export function noticePreview(delta: NoticeDelta, length: number): string {
   const text = deltaToPlainText(delta).replace(/\s*\n\s*/g, ' ')
-  return text.slice(0, Math.max(0, Math.trunc(length)))
+  const maxLength = Number.isFinite(length) ? Math.max(0, Math.trunc(length)) : 0
+  if (maxLength === 0) return ''
+  const characters = Array.from(text)
+  return characters.length > maxLength ? `${characters.slice(0, maxLength).join('')}…` : text
 }
 
 export function noticeUrl(title: string): string {
