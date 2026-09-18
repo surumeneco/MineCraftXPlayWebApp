@@ -16,7 +16,18 @@ describe('notice utility', () => {
       { insert: '\n次の行\n' },
     ] }
     expect(deltaToPlainText(delta)).toBe('太字\n次の行')
-    expect(noticePreview(delta, 4)).toBe('太字 次')
+    expect(noticePreview(delta, 4)).toBe('太字 次…')
+  })
+
+  it('adds an ellipsis only when the text exceeds the character limit', () => {
+    const delta = { ops: [{ insert: 'お知らせ\n' }] }
+    expect(noticePreview(delta, 4)).toBe('お知らせ')
+    expect(noticePreview(delta, 3)).toBe('お知ら…')
+    expect(noticePreview(delta, 0)).toBe('')
+  })
+
+  it('does not split surrogate pairs at the preview boundary', () => {
+    expect(noticePreview({ ops: [{ insert: '😀テスト\n' }] }, 1)).toBe('😀…')
   })
 
   it('encodes the title into a single route segment', () => {
