@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import type { NoticeDelta, NoticeTag } from '../../types/notice'
+import type { NoticeDelta, NoticeTag } from '../../../types/notice'
 
 type AdminNotice = {
   id: string; title: string; status: 'draft' | 'published' | 'unpublished'; version: number;
