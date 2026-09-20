@@ -1,15 +1,15 @@
 # Notice API and database operations
 
-Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webアプリ設計詳細/お知らせ設計.md`. Do not infer that this implementation has been deployed or integration-tested merely because the files exist.
+Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webアプリ設計詳細/お知らせ設計.md`. Code in this repository has not been deployed to the production VPS.
 
 ## Local setup
 
 1. From the repository root, copy `.env.example` to `.env` and set PostgreSQL credentials.
 2. Set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`, and `ADMIN_DISCORD_IDS` to enable administration. Obtain the first three from a Discord OAuth2 application. Set `DISCORD_REDIRECT_URI` to the full API callback URL, e.g. `http://localhost:3001/api/auth/discord/callback` in local development. The Discord application must authorize exactly that URI. Use HTTPS and Secure cookies in production.
 3. Set `FRONTEND_ORIGIN` to the browser origin, `NUXT_PUBLIC_API_BASE` to its API base URL, and `PUBLIC_API_BASE` to the same externally reachable API base URL (without a trailing slash). Configure an HTTPS reverse proxy in production; do not expose PostgreSQL.
-4. Run `npm install` at repository root to install workspace dependencies and synchronize the root lockfile, then `npm run dev`. `npm run dev` starts Docker PostgreSQL and launches the Nuxt and NestJS host processes. The backend startup applies migrations before listening. Docker Compose production also applies them before startup. To apply them explicitly: `npm run db:migrate --workspace @xplay/backend` with `DATABASE_URL` provided.
+4. Run `npm ci` at repository root and then `npm run dev`. `npm run dev` starts Docker PostgreSQL and launches Nuxt and NestJS host processes. The backend startup applies migrations before listening. Docker Compose production also applies them before startup. To apply them explicitly: `npm run db:migrate --workspace @xplay/backend` with `DATABASE_URL` provided.
 
-**Dependency note:** the root `package-lock.json` must be regenerated with the new `postgres@3.4.7` dependency before a clean `npm ci`. Do not use `npm ci` against an out-of-date lockfile. The current branch contains no assertion of successful local build unless explicitly tested.
+The checked-in root `package-lock.json` includes `postgres@3.4.7` and the backend TypeScript 6 dependency; the locked clean installation is checked in CI. Database access uses `postgres.js` through a shared NestJS `Database` provider and versioned, checksummed SQL migrations, not an ORM. Do not substitute a different migration system without updating the design and migration history.
 
 ## Public REST APIs
 
@@ -53,4 +53,4 @@ The first iteration stores image bytes in PostgreSQL, purpose `notice`, with an 
 
 ## Verification
 
-`npm run test:backend` exercises tests in `apps/backend/test`. Run `npm run build` and a PostgreSQL-backed request matrix (draft/edit/publish/unpublish/delete, title conflict, CSRF, images, timestamps) before promoting a feature branch to develop or production. Discord OAuth callback requires configured credentials and a real Discord application. Do not put credentials or production data in Git.
+GitHub Actions workflow `Notice implementation verification` executes a clean `npm ci`, PostgreSQL 18 migration, backend Vitest unit and integration tests, frontend Vitest tests, both workspace production builds, a backend production Docker image build, and HTTP smoke tests (health, public notices, unauthorized admin POST). See the workflow run for a particular commit before deployment. A live Discord OAuth callback, production Cloudflare/reverse-proxy configuration, and interactive browser image insertion remain deployment-level checks requiring the actual environment. Never commit credentials or production data.
