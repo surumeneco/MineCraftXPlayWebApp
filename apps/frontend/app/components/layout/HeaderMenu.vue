@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <!-- Native modal dialog makes the page inert and traps keyboard navigation inside the drawer. -->
+    <!-- Native showModal makes the background inert and confines keyboard focus to the drawer. -->
     <dialog
       id="mobile-menu-drawer"
       ref="mobileDialog"
@@ -142,10 +142,9 @@ async function toggleMobileMenu(menu: MobileMenu, event: MouseEvent) {
   if (openMobileMenu.value !== menu) return
   const dialog = mobileDialog.value
   if (!dialog) return
-  // showModal supplies modality, focus containment and inert background natively.
   if (!dialog.open) {
     if (typeof dialog.showModal === 'function') dialog.showModal()
-    else dialog.setAttribute('open', '') // jsdom fallback; production browsers implement showModal.
+    else dialog.setAttribute('open', '') // jsdom fallback; production uses the native modal.
   }
   if (previousBodyOverflow === null) {
     previousBodyOverflow = document.body.style.overflow
@@ -155,6 +154,8 @@ async function toggleMobileMenu(menu: MobileMenu, event: MouseEvent) {
 }
 
 function onDrawerClose() {
+  // Native close events are queued: do not clear a newly opened drawer after a switch.
+  if (mobileDialog.value?.open) return
   openMobileMenu.value = null
   if (previousBodyOverflow !== null) {
     document.body.style.overflow = previousBodyOverflow
@@ -172,7 +173,7 @@ function closeDrawer(restoreFocus = true) {
     if (typeof dialog.close === 'function') dialog.close()
     else dialog.removeAttribute('open')
   }
-  // Update synchronously as well: the native close event fires separately.
+  // Keep reactive state and body scroll in sync before the native close event fires.
   onDrawerClose()
 }
 
