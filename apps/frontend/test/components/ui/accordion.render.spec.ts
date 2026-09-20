@@ -23,6 +23,26 @@ describe('UiAccordion', () => {
     expect(panel.isVisible()).toBe(false)
   })
 
+  it('renders default-open children when modelValue is omitted and permits closing and reopening', async () => {
+    const wrapper = await mountSuspended(Accordion, {
+      props: { title: '情報', defaultOpen: true },
+      slots: { default: '<ul><li><a href="/info/notice">お知らせ</a></li></ul>' },
+    })
+    const button = wrapper.get('button.accordion-button')
+    const panel = wrapper.get('[role="region"]')
+    expect(wrapper.props('modelValue')).toBeUndefined()
+    expect(button.attributes('aria-expanded')).toBe('true')
+    expect(panel.isVisible()).toBe(true)
+    expect(panel.get('a[href="/info/notice"]').isVisible()).toBe(true)
+
+    await button.trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('false')
+    expect(panel.isVisible()).toBe(false)
+    await button.trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('true')
+    expect(panel.get('a[href="/info/notice"]').isVisible()).toBe(true)
+  })
+
   it('supports initially open panels, custom heading slots and disabled toggles', async () => {
     const wrapper = await mountSuspended(Accordion, {
       props: { title: '既定', defaultOpen: true, disabled: true, headingLevel: 4 },
