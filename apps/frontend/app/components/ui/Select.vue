@@ -1,22 +1,3 @@
-<script setup lang="ts">
-interface SelectOption {
-  value: string
-  label: string
-}
-const props = defineProps<{
-  modelValue: string
-  options: SelectOption[]
-  id?: string
-  label?: string
-  disabled?: boolean
-  required?: boolean
-  error?: string
-}>()
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
-const generatedId = useId()
-const selectId = computed(() => props.id ?? generatedId)
-</script>
-
 <template>
   <div>
     <label v-if="label" class="form-label" :for="selectId">{{ label }}</label>
@@ -35,3 +16,22 @@ const selectId = computed(() => props.id ?? generatedId)
     <div v-if="error" class="invalid-feedback">{{ error }}</div>
   </div>
 </template>
+
+<script setup lang="ts">
+interface SelectOption {
+  value: string
+  label: string
+}
+const props = defineProps<{
+  modelValue: string
+  options: SelectOption[]
+  id?: string
+  label?: string
+  disabled?: boolean
+  required?: boolean
+  error?: string
+}>()
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const generatedId = useId()
+const selectId = computed(() => props.id ?? generatedId)
+</script>
