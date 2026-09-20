@@ -17,6 +17,7 @@
     <div
       :id="panelId"
       v-show="expanded"
+      :hidden="!expanded"
       class="accordion-panel"
       role="region"
       :aria-labelledby="headerId"
