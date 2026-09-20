@@ -5,21 +5,47 @@
       <UiSectionHeading title="最新のお知らせ" class="mb-0 flex-grow-1" />
       <NuxtLink to="/info/notice" class="flex-shrink-0">お知らせ一覧</NuxtLink>
     </div>
-    <p v-if="status === 'pending' || status === 'idle'" role="status">お知らせを読み込んでいます…</p>
-    <p v-else-if="error" class="text-body-secondary">お知らせを取得できませんでした。</p>
+    <p v-if="status === 'pending' || status === 'idle'" role="status">
+      お知らせを読み込んでいます…
+    </p>
+    <p v-else-if="error" class="text-body-secondary">
+      お知らせを取得できませんでした。
+    </p>
     <p v-else-if="latest.length === 0">公開中のお知らせはありません。</p>
     <div v-else class="d-grid gap-3">
-      <NoticeBanner v-for="notice in latest" :key="notice.id" :notice="notice" :lines="3" />
+      <NoticeBanner
+        v-for="notice in latest"
+        :key="notice.id"
+        :notice="notice"
+        :lines="3"
+      />
     </div>
+
+    <!-- Bluemap見出し -->
+    <!-- カード形式：Bluemap -->
+    <!-- 場所案内見出し -->
+    <!-- カード形式：公営スポット -->
+    <!-- カード形式：観光情報 -->
+    <!-- 一覧・検索見出し -->
+    <!-- カード形式：領地一覧 -->
+    <!-- カード形式：企業一覧 -->
+    <!-- 情報ページ見出し -->
+    <!-- カード形式：各情報ページ -->
+    <!-- 一覧ページ見出し -->
+    <!-- カード形式：各一覧ページ -->
+    <!-- 申請ページ見出し -->
+    <!-- カード形式：各申請ページ -->
   </section>
 </template>
 
 <script setup lang="ts">
-import { sortNotices } from '../utils/notice'
+import { sortNotices } from "../utils/notice";
 
-const { data: notices, status, error } = usePublicNotices()
-const latest = computed(() => sortNotices(
-  notices.value.filter(notice => !notice.is_draft && notice.published_at),
-  'published_at',
-).slice(0, 3))
+const { data: notices, status, error } = usePublicNotices();
+const latest = computed(() =>
+  sortNotices(
+    notices.value.filter((notice) => !notice.is_draft && notice.published_at),
+    "published_at",
+  ).slice(0, 3),
+);
 </script>
