@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "nest build",
+    "db:migrate": "node scripts/migrate.mjs",
     "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:prod": "node dist/main.js",
+    "start:dev": "node scripts/migrate.mjs && nest start --watch",
+    "start:prod": "node scripts/migrate.mjs && node dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -15,6 +16,7 @@
     "@nestjs/common": "^12.0.3",
     "@nestjs/core": "^12.0.3",
     "@nestjs/platform-express": "^12.0.3",
+    "postgres": "3.4.7",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
@@ -26,7 +28,5 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"
   },
-  "engines": {
-    "node": ">=24"
-  }
+  "engines": { "node": ">=24" }
 }
