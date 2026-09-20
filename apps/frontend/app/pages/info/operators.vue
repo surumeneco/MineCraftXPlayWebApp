@@ -1,5 +1,5 @@
 <template>
   <div>
-    <h2>運営メンバー紹介</h2>
+    <UiPageTitle as="h2" title="運営メンバー紹介" />
   </div>
 </template>
