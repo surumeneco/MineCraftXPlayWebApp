@@ -17,8 +17,7 @@
     <div
       :id="panelId"
       v-show="expanded"
-      class="accordion-collapse collapse"
-      :class="{ show: expanded }"
+      class="accordion-panel"
       role="region"
       :aria-labelledby="headerId"
     >
