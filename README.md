@@ -40,8 +40,10 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 依存パッケージは**リポジトリのルート**で初回・依存更新時にインストールします。モノレポの `package-lock.json` はルートにあります。
 
 ```powershell
-npm ci
+npm install
 ```
+
+**SCSS移行に伴う一時的な注意：** フロントエンドの `package.json` に `sass` を追加しましたが、この変更を行った環境ではnpmレジストリに接続できず、ルートの `package-lock.json` を再生成できていません。現状は `npm ci` ではなく上記の `npm install` を実行してください。依存関係の解決後に生成された `package-lock.json` の差分を確認してコミットする必要があります。ロックファイル更新・ビルド・ブラウザ検証は未完了です。
 
 ## ローカル開発環境の起動（推奨：ワンコマンド）
 
@@ -78,6 +80,16 @@ npm run dev:frontend
 # 別のターミナルで
 npm run dev:backend
 ```
+
+## SCSS・デザイントークンとナビゲーション（2026-09-20）
+
+アプリ独自のスタイルを `apps/frontend/app/assets/styles/theme.scss` と `mobile-drawer.scss` に移行し、以前の同名 `.css` ファイルは削除しました。Bootstrap／Quillの配布CSSはサードパーティ製なので維持します。Nuxtは配布CSSの後からこの2つのSCSSを読み込みます。
+
+デザイントークンは `apps/frontend/app/assets/styles/tokens/` に `_color.scss`（色）、`_font-size.scss`（文字サイズ）、`_radius.scss`（角丸半径）、`_elevation.scss`（影）、`_margin.scss`（マージン・余白）として分離。各Sassマップを `theme.scss` から `@use` し、`--xplay-*` カスタムプロパティを一括生成します。採用済みのEternaliaの汎用デザイン値を維持します。参照先の `kumamov_guardian_manager` は確認時点でREADMEのみで、スタイルの実装はありませんでした。
+
+ヘッダーはロゴ「もふもふ広場」を `/` へのリンクにし、ホームをナビゲーション項目から削除しました。PCナビゲーションはヘッダー全体を基準に中央寄せし、ドロップダウンをホバーで展開します。クリック・Esc・フォーカス離脱にも引き続き対応します。モバイルのドロワーはリンクに白文字を適用し、ヘッダーの暗色テキスト指定による視認性低下を防ぎます。
+
+レンダリングテストとPlaywright E2Eテストを更新していますが、依存関係解決・Vitest・E2E実行・実ブラウザの視覚確認は未実施です。
 
 ## Dockerだけで開発する場合（代替）
 
