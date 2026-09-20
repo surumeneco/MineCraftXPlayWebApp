@@ -5,6 +5,7 @@ export default defineNuxtConfig({
     'quill/dist/quill.snow.css',
     'quill/dist/quill.bubble.css',
     '~/assets/styles/theme.css',
+    '~/assets/styles/mobile-drawer.css',
   ],
   runtimeConfig: {
     public: {
