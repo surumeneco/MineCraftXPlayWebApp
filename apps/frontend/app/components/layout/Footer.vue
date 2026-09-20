@@ -1,25 +1,3 @@
-<script setup lang="ts">
-import type {
-  FooterExternalLink,
-  FooterInternalLink,
-} from "../../types/footer-links";
-
-withDefaults(
-  defineProps<{
-    externalLinks?: FooterExternalLink[];
-    internalLinks?: FooterInternalLink[];
-    copyrightHolder?: string;
-  }>(),
-  {
-    externalLinks: () => [],
-    internalLinks: () => [],
-    copyrightHolder: "surumeneco",
-  },
-);
-
-const currentYear = new Date().getFullYear();
-</script>
-
 <template>
   <footer class="border-top bg-body">
     <div class="container py-4 text-center">
@@ -60,3 +38,25 @@ const currentYear = new Date().getFullYear();
     </div>
   </footer>
 </template>
+
+<script setup lang="ts">
+import type {
+  FooterExternalLink,
+  FooterInternalLink,
+} from "../../types/footer-links";
+
+withDefaults(
+  defineProps<{
+    externalLinks?: FooterExternalLink[];
+    internalLinks?: FooterInternalLink[];
+    copyrightHolder?: string;
+  }>(),
+  {
+    externalLinks: () => [],
+    internalLinks: () => [],
+    copyrightHolder: "surumeneco",
+  },
+);
+
+const currentYear = new Date().getFullYear();
+</script>
