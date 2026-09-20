@@ -13,7 +13,6 @@ import type { HeaderNavigationItem } from './types/header-navigation'
 import type { FooterInternalLink } from './types/footer-links'
 
 const navigationItems: HeaderNavigationItem[] = [
-  { label: 'ホーム', to: '/' },
   {
     label: '情報',
     children: [
