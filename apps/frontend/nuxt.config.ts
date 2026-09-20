@@ -4,6 +4,7 @@ export default defineNuxtConfig({
     'bootstrap/dist/css/bootstrap.min.css',
     'quill/dist/quill.snow.css',
     'quill/dist/quill.bubble.css',
+    '~/assets/styles/theme.css',
   ],
   runtimeConfig: {
     public: {
