@@ -1,6 +1,6 @@
 <template>
   <section aria-labelledby="notice-heading">
-    <h1 id="notice-heading" class="h2 mb-4">お知らせ</h1>
+    <UiPageTitle id="notice-heading" title="お知らせ" />
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
       <div>
         <div class="form-label mb-1">並び替え</div>
