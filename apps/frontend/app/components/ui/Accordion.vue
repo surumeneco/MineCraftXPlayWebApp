@@ -37,6 +37,9 @@ const props = withDefaults(defineProps<{
   id?: string
   headingLevel?: 2 | 3 | 4 | 5 | 6
 }>(), {
+  // Vue casts absent Boolean props to false unless an explicit default is given.
+  // Preserve undefined to distinguish uncontrolled usage from v-model="false".
+  modelValue: undefined,
   defaultOpen: false,
   disabled: false,
   headingLevel: 3,
