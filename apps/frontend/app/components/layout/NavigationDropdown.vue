@@ -1,5 +1,11 @@
 <template>
-  <div class="nav-item dropdown" @focusout="handleFocusOut" @keydown.esc.stop.prevent="closeMenu">
+  <div
+    class="nav-item dropdown"
+    @mouseenter="open = true"
+    @mouseleave="open = false"
+    @focusout="handleFocusOut"
+    @keydown.esc.stop.prevent="closeMenu"
+  >
     <button
       :id="triggerId"
       ref="trigger"
