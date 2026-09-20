@@ -5,6 +5,7 @@ import { createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseEnv } from 'node:util'
+import { devSpawnOptions, terminateDevTree } from './dev-process.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const envFile = resolve(root, '.env')
@@ -92,21 +93,11 @@ let stopping = false
 function stop(signal = 'SIGTERM') {
   if (stopping) return
   stopping = true
-  for (const child of children.values()) {
-    if (!child.pid || child.exitCode !== null || child.signalCode !== null) continue
+  for (const [name, child] of children) {
     try {
-      if (process.platform === 'win32') {
-        // Killing only npm leaves its Nuxt/Nest grandchildren running on Windows.
-        const result = spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
-          stdio: 'ignore',
-          windowsHide: true,
-        })
-        if (result.error) child.kill(signal)
-      } else {
-        process.kill(-child.pid, signal)
-      }
+      terminateDevTree(child, signal)
     } catch (error) {
-      if (error.code !== 'ESRCH') console.error('[dev] 子プロセスの停止に失敗:', error)
+      if (error.code !== 'ESRCH') console.error(`[dev] ${name} の停止に失敗: ${error.message}`)
     }
   }
 }
@@ -124,14 +115,13 @@ console.log('[dev] Nuxt: http://localhost:3000 / NestJS: http://localhost:3001/a
 console.log('[dev] Ctrl+C で両方を停止します。PostgreSQL は保持されます。')
 for (const [name, script] of [['frontend', 'dev:frontend'], ['backend', 'dev:backend']]) {
   const args = npmCli ? [npmCli, 'run', script] : ['run', script]
-  const child = spawn(executable, args, {
-    cwd: root,
-    env: childEnv,
-    stdio: 'inherit',
-    shell: process.platform === 'win32' && !npmCli,
-    detached: process.platform !== 'win32',
-  })
+  const child = spawn(executable, args, devSpawnOptions({ root, env: childEnv, npmCli }))
   children.set(name, child)
+  // Keep logs in the current terminal while Windows workers use separate process groups.
+  if (process.platform === 'win32') {
+    child.stdout?.pipe(process.stdout, { end: false })
+    child.stderr?.pipe(process.stderr, { end: false })
+  }
   child.on('error', (error) => {
     children.delete(name)
     console.error(`[dev] ${name} の起動に失敗: ${error.message}`)
