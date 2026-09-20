@@ -1,3 +1,25 @@
+<template>
+  <fieldset class="border-0 p-0 m-0" :disabled="disabled">
+    <legend class="fs-6">タグ</legend>
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <UiSelect v-model="selectedTag" label="既存タグ" :options="choices" :disabled="disabled" />
+      </div>
+      <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled || !selectedTag" @click="addExisting">追加</UiButton></div>
+      <div class="col-12 col-md">
+        <UiTextInput v-model="newTag" label="新規タグ" :disabled="disabled" :error="error" @update:model-value="error = ''" />
+      </div>
+      <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled" @click="addNew">追加</UiButton></div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-2" aria-label="選択済みタグ">
+      <span v-for="name in modelValue" :key="name" class="badge text-bg-secondary d-inline-flex align-items-center gap-2">
+        {{ name }}
+        <button type="button" class="btn-close btn-close-white" :aria-label="`${name}を解除`" :disabled="disabled" @click="remove(name)" />
+      </span>
+    </div>
+  </fieldset>
+</template>
+
 <script setup lang="ts">
 import type { NoticeTag } from '../../types/notice'
 
@@ -45,25 +67,3 @@ function remove(name: string) {
   if (!props.disabled) emit('update:modelValue', props.modelValue.filter(value => value !== name))
 }
 </script>
-
-<template>
-  <fieldset class="border-0 p-0 m-0" :disabled="disabled">
-    <legend class="fs-6">タグ</legend>
-    <div class="row g-2 align-items-end">
-      <div class="col-12 col-md-5">
-        <UiSelect v-model="selectedTag" label="既存タグ" :options="choices" :disabled="disabled" />
-      </div>
-      <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled || !selectedTag" @click="addExisting">追加</UiButton></div>
-      <div class="col-12 col-md">
-        <UiTextInput v-model="newTag" label="新規タグ" :disabled="disabled" :error="error" @update:model-value="error = ''" />
-      </div>
-      <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled" @click="addNew">追加</UiButton></div>
-    </div>
-    <div class="d-flex flex-wrap gap-2 mt-2" aria-label="選択済みタグ">
-      <span v-for="name in modelValue" :key="name" class="badge text-bg-secondary d-inline-flex align-items-center gap-2">
-        {{ name }}
-        <button type="button" class="btn-close btn-close-white" :aria-label="`${name}を解除`" :disabled="disabled" @click="remove(name)" />
-      </span>
-    </div>
-  </fieldset>
-</template>
