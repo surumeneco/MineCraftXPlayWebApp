@@ -1,17 +1,3 @@
-<script setup lang="ts">
-import type { Notice } from '../../types/notice'
-import { noticeDate, noticePreview, noticeUrl } from '../../utils/notice'
-
-const props = withDefaults(defineProps<{
-  notice: Notice
-  lines?: number
-  previewLength?: number
-}>(), { lines: 3, previewLength: 200 })
-
-const previewLines = computed(() => Number.isInteger(props.lines) && props.lines > 0 ? props.lines : 3)
-const preview = computed(() => noticePreview(props.notice.body_delta, props.previewLength))
-</script>
-
 <template>
   <article class="notice-banner card w-100" :style="{ '--notice-lines': previewLines, '--notice-preview-height': `${previewLines * 1.5}em` }">
     <div class="card-body d-flex flex-column gap-2">
@@ -30,6 +16,20 @@ const preview = computed(() => noticePreview(props.notice.body_delta, props.prev
     </div>
   </article>
 </template>
+
+<script setup lang="ts">
+import type { Notice } from '../../types/notice'
+import { noticeDate, noticePreview, noticeUrl } from '../../utils/notice'
+
+const props = withDefaults(defineProps<{
+  notice: Notice
+  lines?: number
+  previewLength?: number
+}>(), { lines: 3, previewLength: 200 })
+
+const previewLines = computed(() => Number.isInteger(props.lines) && props.lines > 0 ? props.lines : 3)
+const preview = computed(() => noticePreview(props.notice.body_delta, props.previewLength))
+</script>
 
 <style scoped>
 .notice-banner { min-width: 0; }
