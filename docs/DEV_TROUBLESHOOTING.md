@@ -4,7 +4,7 @@
 
 ## NestJS が起動直後に終了する
 
-バックエンドは Nest CLI 12 を使用します。TypeScript 7.0 には Nest CLI が必要とするプログラム用コンパイラAPIがなく、`nest start --watch` は動きません。`apps/backend/package.json` の TypeScript は `~6.0.2` に固定し、`tsconfig.json` の廃止された `baseUrl` を削除しました。`tsconfig.build.json` に `rootDir: ./src` を指定し、`dist/main.js` に出力されるようにしています。
+バックエンドは Nest CLI 12 を使用します。TypeScript 7.0 には Nest CLI が必要とするプログラム用コンパイラAPIがなく、`nest start --watch` は動きません。`apps/backend/package.json` の TypeScript は6系（`^6.0.0`）を指定し、`package-lock.json` では6.0.3を解決しています。`tsconfig.json` の廃止された `baseUrl` を削除し、`tsconfig.build.json` に `rootDir: ./src` を指定して `dist/main.js` に出力する設定です。
 
 ルートで実行してください。
 
@@ -12,12 +12,12 @@
 git fetch origin --prune
 git switch develop
 git pull --ff-only origin develop
-npm install
+npm ci
 npm ls typescript --workspace @xplay/backend
 npm run dev
 ```
 
-現在の `package-lock.json` は Sass 追加時から未同期です。ロックファイルが更新・コミットされるまでは `npm ci` ではなく `npm install` が必要です。依存解決後に作成されたルート `package-lock.json` の差分を確認してリポジトリへコミットしてください。
+お知らせ機能の実装ブランチを `develop` に取り込んだ時点で、ルート `package-lock.json` はワークスペースの依存と同期済みです。CIの `npm ci`、DBマイグレーション、各ワークスペースのテスト・ビルドも成功しています。依存定義を変更した場合は、ルートで `npm install` を実行してロックファイルの差分を確認し、ソースと一緒にコミットしてください。
 
 解消しない場合は、次を単独で実行し、最初のエラーから末尾までのログを保存してください。`--preserveWatchOutput` によりコンパイルメッセージが消えにくくなっています。
 
@@ -60,3 +60,5 @@ node --test scripts/dev-process.test.mjs
 ## 検証状態
 
 2026-09-21時点、Windowsのプロセス起動オプションと `taskkill /T /F` の引数を模擬した6件の単体テストに合格。Linuxの模擬サービス（Dockerスタブ・npm2プロセス・TCPリスナー2つ）ではSIGINTで両ポートが解放されることを確認。実際のWindows＋Docker＋Nuxt＋NestJS環境でのCtrl+C確認は未実施です。
+
+お知らせ機能統合後のCIは <https://github.com/surumeneco/MineCraftXPlayWebApp/actions/runs/35530830179> を参照してください。DB・API・ビルド検証の成功と、Discord実OAuth／HTTPS本番公開／ブラウザE2Eの未検証は区別してください。
