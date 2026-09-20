@@ -41,7 +41,7 @@ describe('Responsive header menus', () => {
     expect(wrapper.get('#header-navigation').classes()).toContain('d-none')
   })
 
-  it('closes the mobile navigation and its submenu after selecting a child link', async () => {
+  it('uses an initially expanded mobile accordion instead of a dropdown', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       props: {
         items: [{ label: '情報', children: [{ label: 'お知らせ', to: '/news' }] }],
@@ -50,12 +50,21 @@ describe('Responsive header menus', () => {
 
     const navToggle = wrapper.get('button[aria-controls="header-navigation"]')
     await navToggle.trigger('click')
-    await wrapper.get('button.dropdown-toggle').trigger('click')
-    expect(wrapper.get('.dropdown-menu').classes()).toContain('show')
+    const mobileAccordion = wrapper.get('.d-lg-none.accordion')
+    const accordionToggle = mobileAccordion.get('button.accordion-button')
+    expect(accordionToggle.attributes('aria-expanded')).toBe('true')
+    expect(mobileAccordion.get('a[href="/news"]').isVisible()).toBe(true)
+    expect(wrapper.get('.dropdown').classes()).toContain('d-none')
 
-    await wrapper.get('.dropdown-item').trigger('click')
+    await accordionToggle.trigger('click')
+    expect(accordionToggle.attributes('aria-expanded')).toBe('false')
+    await navToggle.trigger('click')
+    await navToggle.trigger('click')
+    expect(wrapper.get('.d-lg-none.accordion button.accordion-button').attributes('aria-expanded')).toBe('true')
+
+    await wrapper.get('.d-lg-none.accordion a[href="/news"]').trigger('click')
     expect(navToggle.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.find('.dropdown-menu').exists()).toBe(false)
+    expect(wrapper.get('#header-navigation').classes()).toContain('d-none')
   })
 })
 
