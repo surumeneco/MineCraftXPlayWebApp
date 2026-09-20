@@ -1,13 +1,3 @@
-<script setup lang="ts">
-import { sortNotices } from '../utils/notice'
-
-const { data: notices, status, error } = usePublicNotices()
-const latest = computed(() => sortNotices(
-  notices.value.filter(notice => !notice.is_draft && notice.published_at),
-  'published_at',
-).slice(0, 3))
-</script>
-
 <template>
   <section aria-labelledby="home-heading">
     <h1 id="home-heading" class="h2 mb-4">ホーム</h1>
@@ -23,3 +13,13 @@ const latest = computed(() => sortNotices(
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+import { sortNotices } from '../utils/notice'
+
+const { data: notices, status, error } = usePublicNotices()
+const latest = computed(() => sortNotices(
+  notices.value.filter(notice => !notice.is_draft && notice.published_at),
+  'published_at',
+).slice(0, 3))
+</script>
