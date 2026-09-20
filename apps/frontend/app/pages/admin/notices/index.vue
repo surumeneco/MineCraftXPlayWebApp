@@ -234,13 +234,16 @@ onMounted(async () => {
     authenticated.value = sessionInfo.authenticated
     csrf.value = sessionInfo.csrf_token ?? ''
     if (authenticated.value && csrf.value) {
-      newSession(); await reload(); await ensureQuill()
+      newSession(); await reload()
       heartbeat = setInterval(() => {
         if (session) void mutation(`/admin/images/sessions/${session}/refresh`, 'POST').catch(() => undefined)
       }, 30 * 60 * 1000)
     } else authenticated.value = false
   } catch (error) { errorMessage.value = describeError(error) }
-  finally { loading.value = false }
+  finally {
+    loading.value = false
+    if (authenticated.value) await ensureQuill()
+  }
 })
 onBeforeUnmount(() => { if (heartbeat) clearInterval(heartbeat) })
 </script>
