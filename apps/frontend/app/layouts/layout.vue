@@ -1,15 +1,3 @@
-<script setup lang="ts">
-import type { HeaderNavigationItem } from '../types/header-navigation'
-import type { FooterExternalLink, FooterInternalLink } from '../types/footer-links'
-
-defineProps<{
-  navigationItems?: HeaderNavigationItem[]
-  footerExternalLinks?: FooterExternalLink[]
-  footerInternalLinks?: FooterInternalLink[]
-  copyrightHolder?: string
-}>()
-</script>
-
 <template>
   <div id="page-top" class="d-flex min-vh-100 flex-column">
     <LayoutHeaderMenu :items="navigationItems">
@@ -32,3 +20,15 @@ defineProps<{
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import type { HeaderNavigationItem } from '../types/header-navigation'
+import type { FooterExternalLink, FooterInternalLink } from '../types/footer-links'
+
+defineProps<{
+  navigationItems?: HeaderNavigationItem[]
+  footerExternalLinks?: FooterExternalLink[]
+  footerInternalLinks?: FooterInternalLink[]
+  copyrightHolder?: string
+}>()
+</script>
