@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,6 +26,22 @@ for (const key of ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD']) {
 const dbPort = Number(env.POSTGRES_PORT ?? '5432')
 if (!Number.isInteger(dbPort) || dbPort < 1 || dbPort > 65535) {
   console.error('[dev] POSTGRES_PORT には有効なポート番号を指定してください。')
+  process.exit(1)
+}
+
+// Nest CLI currently needs TypeScript's programmatic Compiler API, which TS 7 does not expose.
+// Fail before starting Docker, with an actionable message if an old install is still in place.
+let typescriptVersion
+try {
+  const requireBackend = createRequire(resolve(root, 'apps/backend/package.json'))
+  const typescriptPackage = requireBackend.resolve('typescript/package.json')
+  typescriptVersion = JSON.parse(readFileSync(typescriptPackage, 'utf8')).version
+} catch {
+  console.error('[dev] バックエンド用TypeScriptが見つかりません。リポジトリのルートで npm install を実行してください。')
+  process.exit(1)
+}
+if (Number(typescriptVersion.split('.')[0]) >= 7) {
+  console.error(`[dev] インストール済みTypeScript ${typescriptVersion} はNest CLIの開発起動に非対応です。ルートで npm install を実行し、6系に更新してください。`)
   process.exit(1)
 }
 
@@ -76,10 +93,18 @@ function stop(signal = 'SIGTERM') {
   if (stopping) return
   stopping = true
   for (const child of children.values()) {
-    if (child.exitCode !== null || child.signalCode !== null) continue
+    if (!child.pid || child.exitCode !== null || child.signalCode !== null) continue
     try {
-      if (process.platform === 'win32') child.kill(signal)
-      else process.kill(-child.pid, signal)
+      if (process.platform === 'win32') {
+        // Killing only npm leaves its Nuxt/Nest grandchildren running on Windows.
+        const result = spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+          stdio: 'ignore',
+          windowsHide: true,
+        })
+        if (result.error) child.kill(signal)
+      } else {
+        process.kill(-child.pid, signal)
+      }
     } catch (error) {
       if (error.code !== 'ESRCH') console.error('[dev] 子プロセスの停止に失敗:', error)
     }
@@ -108,6 +133,7 @@ for (const [name, script] of [['frontend', 'dev:frontend'], ['backend', 'dev:bac
   })
   children.set(name, child)
   child.on('error', (error) => {
+    children.delete(name)
     console.error(`[dev] ${name} の起動に失敗: ${error.message}`)
     process.exitCode = 1
     stop()
