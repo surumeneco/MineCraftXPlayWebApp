@@ -43,24 +43,15 @@
           <ul class="navbar-nav flex-column flex-lg-row flex-wrap gap-2 w-100 justify-content-lg-end">
             <li v-for="(item, index) in items" :key="item.label" class="nav-item">
               <template v-if="item.children?.length">
-                <div class="dropdown d-none d-lg-block">
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary dropdown-toggle"
-                    :aria-expanded="openCategory === index"
-                    @click="toggleCategory(index)"
-                  >
-                    {{ item.label }}
-                  </button>
-                  <ul v-if="openCategory === index" class="dropdown-menu show mt-1">
-                    <li v-for="child in item.children" :key="child.to">
-                      <NuxtLink :to="child.to" class="dropdown-item" @click="closeNavigation">
-                        {{ child.label }}
-                      </NuxtLink>
-                    </li>
-                  </ul>
+                <div class="d-none d-lg-block">
+                  <LayoutNavigationDropdown
+                    :key="`${index}-${desktopDropdownCycle}`"
+                    :label="item.label"
+                    :links="item.children"
+                    @link-selected="closeNavigation"
+                  />
                 </div>
-                <div class="accordion accordion-flush d-lg-none">
+                <div class="accordion accordion-flush d-lg-none w-100">
                   <UiAccordion
                     :key="`${index}-${mobileAccordionCycle}`"
                     :title="item.label"
@@ -76,7 +67,7 @@
                   </UiAccordion>
                 </div>
               </template>
-              <NuxtLink v-else-if="item.to" :to="item.to" class="btn btn-outline-secondary" @click="closeNavigation">
+              <NuxtLink v-else-if="item.to" :to="item.to" class="nav-link" @click="closeNavigation">
                 {{ item.label }}
               </NuxtLink>
             </li>
@@ -97,7 +88,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { HeaderNavigationItem } from '../../types/header-navigation'
 
 withDefaults(defineProps<{
@@ -107,23 +97,18 @@ withDefaults(defineProps<{
 })
 
 const openMobileMenu = ref<'side' | 'navigation' | null>(null)
-const openCategory = ref<number | null>(null)
 const mobileAccordionCycle = ref(0)
+const desktopDropdownCycle = ref(0)
 
 function toggleMobileMenu(menu: 'side' | 'navigation') {
   const next = openMobileMenu.value === menu ? null : menu
   openMobileMenu.value = next
-  openCategory.value = null
-  // Opening the hamburger menu always restores its categories to the default open state.
+  desktopDropdownCycle.value++
   if (next === 'navigation') mobileAccordionCycle.value++
-}
-
-function toggleCategory(index: number) {
-  openCategory.value = openCategory.value === index ? null : index
 }
 
 function closeNavigation() {
   openMobileMenu.value = null
-  openCategory.value = null
+  desktopDropdownCycle.value++
 }
 </script>
