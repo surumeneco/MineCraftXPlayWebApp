@@ -1,6 +1,9 @@
 <template>
   <section aria-labelledby="home-heading">
     <UiPageTitle id="home-heading" title="ホーム" />
+
+    <!-- カード形式：Discord招待リンク -->
+
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
       <UiSectionHeading title="最新のお知らせ" class="mb-0 flex-grow-1" />
       <NuxtLink to="/info/notice" class="flex-shrink-0">お知らせ一覧</NuxtLink>
