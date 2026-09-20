@@ -1,3 +1,13 @@
+<template>
+  <NuxtLayout
+    name="layout"
+    :navigation-items="navigationItems"
+    :footer-internal-links="footerInternalLinks"
+  >
+    <NuxtPage />
+  </NuxtLayout>
+</template>
+
 <script setup lang="ts">
 import type { HeaderNavigationItem } from './types/header-navigation'
 import type { FooterInternalLink } from './types/footer-links'
@@ -22,13 +32,3 @@ const footerInternalLinks: FooterInternalLink[] = [
   { label: '運営方針とルール', to: '/info/rules' },
 ]
 </script>
-
-<template>
-  <NuxtLayout
-    name="layout"
-    :navigation-items="navigationItems"
-    :footer-internal-links="footerInternalLinks"
-  >
-    <NuxtPage />
-  </NuxtLayout>
-</template>
