@@ -48,7 +48,7 @@
     <ul>
       <li>Geyser：Java版・統合版のクロスプレイ</li>
       <li>Floodgate：統合版プレイヤーの接続</li>
-      <li>Bedrock Restorer：クロスプレイ時のスキン反映</li>
+      <li>Bedrock Skin Restorer：クロスプレイ時のスキン反映</li>
       <li>ViaVersion：バージョン互換性への対応</li>
       <li>ViaBackwards：バージョン互換性への対応</li>
     </ul>
@@ -62,7 +62,7 @@
 
     <h4>便利機能</h4>
     <ul>
-      <li>Block Locker：アイテムの保護</li>
+      <li>Block Locker：チェストやドアなどのロック・保護</li>
       <li>ClickMobs：Mobの運搬を補助</li>
       <li>GSit：座るなどのモーションを追加</li>
     </ul>
