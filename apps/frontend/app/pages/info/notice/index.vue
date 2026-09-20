@@ -1,3 +1,31 @@
+<template>
+  <section aria-labelledby="notice-heading">
+    <h1 id="notice-heading" class="h2 mb-4">お知らせ</h1>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+      <div>
+        <div class="form-label mb-1">並び替え</div>
+        <div class="btn-group" role="group" aria-label="お知らせの並び替え">
+          <UiButton :variant="sortBy === 'published_at' ? 'primary' : 'outline-primary'" :pressed="sortBy === 'published_at'" @click="sortBy = 'published_at'">投稿日時順</UiButton>
+          <UiButton :variant="sortBy === 'updated_at' ? 'primary' : 'outline-primary'" :pressed="sortBy === 'updated_at'" @click="sortBy = 'updated_at'">更新日時順</UiButton>
+        </div>
+      </div>
+      <div class="flex-grow-1" style="max-width: 20rem">
+        <UiSelect v-model="tagId" label="タグで絞り込み" :options="tagOptions" />
+      </div>
+    </div>
+
+    <p v-if="status === 'pending' || status === 'idle'" role="status">お知らせを読み込んでいます…</p>
+    <div v-else-if="error" class="alert alert-danger" role="alert">
+      お知らせを取得できませんでした。
+      <UiButton variant="outline-secondary" size="sm" @click="refresh()">再読み込み</UiButton>
+    </div>
+    <p v-else-if="displayed.length === 0" role="status">該当するお知らせはありません。</p>
+    <div v-else class="d-grid gap-3">
+      <NoticeBanner v-for="notice in displayed" :key="notice.id" :notice="notice" :lines="3" />
+    </div>
+  </section>
+</template>
+
 <script setup lang="ts">
 import type { NoticeTag } from '../../../types/notice'
 import { sortNotices } from '../../../utils/notice'
@@ -29,31 +57,3 @@ const displayed = computed(() => sortNotices(
   sortBy.value,
 ))
 </script>
-
-<template>
-  <section aria-labelledby="notice-heading">
-    <h1 id="notice-heading" class="h2 mb-4">お知らせ</h1>
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
-      <div>
-        <div class="form-label mb-1">並び替え</div>
-        <div class="btn-group" role="group" aria-label="お知らせの並び替え">
-          <UiButton :variant="sortBy === 'published_at' ? 'primary' : 'outline-primary'" :pressed="sortBy === 'published_at'" @click="sortBy = 'published_at'">投稿日時順</UiButton>
-          <UiButton :variant="sortBy === 'updated_at' ? 'primary' : 'outline-primary'" :pressed="sortBy === 'updated_at'" @click="sortBy = 'updated_at'">更新日時順</UiButton>
-        </div>
-      </div>
-      <div class="flex-grow-1" style="max-width: 20rem">
-        <UiSelect v-model="tagId" label="タグで絞り込み" :options="tagOptions" />
-      </div>
-    </div>
-
-    <p v-if="status === 'pending' || status === 'idle'" role="status">お知らせを読み込んでいます…</p>
-    <div v-else-if="error" class="alert alert-danger" role="alert">
-      お知らせを取得できませんでした。
-      <UiButton variant="outline-secondary" size="sm" @click="refresh()">再読み込み</UiButton>
-    </div>
-    <p v-else-if="displayed.length === 0" role="status">該当するお知らせはありません。</p>
-    <div v-else class="d-grid gap-3">
-      <NoticeBanner v-for="notice in displayed" :key="notice.id" :notice="notice" :lines="3" />
-    </div>
-  </section>
-</template>
