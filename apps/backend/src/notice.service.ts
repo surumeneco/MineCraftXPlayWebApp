@@ -77,7 +77,7 @@ export class NoticeService {
     const previous = await tx`
       SELECT i.id FROM images i JOIN notice_images ni ON ni.image_id = i.id
       WHERE ni.notice_id = ${id} FOR UPDATE OF i`
-    const existing = new Set(previous.map((row: any) => String(row.id)))
+    const existing = new Set<string>(previous.map((row: any) => String(row.id)))
     for (const imageId of imageIdsInBody) {
       if (existing.has(imageId)) continue
       if (!session) throw new BadRequestException('upload_session_id is required for new images')
@@ -106,7 +106,7 @@ export class NoticeService {
     try {
       id = await this.database.sql.begin(async (tx) => {
         const rows = await tx`
-          INSERT INTO notices (title, body_delta, status) VALUES (${next.heading}, ${tx.json(next.body)}, 'draft')
+          INSERT INTO notices (title, body_delta, status) VALUES (${next.heading}, ${tx.json(next.body as any)}, 'draft')
           RETURNING id`
         const newId = String(rows[0].id)
         await this.saveTags(tx, newId, next.selectedTags)
@@ -130,7 +130,7 @@ export class NoticeService {
         const next = this.input(raw, { ...old, tags: tagRows })
         if (old.status === 'published' && next.heading !== old.title) throw new ConflictException('Published title cannot change')
         if (old.status !== 'draft' && !hasContent(next.body)) throw new BadRequestException('Body cannot be empty')
-        await tx`UPDATE notices SET title=${next.heading}, body_delta=${tx.json(next.body)},
+        await tx`UPDATE notices SET title=${next.heading}, body_delta=${tx.json(next.body as any)},
           updated_at=clock_timestamp(), version=version+1 WHERE id=${id}`
         await this.saveTags(tx, id, next.selectedTags)
         await this.saveImages(tx, id, next.ids, admin, next.session)
