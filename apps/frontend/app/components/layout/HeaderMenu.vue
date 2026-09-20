@@ -1,7 +1,7 @@
 <template>
   <header class="navbar navbar-expand-lg sticky-top border-bottom bg-body py-3">
     <div class="container">
-      <div class="row align-items-center w-100 g-2">
+      <div class="row align-items-center w-100 g-2 xplay-header-row">
         <div class="col d-lg-none">
           <button
             type="button"
@@ -16,10 +16,12 @@
           </button>
         </div>
 
-        <div class="col-auto text-center">
-          <slot name="logo">
-            <span class="fs-3 fw-bold">ここにロゴ</span>
-          </slot>
+        <div class="col-auto text-center xplay-header-brand">
+          <NuxtLink to="/" class="xplay-site-logo" aria-label="もふもふ広場 ホームへ" @click="closeNavigation">
+            <slot name="logo">
+              <span class="fs-3 fw-bold">もふもふ広場</span>
+            </slot>
+          </NuxtLink>
         </div>
 
         <div class="col d-lg-none d-flex justify-content-end">
@@ -38,10 +40,10 @@
 
         <nav
           id="header-navigation"
-          class="col-12 col-lg d-none d-lg-flex justify-content-lg-end"
+          class="col-12 col-lg d-none d-lg-flex justify-content-lg-center xplay-desktop-navigation"
           aria-label="メインナビゲーション"
         >
-          <ul class="navbar-nav flex-row flex-wrap gap-2 w-100 justify-content-lg-end">
+          <ul class="navbar-nav flex-row flex-wrap gap-2 w-100 justify-content-lg-center">
             <li v-for="(item, index) in items" :key="item.label" class="nav-item">
               <LayoutNavigationDropdown
                 v-if="item.children?.length"
