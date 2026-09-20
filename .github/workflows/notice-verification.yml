@@ -4,12 +4,11 @@ on:
   push:
     branches:
       - feature/notice-backend
-    paths-ignore:
-      - package-lock.json
+      - develop
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check:
@@ -38,23 +37,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Resolve dependencies and synchronize lockfile
-        run: npm install --ignore-scripts
-      - name: Commit dependency lockfile if updated
-        run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add package-lock.json
-            git commit -m "chore: synchronize notice backend lockfile"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
       - name: Database migrations
         run: npm run db:migrate --workspace @xplay/backend
-      - name: Backend unit tests
+      - name: Backend unit and database integration tests
         run: npm run test:backend
+      - name: Frontend tests
+        run: npm run test:frontend
       - name: Build workspaces
         run: npm run build
+      - name: Build backend production container
+        run: docker build --target production -t xplay-notices-backend ./apps/backend
       - name: Public and unauthorized API smoke test
         shell: bash
         run: |
