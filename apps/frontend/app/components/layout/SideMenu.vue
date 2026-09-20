@@ -1,13 +1,3 @@
-<script setup lang="ts">
-import { sortNotices } from '../../utils/notice'
-
-const { data: notices, status, error } = usePublicNotices()
-const latest = computed(() => sortNotices(
-  notices.value.filter(notice => !notice.is_draft && notice.published_at),
-  'published_at',
-).slice(0, 2))
-</script>
-
 <template>
   <aside aria-label="サイドメニュー">
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
@@ -23,3 +13,13 @@ const latest = computed(() => sortNotices(
     <!-- TODO: Bluemap リンク -->
   </aside>
 </template>
+
+<script setup lang="ts">
+import { sortNotices } from '../../utils/notice'
+
+const { data: notices, status, error } = usePublicNotices()
+const latest = computed(() => sortNotices(
+  notices.value.filter(notice => !notice.is_draft && notice.published_at),
+  'published_at',
+).slice(0, 2))
+</script>
