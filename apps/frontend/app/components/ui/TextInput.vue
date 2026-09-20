@@ -1,20 +1,3 @@
-<script setup lang="ts">
-const props = withDefaults(defineProps<{
-  modelValue: string
-  id?: string
-  label?: string
-  type?: 'text' | 'email' | 'password'
-  placeholder?: string
-  disabled?: boolean
-  required?: boolean
-  error?: string
-  maxlength?: number
-}>(), { type: 'text' })
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
-const generatedId = useId()
-const inputId = computed(() => props.id ?? generatedId)
-</script>
-
 <template>
   <div>
     <label v-if="label" class="form-label" :for="inputId">{{ label }}</label>
@@ -34,3 +17,20 @@ const inputId = computed(() => props.id ?? generatedId)
     <div v-if="error" class="invalid-feedback">{{ error }}</div>
   </div>
 </template>
+
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  modelValue: string
+  id?: string
+  label?: string
+  type?: 'text' | 'email' | 'password'
+  placeholder?: string
+  disabled?: boolean
+  required?: boolean
+  error?: string
+  maxlength?: number
+}>(), { type: 'text' })
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const generatedId = useId()
+const inputId = computed(() => props.id ?? generatedId)
+</script>
