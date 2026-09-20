@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core'
+import type { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module.js'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
   app.setGlobalPrefix('api')
   app.enableShutdownHooks()
   // A 5 MiB image needs up to ~6.7 MiB of base64 JSON transport.
