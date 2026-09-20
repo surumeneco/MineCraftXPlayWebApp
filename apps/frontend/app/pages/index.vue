@@ -1,9 +1,9 @@
 <template>
   <section aria-labelledby="home-heading">
-    <h1 id="home-heading" class="h2 mb-4">ホーム</h1>
+    <UiPageTitle id="home-heading" title="ホーム" />
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-      <h2 class="h4 mb-0">最新のお知らせ</h2>
-      <NuxtLink to="/info/notice">お知らせ一覧</NuxtLink>
+      <UiSectionHeading title="最新のお知らせ" class="mb-0 flex-grow-1" />
+      <NuxtLink to="/info/notice" class="flex-shrink-0">お知らせ一覧</NuxtLink>
     </div>
     <p v-if="status === 'pending' || status === 'idle'" role="status">お知らせを読み込んでいます…</p>
     <p v-else-if="error" class="text-body-secondary">お知らせを取得できませんでした。</p>
