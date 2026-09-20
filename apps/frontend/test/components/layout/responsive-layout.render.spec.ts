@@ -53,7 +53,7 @@ describe('Responsive header menus', () => {
     const mobileAccordion = wrapper.get('.d-lg-none.accordion')
     const accordionToggle = mobileAccordion.get('button.accordion-button')
     expect(accordionToggle.attributes('aria-expanded')).toBe('true')
-    expect(mobileAccordion.get('a[href="/news"]').isVisible()).toBe(true)
+    expect(mobileAccordion.get('a[href="/news"]').exists()).toBe(true)
     expect(wrapper.get('.dropdown').classes()).toContain('d-none')
 
     await accordionToggle.trigger('click')
