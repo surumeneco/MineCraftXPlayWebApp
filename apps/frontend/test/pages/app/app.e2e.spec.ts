@@ -1,17 +1,24 @@
 import { expect, test } from '@nuxt/test-utils/playwright'
 
-test('renders the home page and navigates to a published information page', async ({ page, goto }) => {
+test('navigates from the centered hover menu and returns home through the logo', async ({ page, goto }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
   await goto('/', { waitUntil: 'hydration' })
 
   await expect(page.getByRole('heading', { name: 'ホーム' })).toBeVisible()
-  await page.getByRole('button', { name: '情報' }).click()
-  await page.getByRole('link', { name: 'お知らせ' }).click()
-
+  const logo = page.locator('header a.xplay-site-logo')
+  await expect(logo).toHaveText('もふもふ広場')
+  await expect(logo).toHaveAttribute('href', '/')
+  await expect(page.locator('#header-navigation')).toHaveCSS('justify-content', 'center')
+  await expect(page.locator('#header-navigation a[href="/"]')).toHaveCount(0)
+  await page.getByRole('button', { name: '情報' }).hover()
+  await expect(page.getByRole('link', { name: 'お知らせ', exact: true }).first()).toBeVisible()
+  await page.locator('#header-navigation a[href="/info/notice"]').click()
   await expect(page).toHaveURL(/\/info\/notice$/)
-  await expect(page.getByRole('heading', { name: 'お知らせ' })).toBeVisible()
+  await logo.click()
+  await expect(page).toHaveURL(/\/$/)
 })
 
-test('mobile hamburgers open modal overlays without pushing content down', async ({ page, goto }) => {
+test('mobile hamburgers open modal overlays with legible white links without pushing content down', async ({ page, goto }) => {
   await page.setViewportSize({ width: 375, height: 720 })
   await goto('/', { waitUntil: 'hydration' })
   const main = page.locator('main')
@@ -32,9 +39,12 @@ test('mobile hamburgers open modal overlays without pushing content down', async
 
   await navigation.click()
   await expect(drawer.locator('#mobile-navigation')).toBeVisible()
+  await expect(drawer.locator('#mobile-navigation a[href="/"]')).toHaveCount(0)
   const accordion = drawer.getByRole('button', { name: '情報' })
   await expect(accordion).toHaveAttribute('aria-expanded', 'true')
-  await expect(drawer.getByRole('link', { name: 'お知らせ' })).toBeVisible()
+  const noticeLink = drawer.locator('#mobile-navigation a[href="/info/notice"]')
+  await expect(noticeLink).toBeVisible()
+  await expect(noticeLink).toHaveCSS('color', 'rgb(255, 255, 255)')
   await page.keyboard.press('Escape')
   await expect(drawer).not.toHaveAttribute('open', '')
   await expect(navigation).toBeFocused()
@@ -43,6 +53,6 @@ test('mobile hamburgers open modal overlays without pushing content down', async
   await drawer.locator('.xplay-mobile-drawer__scrim').click({ position: { x: 2, y: 2 }, force: true })
   await expect(drawer).not.toHaveAttribute('open', '')
   await navigation.click()
-  await drawer.getByRole('link', { name: 'お知らせ' }).click()
+  await noticeLink.click()
   await expect(page).toHaveURL(/\/info\/notice$/)
 })

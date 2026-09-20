@@ -3,54 +3,35 @@ import { describe, expect, it } from 'vitest'
 import HeaderMenu from '../../../app/components/layout/HeaderMenu.vue'
 
 describe('HeaderMenu', () => {
-  it('renders Bootstrap navigation and opens/closes category links', async () => {
+  it('links the branded logo to home and centers desktop navigation', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       props: {
-        items: [
-          { label: 'ホーム', to: '/' },
-          {
-            label: '情報',
-            children: [
-              { label: 'お知らせ', to: '/news' },
-              { label: 'サーバー情報', to: '/server' },
-            ],
-          },
-        ],
+        items: [{ label: '情報', children: [{ label: 'お知らせ', to: '/news' }] }],
       },
     })
-
-    expect(wrapper.get('header').text()).toContain('ここにロゴ')
     expect(wrapper.get('header').classes()).toContain('sticky-top')
     expect(wrapper.get('header').classes()).toContain('bg-body')
-    expect(wrapper.get('nav > ul > li > a').attributes('href')).toBe('/')
-    expect(wrapper.find('.dropdown-menu').exists()).toBe(false)
-
-    const toggle = wrapper.get('button.dropdown-toggle')
-    expect(toggle.text()).toBe('情報')
-    expect(toggle.attributes('aria-expanded')).toBe('false')
-    await toggle.trigger('click')
-
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-    expect(wrapper.findAll('.dropdown-item').map(link => link.attributes('href'))).toEqual([
-      '/news',
-      '/server',
-    ])
-
-    await toggle.trigger('click')
-    expect(toggle.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.find('.dropdown-menu').exists()).toBe(false)
-
-    await toggle.trigger('click')
-    await wrapper.get('.dropdown-item').trigger('click')
-    expect(wrapper.find('.dropdown-menu').exists()).toBe(false)
+    expect(wrapper.get('a.xplay-site-logo').attributes('href')).toBe('/')
+    expect(wrapper.get('a.xplay-site-logo').text()).toBe('もふもふ広場')
+    const navigation = wrapper.get('nav[aria-label="メインナビゲーション"]')
+    expect(navigation.classes()).toContain('justify-content-lg-center')
+    expect(navigation.classes()).toContain('xplay-desktop-navigation')
+    expect(navigation.get('ul').classes()).toContain('justify-content-lg-center')
+    expect(navigation.find('a[href="/"]').exists()).toBe(false)
+    const dropdown = navigation.get('.dropdown')
+    await dropdown.trigger('mouseenter')
+    expect(dropdown.get('button').attributes('aria-expanded')).toBe('true')
+    expect(dropdown.get('a[href="/news"]').text()).toBe('お知らせ')
+    await dropdown.trigger('mouseleave')
+    expect(dropdown.get('button').attributes('aria-expanded')).toBe('false')
   })
 
-  it('allows the logo to be replaced through its slot', async () => {
+  it('keeps a custom logo slot inside the home link', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       slots: { logo: '<strong>カスタムロゴ</strong>' },
     })
-
-    expect(wrapper.get('header').text()).toContain('カスタムロゴ')
+    expect(wrapper.get('a.xplay-site-logo').attributes('href')).toBe('/')
+    expect(wrapper.get('a.xplay-site-logo').text()).toBe('カスタムロゴ')
     expect(wrapper.get('header').text()).not.toContain('ここにロゴ')
   })
 })

@@ -1,0 +1,263 @@
+// Site-owned styles are SCSS; Bootstrap and Quill vendor CSS stay external.
+@use './tokens/color' as color;
+@use './tokens/font-size' as font;
+@use './tokens/radius' as radius;
+@use './tokens/elevation' as elevation;
+@use './tokens/margin' as margin;
+
+:root {
+  @include color.expose();
+  @include font.expose();
+  @include radius.expose();
+  @include elevation.expose();
+  @include margin.expose();
+}
+
+html { color-scheme: dark; }
+body {
+  min-height: 100vh;
+  color: var(--xplay-text);
+  background: linear-gradient(180deg, var(--xplay-page-start), var(--xplay-page-end)) fixed;
+}
+
+.xplay-shell[data-bs-theme='dark'] {
+  color: var(--xplay-text);
+  --bs-body-color: var(--xplay-text);
+  --bs-body-color-rgb: 229, 229, 229;
+  --bs-body-bg: var(--xplay-panel);
+  --bs-body-bg-rgb: 38, 38, 38;
+  --bs-emphasis-color: #f2f2f2;
+  --bs-secondary-color: var(--xplay-text-muted);
+  --bs-secondary-bg: var(--xplay-panel-soft);
+  --bs-tertiary-bg: var(--xplay-input);
+  --bs-border-color: var(--xplay-border);
+  --bs-primary: var(--xplay-main-bold);
+  --bs-primary-rgb: 0, 143, 191;
+  --bs-link-color: var(--xplay-link);
+  --bs-link-color-rgb: 0, 191, 229;
+  --bs-link-hover-color: var(--xplay-link-hover);
+  --bs-focus-ring-color: rgba(0, 191, 255, .4);
+}
+
+.xplay-shell {
+  a:not(.btn, .nav-link, .dropdown-item, .xplay-card-link) {
+    color: var(--xplay-link);
+    &:visited { color: var(--xplay-link-visited); }
+    &:hover { color: var(--xplay-link-hover); }
+  }
+  :is(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--xplay-main-soft);
+    outline-offset: 3px;
+  }
+}
+
+.xplay-panel {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  background: var(--xplay-panel);
+  border: 1px solid var(--xplay-border);
+  border-radius: var(--xplay-panel-radius);
+  box-shadow: var(--xplay-panel-shadow);
+  &--inset {
+    box-shadow: none;
+    background: var(--xplay-panel-soft);
+  }
+}
+.xplay-page-title {
+  margin: 0 0 var(--xplay-page-title-bottom);
+  padding: var(--xplay-content-padding-y) var(--xplay-content-margin-x);
+  background: var(--xplay-panel-bold);
+  border: 1px dashed var(--xplay-main);
+  border-radius: var(--xplay-input-radius);
+  font-size: clamp(var(--xplay-font-xl), 3vw, var(--xplay-font-xxl));
+  font-weight: 700;
+  line-height: 1.4;
+}
+.xplay-section-heading,
+.xplay-shell main h2:not(.xplay-page-title),
+.xplay-shell main h3 {
+  margin-bottom: var(--xplay-section-heading-bottom);
+  padding: .3rem .5rem .3rem .75rem;
+  border-left: 5px solid var(--xplay-main);
+  border-bottom: 1px dashed var(--xplay-main-heavy);
+  font-size: var(--xplay-font-lg);
+  font-weight: 700;
+}
+.xplay-shell main h4 {
+  color: var(--xplay-main-soft);
+  font-size: var(--xplay-font-lg);
+  margin-top: 1.6rem;
+}
+.xplay-shell main h5 {
+  font-size: var(--xplay-font-md);
+  font-weight: 700;
+  margin-top: 1.1rem;
+}
+.xplay-note { font-size: var(--xplay-font-sm); color: var(--xplay-text-muted); }
+
+.xplay-card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.25rem 1rem;
+  color: var(--xplay-text);
+  background: var(--xplay-input);
+  border: 1px solid var(--xplay-border-soft);
+  border-radius: var(--xplay-panel-radius);
+  box-shadow: var(--xplay-card-shadow);
+  font-size: clamp(var(--xplay-font-lg), 2.5vw, var(--xplay-font-xl));
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color .25s ease, border-color .25s ease;
+  &:visited { color: var(--xplay-text); }
+  &:hover, &:focus-visible {
+    color: var(--xplay-text);
+    border-color: var(--xplay-main);
+    background: linear-gradient(90deg, var(--xplay-input-focus), var(--xplay-input));
+  }
+  &__label { min-width: 0; overflow-wrap: anywhere; }
+  &__arrow {
+    flex-shrink: 0;
+    color: var(--xplay-main-soft);
+    transition: transform .25s ease;
+  }
+  &:hover &__arrow { transform: translateX(.35rem); }
+}
+
+// Cyan branding applies to the header only; mobile dialog links have their own palette.
+.xplay-shell > header.bg-body {
+  background: var(--xplay-header) !important;
+  border-color: var(--xplay-main-heavy) !important;
+  color: var(--xplay-header-text);
+}
+.xplay-shell > header {
+  .xplay-site-logo {
+    display: inline-flex;
+    align-items: center;
+    color: var(--xplay-header-text);
+    text-decoration: none;
+    white-space: nowrap;
+    &:visited { color: var(--xplay-header-text); }
+    &:hover, &:focus-visible { color: var(--xplay-header-text-hover); text-decoration: underline; }
+  }
+  .nav-link, .nav-link:visited { color: var(--xplay-header-text); font-weight: 700; }
+  .nav-link:hover, .nav-link:focus-visible {
+    color: var(--xplay-header-text-hover);
+    background: rgba(0, 95, 127, .15);
+    box-shadow: inset 0 -3px 0 var(--xplay-main-heavy);
+  }
+  .navbar-toggler { border-color: var(--xplay-main-heavy); color: var(--xplay-header-text); }
+  .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23002633' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  }
+  .dropdown-menu {
+    margin-top: 0; // No hover gap between the trigger and its popup.
+    background: var(--xplay-panel);
+    border: 1px solid var(--xplay-border-focus);
+    border-radius: var(--xplay-input-radius);
+    box-shadow: var(--xplay-dropdown-shadow);
+  }
+  .dropdown-item {
+    color: var(--xplay-text);
+    &:hover, &:focus-visible { background: var(--xplay-main-heavy); color: var(--xplay-text-inverse); }
+  }
+}
+
+.xplay-shell > footer.bg-body {
+  background: var(--xplay-footer) !important;
+  border-color: var(--xplay-border-soft) !important;
+}
+.xplay-shell > footer .link-body-emphasis {
+  color: var(--xplay-text) !important;
+  &:hover { color: var(--xplay-link-hover) !important; }
+}
+
+// UiAccordion retains its Vue-owned v-show behavior.
+.xplay-shell .accordion {
+  --bs-accordion-bg: var(--xplay-panel);
+  --bs-accordion-color: var(--xplay-text);
+  .accordion-item {
+    background: var(--xplay-panel);
+    border: 1px solid var(--xplay-border);
+    .accordion-button {
+      background: var(--xplay-panel-bold);
+      color: var(--xplay-text);
+      border-left: 5px solid var(--xplay-main);
+      border-bottom: 1px dashed var(--xplay-main);
+      font-weight: 700;
+      box-shadow: none;
+      &::after {
+        filter: brightness(0) saturate(100%) invert(82%) sepia(20%) saturate(1520%) hue-rotate(157deg);
+      }
+    }
+  }
+  .accordion-body { color: var(--xplay-text); background: var(--xplay-panel); }
+}
+
+// Bootstrap bridge keeps existing component props and markup unchanged.
+.xplay-shell {
+  .card {
+    --bs-card-bg: var(--xplay-panel-soft);
+    --bs-card-color: var(--xplay-text);
+    --bs-card-border-color: var(--xplay-border);
+    border-radius: var(--xplay-panel-radius);
+  }
+  .btn { border-radius: var(--xplay-button-radius); transition: background-color .2s ease, border-color .2s ease; }
+  .btn-primary {
+    --bs-btn-bg: var(--xplay-main-bold);
+    --bs-btn-border-color: var(--xplay-main-bold);
+    --bs-btn-hover-bg: var(--xplay-main-heavy);
+    --bs-btn-hover-border-color: var(--xplay-main);
+    --bs-btn-active-bg: var(--xplay-main-heavy);
+    --bs-btn-active-border-color: var(--xplay-main);
+    --bs-btn-color: var(--xplay-text-inverse);
+    --bs-btn-hover-color: var(--xplay-text-inverse);
+  }
+  .btn-outline-primary {
+    --bs-btn-color: var(--xplay-main-soft);
+    --bs-btn-border-color: var(--xplay-main);
+    --bs-btn-hover-bg: var(--xplay-main-heavy);
+    --bs-btn-hover-border-color: var(--xplay-main);
+    --bs-btn-hover-color: var(--xplay-text-inverse);
+    --bs-btn-active-bg: var(--xplay-main-heavy);
+  }
+  .form-control, .form-select {
+    background-color: var(--xplay-input);
+    border-color: var(--xplay-border);
+    border-radius: var(--xplay-input-radius);
+    color: var(--xplay-text);
+    &:focus {
+      background-color: var(--xplay-input-focus);
+      border-color: var(--xplay-main);
+      color: var(--xplay-text);
+      box-shadow: 0 0 0 .2rem rgba(0,191,255,.19);
+    }
+  }
+  .form-control::placeholder { color: var(--xplay-text-muted); opacity: 1; }
+}
+
+@media (min-width: 992px) {
+  // Equal outer tracks center the desktop nav relative to the viewport container, not the logo.
+  .xplay-header-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  }
+  .xplay-header-brand { grid-column: 1; justify-self: start; }
+  .xplay-desktop-navigation {
+    grid-column: 2;
+    justify-self: center;
+    width: max-content;
+    max-width: 100%;
+    flex: none;
+  }
+}
+@media (max-width: 991.98px) {
+  .xplay-shell > header nav .accordion { width: 100%; }
+  .xplay-shell > header nav .accordion .accordion-item { border-radius: var(--xplay-input-radius); }
+  .xplay-panel { padding: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xplay-card-link, .xplay-card-link__arrow, .xplay-shell .btn { transition: none; }
+}

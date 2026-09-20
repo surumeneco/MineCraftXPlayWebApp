@@ -6,14 +6,15 @@ import Layout from '../../../app/layouts/layout.vue'
 describe('Responsive header menus', () => {
   it('keeps the desktop navigation separate and opens left/right modal overlays', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
-      props: { items: [{ label: 'ホーム', to: '/' }] },
+      props: { items: [{ label: '概要', to: '/info' }] },
       slots: { 'side-menu': '<p>サイドメニューの内容</p>' },
     })
 
     expect(wrapper.get('header').classes()).toEqual(expect.arrayContaining([
       'navbar', 'navbar-expand-lg', 'sticky-top',
     ]))
-    expect(wrapper.get('.col-auto').text()).toBe('ここにロゴ')
+    expect(wrapper.get('a.xplay-site-logo').text()).toBe('もふもふ広場')
+    expect(wrapper.get('a.xplay-site-logo').attributes('href')).toBe('/')
     const sideToggle = wrapper.get('button[aria-label="サイドメニュー"]')
     const navToggle = wrapper.get('button[aria-label="ナビゲーションメニュー"]')
     expect(sideToggle.attributes('aria-controls')).toBe('mobile-menu-drawer')
@@ -23,7 +24,7 @@ describe('Responsive header menus', () => {
     expect(sideToggle.attributes('aria-expanded')).toBe('false')
     expect(navToggle.attributes('aria-expanded')).toBe('false')
     expect(wrapper.get('#header-navigation').classes()).toContain('d-lg-flex')
-    expect(wrapper.get('#header-navigation').classes()).toContain('d-none')
+    expect(wrapper.get('#header-navigation').classes()).toContain('justify-content-lg-center')
     const drawer = wrapper.get('#mobile-menu-drawer')
     expect(drawer.attributes('open')).toBeUndefined()
 
@@ -41,7 +42,8 @@ describe('Responsive header menus', () => {
     expect(drawer.attributes('aria-label')).toBe('ナビゲーションメニュー')
     expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--right')
     expect(drawer.find('#mobile-side-menu').exists()).toBe(false)
-    expect(drawer.get('#mobile-navigation a[href="/"]').text()).toBe('ホーム')
+    expect(drawer.get('#mobile-navigation a[href="/info"]').text()).toBe('概要')
+    expect(drawer.find('#mobile-navigation a[href="/"]').exists()).toBe(false)
     await drawer.get('.xplay-mobile-drawer__close').trigger('click')
     expect(navToggle.attributes('aria-expanded')).toBe('false')
     expect(drawer.attributes('open')).toBeUndefined()
@@ -79,7 +81,7 @@ describe('Responsive header menus', () => {
 
   it('closes on the backdrop, preserves the desktop nav and restores scroll state', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
-      props: { items: [{ label: 'ホーム', to: '/' }] },
+      props: { items: [{ label: '概要', to: '/info' }] },
     })
     const originalOverflow = document.body.style.overflow
     const toggle = wrapper.get('button[aria-label="ナビゲーションメニュー"]')
