@@ -1,3 +1,20 @@
+<template>
+  <NuxtLink v-if="to && !disabled && !loading" :to="to" :class="classes">
+    <slot />
+  </NuxtLink>
+  <button
+    v-else
+    :type="type"
+    :class="classes"
+    :disabled="disabled || loading"
+    :aria-busy="loading || undefined"
+    :aria-pressed="pressed"
+    @click="emit('click', $event)"
+  >
+    <slot />
+  </button>
+</template>
+
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   to?: string
@@ -20,20 +37,3 @@ const classes = computed(() => [
   props.block && 'w-100',
 ])
 </script>
-
-<template>
-  <NuxtLink v-if="to && !disabled && !loading" :to="to" :class="classes">
-    <slot />
-  </NuxtLink>
-  <button
-    v-else
-    :type="type"
-    :class="classes"
-    :disabled="disabled || loading"
-    :aria-busy="loading || undefined"
-    :aria-pressed="pressed"
-    @click="emit('click', $event)"
-  >
-    <slot />
-  </button>
-</template>
