@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const appDirectory = fileURLToPath(new URL('../../app/', import.meta.url))
+// Nuxt's Vitest environment transforms import.meta.url into a virtual URL;
+// the workspace working directory is the stable project-root reference.
+const appDirectory = resolve(process.cwd(), 'app')
 
 function collectVueFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
