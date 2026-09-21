@@ -50,6 +50,7 @@
     </div>
     <dialog id="mobile-menu-drawer" ref="mobileDialog" class="xplay-mobile-drawer"
       :class="{ 'xplay-mobile-drawer--closing': drawerClosing }"
+      :style="{ '--xplay-header-bottom': `${headerBottom}px` }"
       :aria-label="openMobileMenu === 'side' ? 'サイドメニュー' : 'ナビゲーションメニュー'"
       @cancel.prevent="closeDrawer()" @close="onDrawerClose">
       <div class="xplay-mobile-drawer__scrim" aria-hidden="true" @click="closeDrawer()" />
@@ -110,6 +111,7 @@ const route = useRoute()
 const openMobileMenu = ref<MobileMenu | null>(null)
 const drawerClosing = ref(false)
 const openerStyle = ref<Record<string, string>>({})
+const headerBottom = ref(0)
 const accountOpen = ref(false)
 const mobileDialog = ref<HTMLDialogElement | null>(null)
 const closeButton = ref<HTMLButtonElement | null>(null)
@@ -127,6 +129,8 @@ function onSideMenuClick(event: MouseEvent) {
   if (event.target instanceof Element && event.target.closest('a[href]')) closeNavigation()
 }
 function positionCloseButton() {
+  const header = mobileDialog.value?.parentElement
+  headerBottom.value = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0
   if (!opener) return
   const rect = opener.getBoundingClientRect()
   openerStyle.value = {
