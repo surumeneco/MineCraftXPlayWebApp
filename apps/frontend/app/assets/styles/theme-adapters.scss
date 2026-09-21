@@ -1,0 +1,58 @@
+@use './tokens/elevation' as elevation;
+
+// Shadows are semantic too; the default dark values are emitted in theme.scss.
+:root[data-bs-theme='light'] {
+  @include elevation.expose('light');
+}
+
+// Bootstrap's compiled button classes contain literal colors. Override their variables
+// with application semantics rather than depending on vendor mode defaults.
+.xplay-shell {
+  --bs-success-rgb: var(--xplay-feedback-success-icon-rgb);
+  --bs-danger-rgb: var(--xplay-feedback-error-icon-rgb);
+  --bs-warning-rgb: var(--xplay-feedback-warning-icon-rgb);
+  --bs-info-rgb: var(--xplay-feedback-info-icon-rgb);
+
+  .btn-success {
+    --bs-btn-bg: var(--xplay-background-button-success-base);
+    --bs-btn-border-color: var(--xplay-background-button-success-base);
+    --bs-btn-color: var(--xplay-text-on-success);
+    --bs-btn-hover-bg: var(--xplay-background-button-success-hover);
+    --bs-btn-hover-border-color: var(--xplay-background-button-success-hover);
+    --bs-btn-hover-color: var(--xplay-text-on-success);
+    --bs-btn-active-bg: var(--xplay-background-button-success-hover);
+    --bs-btn-active-border-color: var(--xplay-background-button-success-hover);
+    --bs-btn-active-color: var(--xplay-text-on-success);
+  }
+  .btn-info {
+    --bs-btn-bg: var(--xplay-background-button-info-base);
+    --bs-btn-border-color: var(--xplay-background-button-info-base);
+    --bs-btn-color: var(--xplay-text-on-info);
+    --bs-btn-hover-bg: var(--xplay-background-button-info-hover);
+    --bs-btn-hover-border-color: var(--xplay-background-button-info-hover);
+    --bs-btn-hover-color: var(--xplay-text-on-info);
+    --bs-btn-active-bg: var(--xplay-background-button-info-hover);
+    --bs-btn-active-border-color: var(--xplay-background-button-info-hover);
+    --bs-btn-active-color: var(--xplay-text-on-info);
+  }
+  .btn-secondary {
+    --bs-btn-bg: var(--xplay-background-button-secondary-base);
+    --bs-btn-border-color: var(--xplay-border-base);
+    --bs-btn-color: var(--xplay-text-base);
+    --bs-btn-hover-bg: var(--xplay-background-button-secondary-hover);
+    --bs-btn-hover-border-color: var(--xplay-border-strong);
+    --bs-btn-hover-color: var(--xplay-text-base);
+    --bs-btn-active-bg: var(--xplay-background-button-secondary-hover);
+    --bs-btn-active-border-color: var(--xplay-border-strong);
+    --bs-btn-active-color: var(--xplay-text-base);
+  }
+}
+
+// App-level toast is rendered outside .xplay-shell: style its feedback explicitly.
+.xplay-feedback.alert-success {
+  --bs-alert-color: var(--xplay-feedback-success-text);
+  --bs-alert-bg: var(--xplay-feedback-success-background);
+  --bs-alert-border-color: var(--xplay-feedback-success-border);
+}
+.xplay-feedback .btn-close { filter: none; }
+:root:not([data-bs-theme='light']) .xplay-feedback .btn-close { filter: invert(1); }
