@@ -1,4 +1,4 @@
-// Start both panels outside the viewport; transition only after the dialog's visible layout is committed.
+// Mobile navigation and backdrop use semantic colors in both themes.
 .xplay-mobile-drawer {
   &:not([open]) { display: none; }
   &[open] {
@@ -20,7 +20,7 @@
   &__scrim {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, .66);
+    background: var(--xplay-background-overlay-scrim);
     opacity: 0;
     transition: opacity .26s ease-out;
   }
@@ -32,9 +32,9 @@
     max-width: 100%;
     overflow-y: auto;
     overscroll-behavior: contain;
-    color: var(--xplay-text);
-    background: var(--xplay-panel);
-    border: 1px solid var(--xplay-border-soft);
+    color: var(--xplay-text-base);
+    background: var(--xplay-background-surface-base);
+    border: 1px solid var(--xplay-border-strong);
     box-shadow: var(--xplay-drawer-shadow);
     padding: clamp(1rem, 4vw, 1.5rem);
     transition: transform .26s cubic-bezier(.2,.75,.3,1);
@@ -64,7 +64,7 @@
     gap: 1rem;
     padding-block-end: var(--xplay-drawer-heading-bottom);
     margin-block-end: var(--xplay-drawer-heading-bottom);
-    border-bottom: 2px solid var(--xplay-main);
+    border-bottom: 2px solid var(--xplay-concept-main);
   }
   &__title {
     margin: 0;
@@ -109,29 +109,29 @@
       &::before { transform: rotate(45deg); }
       &::after { transform: rotate(-45deg); }
     }
-    &:focus-visible { outline: 3px solid var(--xplay-header-text); outline-offset: 2px; }
+    &:focus-visible { outline: 3px solid var(--xplay-focus-indicator-outer); outline-offset: 2px; }
   }
   .xplay-mobile-drawer .nav-link,
   .xplay-mobile-drawer .nav-link:visited {
-    color: var(--xplay-text-inverse);
+    color: var(--xplay-text-base);
     background: transparent;
     box-shadow: none;
   }
   .xplay-mobile-drawer .nav-link:hover,
   .xplay-mobile-drawer .nav-link:focus-visible {
-    color: var(--xplay-text-inverse);
-    background: var(--xplay-main-heavy);
+    color: var(--xplay-text-on-primary);
+    background: var(--xplay-background-button-primary-hover);
     box-shadow: none;
   }
   .xplay-mobile-drawer .xplay-mobile-drawer__link {
     display: block;
     padding: var(--xplay-drawer-item-padding-y) var(--xplay-drawer-item-padding-x);
     min-height: 44px;
-    border-bottom: 1px solid var(--xplay-border);
+    border-bottom: 1px solid var(--xplay-border-base);
     font-weight: 600;
   }
   .xplay-mobile-drawer :is(a, button):focus-visible {
-    outline: 3px solid var(--xplay-main-soft);
+    outline: 3px solid var(--xplay-focus-indicator-outer);
     outline-offset: 2px;
   }
 }
@@ -143,5 +143,5 @@
 }
 @media (forced-colors: active) {
   .xplay-mobile-drawer__panel { border: 2px solid CanvasText; }
-  .xplay-mobile-drawer__scrim { background: rgba(0, 0, 0, .8); }
+  .xplay-mobile-drawer__scrim { background: var(--xplay-background-overlay-scrim); }
 }
