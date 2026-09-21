@@ -18,13 +18,20 @@ export type AccountRecord = {
 export function useAccountApi() {
   const { public: { apiBase } } = useRuntimeConfig()
   const auth = useAccountSession()
-  const get = <T>(path: string) => $fetch<T>(`${apiBase}${path}`, { credentials: 'include' })
-  const mutate = <T>(path: string, method: 'PATCH' | 'POST' | 'DELETE', body?: unknown) =>
-    $fetch<T>(`${apiBase}${path}`, {
-      method, credentials: 'include',
-      headers: { 'X-XPlay-CSRF': auth.session.value.csrf_token ?? '' },
-      ...(body === undefined ? {} : { body }),
-    })
+  const { showError } = useUiFeedback()
+  async function get<T>(path: string): Promise<T> {
+    try { return await $fetch<T>(`${apiBase}${path}`, { credentials: 'include' }) }
+    catch (error) { showError(error); throw error }
+  }
+  async function mutate<T>(path: string, method: 'PATCH' | 'POST' | 'DELETE', body?: unknown): Promise<T> {
+    try {
+      return await $fetch<T>(`${apiBase}${path}`, {
+        method, credentials: 'include',
+        headers: { 'X-XPlay-CSRF': auth.session.value.csrf_token ?? '' },
+        ...(body === undefined ? {} : { body }),
+      })
+    } catch (error) { showError(error); throw error }
+  }
   return { get, mutate }
 }
 
