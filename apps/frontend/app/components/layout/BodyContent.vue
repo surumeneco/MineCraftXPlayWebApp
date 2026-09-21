@@ -6,6 +6,7 @@
       </div>
 
       <main class="col-12 col-lg-9">
+        <LayoutBreadcrumb />
         <UiPanel>
           <slot />
         </UiPanel>
