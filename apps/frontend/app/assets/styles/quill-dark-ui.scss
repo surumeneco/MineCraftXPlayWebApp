@@ -1,0 +1,48 @@
+// Quill's Snow theme defaults to dark controls intended for light backgrounds.
+// Keep this UI-only override separate from editor content formatting.
+.xplay-shell {
+  .ql-toolbar.ql-snow {
+    .ql-stroke { stroke: #fff; }
+    .ql-fill:not(.ql-color-label) { fill: #fff; }
+    .ql-picker,
+    .ql-picker-label,
+    .ql-picker-item { color: #fff; }
+
+    .ql-picker-options {
+      background: var(--xplay-panel);
+      border-color: var(--xplay-border);
+    }
+
+    button:hover .ql-stroke,
+    button:focus-visible .ql-stroke,
+    button.ql-active .ql-stroke,
+    .ql-picker-label:hover .ql-stroke,
+    .ql-picker.ql-expanded .ql-stroke { stroke: var(--xplay-main-soft); }
+
+    button:hover .ql-fill:not(.ql-color-label),
+    button:focus-visible .ql-fill:not(.ql-color-label),
+    button.ql-active .ql-fill:not(.ql-color-label),
+    .ql-picker-label:hover .ql-fill:not(.ql-color-label),
+    .ql-picker.ql-expanded .ql-fill:not(.ql-color-label) { fill: var(--xplay-main-soft); }
+
+    .ql-picker-item:hover,
+    .ql-picker-item.ql-selected,
+    .ql-picker-label:hover,
+    .ql-picker.ql-expanded .ql-picker-label { color: var(--xplay-main-soft); }
+  }
+
+  .ql-snow .ql-tooltip {
+    background: var(--xplay-panel);
+    border-color: var(--xplay-border);
+    color: #fff;
+
+    input[type='text'] {
+      background: var(--xplay-input);
+      border-color: var(--xplay-border);
+      color: #fff;
+    }
+
+    a.ql-action,
+    a.ql-remove { color: #fff; }
+  }
+}
