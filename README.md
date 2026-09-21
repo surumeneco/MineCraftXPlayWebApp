@@ -118,6 +118,102 @@ docker compose -f compose.yaml -f compose.dev.yaml down
 
 `down --volumes` / `down -v` はPostgreSQLの保存データも削除するため使用しません。ホスト起動とDocker版を同時に使用するとポートが競合するので、どちらかを停止してから切り替えます。
 
+## DiscordBotとのお知らせ通知・ローカル連携テスト
+
+**開発PC（Windows / PowerShell）で行う実Discord送信テストです。VPSへのデプロイ手順ではありません。** Bot側の[READMEの連携テスト手順](https://github.com/surumeneco/MineCraftXPlayDiscordBot/blob/develop/README.md#webappとのお知らせ通知ローカル連携テスト)も参照してください。Botとの接続にはDocker内部の `xplay-notice-bot` という名前を使うため、通常の `npm run dev` ではなく、ここではWebApp全サービスをDocker内で実行します。`npm run dev` を同時に起動するとポート3000/3001が競合します。
+
+### 準備（初回・設定変更時）
+
+1. WebAppとBotの各リポジトリで `git status --short` を確認し、未コミット変更を保護してから `git fetch origin --prune`、`git switch develop`、`git pull --ff-only origin develop` を実行する。Docker Desktopを起動する。
+2. Discordにテスト専用チャンネルを用意し、既存Botへチャンネル閲覧・送信権限を与え、チャンネルIDを控える。**実際にメッセージを投稿するため、本番のお知らせチャンネルを指定しない。**
+3. WebAppとBotの `.env` がなければそれぞれのリポジトリ直下で `if (!(Test-Path .env)) { Copy-Item .env.example .env }` を実行。既存の `.env` やDBパスワード、OAuth設定は上書きしない。
+4. Node.js導入済みのPowerShellで次を実行して32バイトのランダムな共通シークレットを生成し、両アプリに**同一の値**を設定する。実際の値・Bot TokenはGit、README、チャットに貼らない。
+
+   ```powershell
+   node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+   ```
+
+   WebAppの `.env` へ次の3項目を設定し、既存のDB・Discord OAuth設定は保持する。
+
+   ```dotenv
+   NOTICE_BOT_URL=http://xplay-notice-bot:3101
+   NOTICE_NOTIFY_SECRET=<Botと共通のシークレット>
+   NOTICE_PUBLIC_BASE_URL=http://localhost:3000
+   ```
+
+   Botの `.env` に `DISCORD_BOT_TOKEN`（既存トークン）、`NOTICE_CHANNEL_ID`（テストチャンネル）、`NOTICE_NOTIFY_SECRET`（同じ値）、`NOTICE_HTTP_PORT=3101` を設定する。ローカルの投稿URLは `localhost` なので、開発PC以外からは開けない。
+
+5. 共有ネットワークを一度だけ作成する。すでに存在すれば再作成しない。
+
+   ```powershell
+   docker network inspect xplay_notices *> $null
+   if ($LASTEXITCODE -ne 0) { docker network create xplay_notices }
+   ```
+
+### 起動とログ確認
+
+1. **Botリポジトリのルート**で次を実行する。
+
+   ```powershell
+   docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml up -d --build
+   docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml logs --tail=100 bot
+   ```
+
+   `Discord client ready as ...` と `Notice notification receiver listening on port 3101.` を確認する。受信用ポート3101をホストやインターネットへ公開しない。
+
+2. **WebAppリポジトリのルート**で次を実行する。通常の `npm run dev` を使っていた場合は先に `Ctrl+C` で終了する。
+
+   ```powershell
+   docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml up -d --build
+   docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml ps -a
+   docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml logs --tail=100 backend db
+   ```
+
+3. `http://localhost:3001/api/health` と `http://localhost:3000` を開き、両方が応答することを確認する。管理者でログインし、`http://localhost:3000/admin/notices` を開く。
+
+### お知らせの検証項目
+
+- 下書き保存：Discord通知なし。
+- 下書きの初回公開：新規投稿通知を1件受信し、タイトル・タグ・記事URLを確認。投稿された記事URLは開発PCで開く。
+- 公開済みの記事の本文変更：更新通知を1件受信。
+- 公開済みの記事のタグのみ変更・同一本文の再保存：通知なし。
+- 公開取り消し：通知なし。再公開：新規投稿通知をもう一度受信。
+- 必要ならBotを停止して別の下書きを公開し、公開が失敗して下書きが保持されることを確認する。Botを再起動するまで公開しない。
+
+### 起動失敗時：バックエンドの依存パッケージ不足
+
+`ps -a` で `backend` が `Exited (1)`、`localhost:3001` が `ERR_CONNECTION_REFUSED`、ログに `Cannot find package 'postgres' imported from /app/scripts/migrate.mjs` と出る場合、DB削除ではなく**バックエンド用 `node_modules` ボリュームの依存パッケージ不足**を修復する。開発用Composeの `/app/node_modules` ボリュームはイメージ再ビルド後も既存内容を保持するため、`--build` だけでは不足分が補充されない場合がある。
+
+```powershell
+# WebAppリポジトリのルートで実行。DBボリュームには触れない。
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml run --rm --no-deps backend npm install --no-package-lock
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml up -d --no-deps backend
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml ps -a
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml logs --tail=100 backend
+```
+
+修復後に `http://localhost:3001/api/health`、ログイン、お知らせ一覧を再確認する。記事が画面に出なくても、API不通だけでDBから削除されたとは限らない。`db` が `healthy` か確認し、むやみにDBを初期化しない。この事象が繰り返す場合は開発用Dockerの依存パッケージ管理を見直す。
+
+### 停止・通常開発への復帰
+
+連携テストを終えるときは**それぞれのリポジトリのルート**で実行する。`logs -f` の `Ctrl+C` はログ表示を終了するだけで、コンテナは停止しない。
+
+```powershell
+# WebAppリポジトリで実行（frontend / backend / db を停止）
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml stop
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml ps -a
+```
+
+```powershell
+# DiscordBotリポジトリで実行
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml stop
+docker compose -f compose.yaml -f compose.dev.yaml -f compose.notice.yaml ps -a
+```
+
+いずれも `stop` はコンテナとDBの永続データを削除しない。**`down -v` / `down --volumes`、`docker volume prune` は使用しない。** 通常のWebApp開発に戻る場合は、Docker版の `frontend` / `backend` が停止していることを確認してから、このREADMEの「ローカル開発環境の起動（推奨：ワンコマンド）」に従って `npm run dev` を実行する。通常モードでは `NOTICE_BOT_URL=http://xplay-notice-bot:3101` がホストから解決できないため、そのままでは通知付き公開はできない。連携テスト時は再度本手順のDocker起動を使用する。
+
+通知条件・本番設定・配信上の制限は [`NOTICE_NOTIFICATIONS.md`](./NOTICE_NOTIFICATIONS.md) を参照。
+
 ## テスト
 
 Node.js 24 以降でルートの依存関係を導入した後、VSCodeターミナルから実行します。
