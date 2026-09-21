@@ -2,7 +2,16 @@
   <section aria-labelledby="home-heading">
     <UiPageTitle id="home-heading" title="ホーム" />
 
-    <!-- カード形式：Discord招待リンク -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-xl-4">
+        <UiCard
+          image="/images/discord.png"
+          title="参加はこちらから！"
+          url="https://discord.gg/h8NNfn4qPg"
+          new-tab
+        />
+      </div>
+    </div>
 
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
       <UiSectionHeading title="最新のお知らせ" class="mb-0 flex-grow-1" />
@@ -19,7 +28,6 @@
         v-for="notice in latest"
         :key="notice.id"
         :notice="notice"
-        :heading-level="3"
         :lines="2"
       />
     </div>
@@ -38,8 +46,18 @@
       </div>
     </div>
 
-    <!-- Bluemap見出し -->
-    <!-- カード形式：Bluemap -->
+    <UiSectionHeading title="Bluemap" class="mb-3" />
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-xl-4">
+        <UiCard
+          image="/images/bluemap.png"
+          title="Bluemapを見る"
+          to="/bluemap/"
+          native
+        />
+      </div>
+    </div>
+
     <!-- 場所案内見出し -->
     <!-- カード形式：公営スポット -->
     <!-- カード形式：観光情報 -->

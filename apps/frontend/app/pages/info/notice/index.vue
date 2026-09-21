@@ -21,7 +21,7 @@
     </div>
     <p v-else-if="displayed.length === 0" role="status">該当するお知らせはありません。</p>
     <div v-else class="d-grid gap-2">
-      <NoticeBanner v-for="notice in displayed" :key="notice.id" :notice="notice" :heading-level="2" :lines="2" />
+      <NoticeBanner v-for="notice in displayed" :key="notice.id" :notice="notice" :lines="2" />
     </div>
   </section>
 </template>

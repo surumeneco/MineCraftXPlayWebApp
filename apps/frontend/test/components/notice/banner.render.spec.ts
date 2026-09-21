@@ -22,12 +22,14 @@ describe('NoticeBanner', () => {
     expect(banner.attributes('style')).toContain('--notice-preview-max-height: 2.8em')
     expect(banner.attributes('style')).not.toContain('--notice-preview-height:')
     expect(wrapper.get('.notice-preview').text()).toBe('長い本文…')
-    expect(wrapper.get('h2').text()).toBe(notice.title)
+    expect(wrapper.get('span.notice-banner__title').text()).toBe(notice.title)
+    expect(wrapper.get('span.notice-banner__title').classes()).toContain('fs-5')
+    expect(banner.find('h2,h3').exists()).toBe(false)
   })
 
   it('links whole banner, renders accessible times and tags without badge backgrounds', async () => {
-    const wrapper = await mountSuspended(Banner, { props: { notice, headingLevel: 3 } })
-    expect(wrapper.get('h3').text()).toBe(notice.title)
+    const wrapper = await mountSuspended(Banner, { props: { notice } })
+    expect(wrapper.get('span.notice-banner__title').text()).toBe(notice.title)
     expect(wrapper.findAll('time')).toHaveLength(2)
     expect(wrapper.get('time').element.parentElement?.classList.contains('flex-wrap')).toBe(true)
     const tags = wrapper.get('[aria-label="タグ"]')
