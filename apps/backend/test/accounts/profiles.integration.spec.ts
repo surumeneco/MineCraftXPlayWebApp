@@ -52,6 +52,10 @@ suite('account profiles and protected initial administrator (PostgreSQL)', () =>
   afterAll(async () => {
     await app?.close()
     if (sql) {
+      await sql`UPDATE account_discord_identities SET merge_origin=NULL WHERE merge_origin IN (${protectedId},${adminId},${memberId},${targetId})`
+      await sql`UPDATE account_minecraft_identities SET merge_origin=NULL WHERE merge_origin IN (${protectedId},${adminId},${memberId},${targetId})`
+      await sql`UPDATE images SET merge_origin=NULL WHERE merge_origin IN (${protectedId},${adminId},${memberId},${targetId})`
+      await sql`DELETE FROM account_merges WHERE source_account_id IN (${protectedId},${adminId},${memberId},${targetId}) OR target_account_id IN (${protectedId},${adminId},${memberId},${targetId})`
       await sql`DELETE FROM accounts WHERE id IN (${protectedId},${adminId},${memberId},${targetId})`
       await sql.end()
     }
@@ -78,6 +82,7 @@ suite('account profiles and protected initial administrator (PostgreSQL)', () =>
     const placeholder = '981000000000000099'
     await sql`INSERT INTO account_discord_identities(discord_id,account_id,username,display_name) VALUES (${placeholder},${adminId},${placeholder},${placeholder})`
     expect((await request(`/api/admin/accounts/${adminId}/adopt-discord-name`, 'POST', { discord_id: placeholder })).status).toBe(400)
+    expect((await request(`/api/admin/accounts/${adminId}/discord`, 'POST', { discord_id: '981000000000000098' })).status).toBe(404)
   })
 
   it('stores multiple unverified JE and BE names without treating them as authenticated identities', async () => {
@@ -101,13 +106,19 @@ suite('account profiles and protected initial administrator (PostgreSQL)', () =>
     expect((await sql`SELECT 1 FROM account_roles WHERE account_id=${protectedId} AND role='admin'`)).toHaveLength(1)
   })
 
-  it('merges a regular source into a protected destination and moves Minecraft names', async () => {
+  it('preserves source and can separate it again from a protected destination', async () => {
     const merged = await request('/api/admin/accounts/merge', 'POST', { target_account_id: protectedId, source_account_id: memberId })
     expect(merged.status).toBe(201)
     const retained = merged.data.find((entry: any) => entry.id === protectedId)
     expect(retained.discord_ids).toContain(memberDiscord)
     expect(retained.minecraft_ids.some((identity: any) => identity.username === 'surumeneko164')).toBe(true)
     expect(merged.data.some((entry: any) => entry.id === memberId)).toBe(false)
+    expect((await sql`SELECT name FROM accounts WHERE id=${memberId}`)[0].name).toBe('My Discord name')
     expect((await request('/api/accounts/me', 'GET', undefined, memberSession)).status).toBe(401)
+    const restored = await request(`/api/admin/accounts/merges/${memberId}/restore`, 'POST')
+    expect(restored.status).toBe(201)
+    expect(restored.data.find((entry: any) => entry.id === memberId).discord_ids).toContain(memberDiscord)
+    expect(restored.data.find((entry: any) => entry.id === protectedId).discord_ids).not.toContain(memberDiscord)
+    expect((await sql`SELECT 1 FROM account_roles WHERE account_id=${protectedId} AND role='admin'`)).toHaveLength(1)
   })
 })

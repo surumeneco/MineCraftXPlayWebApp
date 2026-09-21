@@ -18,6 +18,7 @@ type AccountRow = {
   discord_ids: string[]
   discord_profiles: { discord_id: string; username: string; display_name: string }[]
   minecraft_ids: { id: string; edition: 'je' | 'be'; username: string }[]
+  merged_sources: { id: string; name: string; merged_at: Date }[]
 }
 
 @Injectable()
@@ -35,8 +36,14 @@ export class AccountsService {
           FROM account_discord_identities i WHERE i.account_id=a.id), '[]'::json) AS discord_profiles,
         COALESCE((SELECT json_agg(json_build_object('id', m.id, 'edition', m.edition,
           'username', m.username) ORDER BY m.edition, m.username)
-          FROM account_minecraft_identities m WHERE m.account_id=a.id), '[]'::json) AS minecraft_ids
-      FROM accounts a ORDER BY a.created_at, a.id`
+          FROM account_minecraft_identities m WHERE m.account_id=a.id), '[]'::json) AS minecraft_ids,
+        COALESCE((SELECT json_agg(json_build_object('id', s.id, 'name', s.name,
+          'merged_at', merge.merged_at) ORDER BY merge.merged_at)
+          FROM account_merges merge JOIN accounts s ON s.id=merge.source_account_id
+          WHERE merge.target_account_id=a.id AND merge.restored_at IS NULL), '[]'::json) AS merged_sources
+      FROM accounts a
+      WHERE NOT EXISTS (SELECT 1 FROM account_merges merge WHERE merge.source_account_id=a.id AND merge.restored_at IS NULL)
+      ORDER BY a.created_at, a.id`
     const protectedIds = initialDiscordIds()
     return (rows as unknown as AccountRow[]).map(row => ({ ...row, is_protected: Boolean(row.is_admin) &&
       row.discord_ids.some(id => protectedIds.has(id)) }))
@@ -49,7 +56,14 @@ export class AccountsService {
     return account
   }
 
-  async rename(accountRaw: unknown, nameRaw: unknown) {
+  private async assertNoActiveMerge(id: string, message = 'Separate the account merge before changing this information') {
+    const rows = await this.database.sql`SELECT id FROM account_merges
+      WHERE restored_at IS NULL AND (source_account_id=${id} OR target_account_id=${id}) LIMIT 1`
+    if (rows.length) throw new ConflictException(message)
+  }
+
+  // Internal-only operation. No arbitrary-name API is exposed to clients.
+  private async rename(accountRaw: unknown, nameRaw: unknown) {
     const id = uuid(accountRaw), name = validName(nameRaw)
     const updated = await this.database.sql`UPDATE accounts SET name=${name} WHERE id=${id} RETURNING id`
     if (!updated.length) throw new NotFoundException('Account not found')
@@ -73,11 +87,15 @@ export class AccountsService {
         (editionRaw === 'je' && !/^[A-Za-z0-9_]{3,16}$/.test(username))) {
       throw new BadRequestException('Invalid Minecraft name')
     }
-    const exists = await this.database.sql`SELECT id FROM accounts WHERE id=${id}`
-    if (!exists.length) throw new NotFoundException('Account not found')
     try {
-      await this.database.sql`INSERT INTO account_minecraft_identities(account_id, edition, username)
-        VALUES (${id}, ${editionRaw}, ${username})`
+      await this.database.sql.begin(async tx => {
+        await tx`SELECT pg_advisory_xact_lock(79412502)`
+        const active = await tx`SELECT id FROM accounts WHERE id=${id} AND NOT EXISTS
+          (SELECT 1 FROM account_merges WHERE source_account_id=${id} AND restored_at IS NULL)`
+        if (!active.length) throw new NotFoundException('Account not found')
+        await tx`INSERT INTO account_minecraft_identities(account_id, edition, username)
+          VALUES (${id}, ${editionRaw}, ${username})`
+      })
     } catch (error) {
       if ((error as { code?: string }).code === '23505') throw new ConflictException('Minecraft name is already linked')
       throw error
@@ -87,22 +105,14 @@ export class AccountsService {
 
   async removeMinecraft(accountRaw: unknown, identityRaw: unknown) {
     const id = uuid(accountRaw), identity = uuid(identityRaw)
-    const removed = await this.database.sql`DELETE FROM account_minecraft_identities WHERE id=${identity} AND account_id=${id} RETURNING id`
-    if (!removed.length) throw new NotFoundException('Minecraft identity not found')
-    return this.get(id)
-  }
-
-  async addDiscord(accountRaw: unknown, discordRaw: unknown) {
-    const id = uuid(accountRaw)
-    if (typeof discordRaw !== 'string' || !/^\d{15,22}$/.test(discordRaw)) throw new BadRequestException('Invalid Discord ID')
-    try {
-      await this.database.sql`INSERT INTO account_discord_identities(discord_id, account_id, username, display_name)
-        VALUES (${discordRaw}, ${id}, ${discordRaw}, ${discordRaw})`
-    } catch (error) {
-      if ((error as { code?: string }).code === '23505') throw new ConflictException('Discord identity is already linked')
-      if ((error as { code?: string }).code === '23503') throw new NotFoundException('Account not found')
-      throw error
-    }
+    await this.database.sql.begin(async tx => {
+      await tx`SELECT pg_advisory_xact_lock(79412502)`
+      const rows = await tx`SELECT merge_origin FROM account_minecraft_identities
+        WHERE id=${identity} AND account_id=${id} FOR UPDATE`
+      if (!rows.length) throw new NotFoundException('Minecraft identity not found')
+      if (rows[0].merge_origin) throw new ConflictException('Separate the merge before removing transferred Minecraft identities')
+      await tx`DELETE FROM account_minecraft_identities WHERE id=${identity} AND account_id=${id}`
+    })
     return this.get(id)
   }
 
@@ -111,6 +121,9 @@ export class AccountsService {
     if (typeof discordRaw !== 'string' || !/^\d{15,22}$/.test(discordRaw)) throw new BadRequestException('Invalid Discord ID')
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
+      const merged = await tx`SELECT 1 FROM account_merges WHERE restored_at IS NULL
+        AND (source_account_id=${id} OR target_account_id=${id}) LIMIT 1`
+      if (merged.length) throw new ConflictException('Separate the merge before unlinking Discord identities')
       const identities = await tx`SELECT discord_id FROM account_discord_identities WHERE account_id=${id} FOR UPDATE`
       if (!identities.some(row => row.discord_id === discordRaw)) throw new NotFoundException('Discord identity not found')
       if (initialDiscordIds().has(discordRaw)) throw new ConflictException('Cannot detach a protected initial administrator identity')
@@ -128,14 +141,16 @@ export class AccountsService {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
       const accounts = await tx`SELECT id FROM accounts WHERE id=${id} FOR UPDATE`
       if (!accounts.length) throw new NotFoundException('Account not found')
+      const merged = await tx`SELECT 1 FROM account_merges WHERE restored_at IS NULL
+        AND (source_account_id=${id} OR target_account_id=${id}) LIMIT 1`
+      if (merged.length) throw new ConflictException('Separate the merge before changing administrator roles')
       if (enabled) {
         await tx`INSERT INTO account_roles(account_id, role) VALUES (${id}, 'admin') ON CONFLICT DO NOTHING`
       } else {
         const exists = await tx`SELECT 1 FROM account_roles WHERE account_id=${id} AND role='admin'`
         if (!exists.length) return
-        const protectedIds = [...initialDiscordIds()]
         const linked = await tx`SELECT discord_id FROM account_discord_identities WHERE account_id=${id}`
-        if (linked.some(row => protectedIds.includes(row.discord_id as string))) {
+        if (linked.some(row => initialDiscordIds().has(row.discord_id as string))) {
           throw new ConflictException('Cannot revoke a protected initial administrator')
         }
         const admins = await tx`SELECT COUNT(*)::INTEGER AS count FROM account_roles WHERE role='admin'`
@@ -152,6 +167,9 @@ export class AccountsService {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
       const existing = await tx`SELECT id FROM accounts WHERE id=${id} FOR UPDATE`
       if (!existing.length) throw new NotFoundException('Account not found')
+      // Preserve both account IDs and their audit trail even after separation.
+      const history = await tx`SELECT 1 FROM account_merges WHERE source_account_id=${id} OR target_account_id=${id} LIMIT 1`
+      if (history.length) throw new ConflictException('Account has merge history and cannot be physically deleted')
       const identities = await tx`SELECT discord_id FROM account_discord_identities WHERE account_id=${id}`
       if (identities.some(row => initialDiscordIds().has(row.discord_id as string))) {
         throw new ConflictException('Cannot delete a protected initial administrator')
@@ -164,29 +182,6 @@ export class AccountsService {
       const images = await tx`SELECT 1 FROM images WHERE uploaded_by=${id} LIMIT 1`
       if (images.length) throw new ConflictException('Account owns images; merge into another account before deletion')
       await tx`DELETE FROM accounts WHERE id=${id}`
-    })
-    return this.list()
-  }
-
-  async merge(targetRaw: unknown, sourceRaw: unknown) {
-    const target = uuid(targetRaw), source = uuid(sourceRaw)
-    if (target === source) throw new BadRequestException('Choose two different accounts')
-    await this.database.sql.begin(async tx => {
-      await tx`SELECT pg_advisory_xact_lock(79412502)`
-      const records = await tx`SELECT id FROM accounts WHERE id IN (${target}, ${source}) FOR UPDATE`
-      if (records.length !== 2) throw new NotFoundException('Both accounts must exist')
-      const identities = await tx`SELECT discord_id FROM account_discord_identities WHERE account_id=${source}`
-      if (identities.some(row => initialDiscordIds().has(row.discord_id as string))) {
-        throw new ConflictException('Protected initial administrator must remain as the merge destination')
-      }
-      await tx`INSERT INTO account_roles(account_id, role)
-        SELECT ${target}, role FROM account_roles WHERE account_id=${source}
-        ON CONFLICT DO NOTHING`
-      await tx`UPDATE account_discord_identities SET account_id=${target} WHERE account_id=${source}`
-      await tx`UPDATE account_minecraft_identities SET account_id=${target} WHERE account_id=${source}`
-      await tx`UPDATE images SET uploaded_by=${target} WHERE uploaded_by=${source}`
-      await tx`DELETE FROM account_sessions WHERE account_id=${source}`
-      await tx`DELETE FROM accounts WHERE id=${source}`
     })
     return this.list()
   }

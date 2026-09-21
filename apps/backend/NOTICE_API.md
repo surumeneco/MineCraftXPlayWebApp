@@ -1,84 +1,88 @@
 # Notice API and database operations
 
-Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webアプリ設計詳細/お知らせ設計.md`, including the most recent account/UI amendments. The application has not been deployed to the production VPS.
+Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webアプリ設計詳細/お知らせ設計.md`, including the latest reversible account-merge amendments. Production VPS deployment is not verified.
 
 ## Local setup
 
-1. Copy root `.env.example` to `.env` and configure PostgreSQL.
-2. Configure `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI`. Register `http://localhost:3001/api/auth/discord/callback` verbatim as a Discord OAuth2 redirect for local development. Login is available to any Discord user, not only administrators.
-3. `ADMIN_DISCORD_IDS` (comma-separated Discord IDs) grants admin on login **only when no DB administrator exists**. Once set up, administrator role is managed in `/admin/accounts/:id/edit`. **Keep the initial administrator Discord IDs in this environment variable:** an account currently holding admin rights and linked to one of these IDs cannot be demoted, deleted, or used as a merge source. Its Discord identity, Minecraft information and Discord-derived name may be edited; arbitrary name entry is not supported. The final admin cannot be removed.
-4. Set `FRONTEND_ORIGIN` to the browser origin, and both `NUXT_PUBLIC_API_BASE` and `PUBLIC_API_BASE` to the external API base URL without a trailing slash. Configure HTTPS/reverse proxy and Secure cookies in production. Never expose PostgreSQL publicly.
-5. Run `npm ci` from repository root, then `npm run dev`; Docker PostgreSQL, Nuxt and NestJS start, with migrations before backend listen. Explicit migration: `npm run db:migrate --workspace @xplay/backend` with `DATABASE_URL`.
+1. Copy root `.env.example` to `.env`; configure PostgreSQL.
+2. Set `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_REDIRECT_URI`. For local development register `http://localhost:3001/api/auth/discord/callback` verbatim with Discord OAuth2. Login is available to all Discord users.
+3. `ADMIN_DISCORD_IDS` is a comma-separated bootstrap list, used only when DB has no administrator. Keep protected initial administrator IDs configured: matching authenticated accounts cannot have the role revoked, be deleted, or be merged **as the source**. They can be merge destinations. At least one administrator must remain.
+4. Set `FRONTEND_ORIGIN` and external API bases `NUXT_PUBLIC_API_BASE`/`PUBLIC_API_BASE` without trailing slashes. Configure HTTPS and Secure cookies in production; do not expose PostgreSQL publicly.
+5. Run `npm ci`, then `npm run dev`. Explicit migrations: `npm run db:migrate --workspace @xplay/backend` with `DATABASE_URL`.
 
-`postgres@3.4.7` and TypeScript 6 are in the lockfile. Shared NestJS `Database` provider uses postgres.js and checksummed, versioned SQL migrations. **Never edit an already applied migration**: `001_notices.sql`, `002_accounts.sql`, and additive `003_account_profiles.sql` are retained.
+Shared `Database` provider uses postgres.js (`postgres@3.4.7` in lockfile), with checksummed incremental SQL migrations. **Never modify an applied migration.** Keep 001 notices, 002 legacy account transition, 003 account profile defaults; 004 adds reversible account merge metadata. Test the actual deployed revision and back up production DB before migration.
 
 ## Public APIs
 
-- `GET /api/notices`: published notices, frontend-compatible schema.
-- `GET /api/notices/:title`: published article or 404.
-- `GET /api/tags`: only tags associated with published articles.
-- `GET /api/images/:id`: public only for published article images. Private/temporary images require appropriate administrator and ownership; no public listing.
+- `GET /api/notices`: published notices in frontend-compatible schema.
+- `GET /api/notices/:title`: published article; non-public or absent returns 404.
+- `GET /api/tags`: tags associated with published articles only.
+- `GET /api/images/:id`: published article images accessible publicly; private and temporary images need ownership/admin authorization; no public image listing.
 
 ## Authentication and account model
 
-- `GET /api/auth/discord`: start OAuth2 with `identify` scope for any Discord user.
-- `GET /api/auth/discord/callback`: validate OAuth2, find or create an internal account, update the authenticated Discord identity's `username` and `display_name` from Discord, issue HttpOnly cookies, then redirect to `/account`.
-- `GET /api/auth/discord/refresh`: run OAuth2 again for the current logged-in Discord ID. Callback only accepts a result already associated with the same authenticated internal account; other linked IDs require login as that Discord identity for their profile refresh. Never accept arbitrary user-provided names as an authenticated Discord profile.
-- `GET /api/auth/session`: authenticated, account_id, is_admin, and csrf_token when cookie matches.
-- `POST /api/auth/logout`: revoke the session.
+- `GET /api/auth/discord`: begin `identify`-scope Discord OAuth2 for any Discord account.
+- `GET /api/auth/discord/callback`: validate state and Discord identity, find/create internal account, update authenticated Discord username/display name, issue HttpOnly session cookies and redirect to `/account`.
+- `GET /api/auth/discord/refresh`: OAuth refresh for the currently authenticated Discord identity only. Refresh cannot switch to another account or accept client-asserted Discord names; other linked identities must log in independently to refresh their own profile.
+- `GET /api/auth/session`: authentication state, internal account ID, `is_admin`, CSRF token when supplied cookies match.
+- `POST /api/auth/logout`: revoke session.
 
-`accounts` holds UUID, name (non-unique, required) and created time. `account_discord_identities` maps globally unique Discord IDs to accounts and stores username/display name. `account_roles` holds `admin`; `account_sessions` references the internal account ID. `account_minecraft_identities` contains JE/BE edition and Minecraft **username**, not UUID, with multiple names per internal account and uniqueness on edition+name. Minecraft names are self-reported, **not authenticated**; never infer admin rights or confirmed ownership from them. Migration 002 preserves legacy administrators, sessions and image ownership; migration 003 backfills account/profile names and adds Minecraft identity records without rewriting 001/002.
+`accounts` holds internal UUID, non-unique required account name and creation time. `account_discord_identities` maps globally unique Discord IDs to accounts and stores fetched usernames/display names. `account_roles` stores `admin`, and `account_sessions` references internal accounts. `account_minecraft_identities` stores self-reported JE/BE username (not UUID); multiple per account and globally unique `(edition,username)`. Minecraft names do not prove ownership and cannot determine permissions. Migration 002 preserves legacy administrators/sessions/image ownership; 003 backfills account names and profile fields without rewriting old migrations.
 
-Internal account names initialize from Discord global display name or username (fallback ID) at first login; subsequent logins refresh only their corresponding Discord profile. The account name is read-only in the UI and changes **only** by explicitly adopting a stored, fetched Discord profile name. Arbitrary name mutation endpoints have been removed. Newly linked placeholder-only Discord IDs cannot be adopted until real profile information is fetched through login. Existing account names are not silently overwritten. Linked Discord IDs remain independent identifiers; accounts are never automatically merged from similar names.
+A new account starts with the Discord global display name, or username, or Discord ID fallback. Subsequent logins update only that Discord identity's profile. Account name does not silently change; it is read-only in the UI, and the user or administrator may explicitly adopt an **existing fetched** linked Discord profile name. Placeholder-only profiles cannot be adopted. Arbitrary account-name update APIs do not exist. Similar Discord names never trigger automatic merging.
 
-### User account APIs (authenticated user)
+### Authenticated user account APIs
 
-- `GET /api/accounts/me`: own account record including internal name, role, Discord identities and Minecraft identities.
-- `POST /api/accounts/me/adopt-discord-name`: `{ "discord_id": "..." }`; copy a name from a linked, fetched Discord profile. Reject an unlinked or placeholder-only identity.
-- `POST /api/accounts/me/minecraft`: `{ "edition": "je"|"be", "username": "surumeneko164" }`; self-reported registration.
-- `DELETE /api/accounts/me/minecraft/:identityId`: unlink own Minecraft username.
-
-`PATCH /api/accounts/me/name` no longer exists; arbitrary names cannot be submitted.
+- `GET /api/accounts/me`: active internal account, linked Discord profiles, roles and Minecraft usernames.
+- `POST /api/accounts/me/adopt-discord-name`: `{ "discord_id": "..." }`; adopt a fetched Discord name from one of the account's linked profiles. No arbitrary name strings.
+- `POST /api/accounts/me/minecraft`: `{ "edition": "je"|"be", "username": "..." }`; self-reported registration.
+- `DELETE /api/accounts/me/minecraft/:identityId`: remove one own Minecraft name; transferred identities must first be separated.
 
 ### Administrator account APIs
 
-- `GET /api/admin/accounts`: all accounts with `name`, `discord_profiles`, `discord_ids`, `minecraft_ids`, `is_admin`, `is_protected` and creation date.
-- `GET /api/admin/accounts/:id`: one account.
-- `POST /api/admin/accounts/:id/adopt-discord-name`: `{ "discord_id": "..." }`; adopt this account's linked Discord profile name, rejecting unlinked/placeholder identities. Requires admin authorization and CSRF.
-- `PATCH /api/admin/accounts/:id/role`: `{ "is_admin": true|false }`; protected initial admins and final admin cannot be demoted.
-- `POST /api/admin/accounts/:id/discord`: `{ "discord_id": "..." }`; explicitly associate an unclaimed Discord ID. An ID cannot belong to two accounts.
-- `DELETE /api/admin/accounts/:id/discord/:discordId`: unlink an identity, but not a protected initial identity or the last identity; sessions of modified accounts are invalidated.
-- `POST /api/admin/accounts/:id/minecraft`: add `{ "edition": "je"|"be", "username": "..." }`.
-- `DELETE /api/admin/accounts/:id/minecraft/:identityId`: unlink.
-- `DELETE /api/admin/accounts/:id`: delete account only if not protected, not the final administrator, and with no images it owns. If images exist, merge into another account first.
-- `POST /api/admin/accounts/merge`: `{ "target_account_id": "UUID", "source_account_id": "UUID" }`. Target preserves its UUID/name and inherits source admin role, Discord identities, Minecraft identities and image ownership. Source sessions expire and source account is deleted in one DB transaction. Initial protected admins can be targets, never sources. Confirm both accounts represent the same person before merging.
+- `GET /api/admin/accounts`: list active accounts, including `merged_sources` for merge destinations; merge sources are retained in DB but hidden from this normal list.
+- `GET /api/admin/accounts/:id`: one **active** account and its associated Discord/Minecraft identities; a dormant merged source is not individually accessible until restored.
+- `POST /api/admin/accounts/:id/adopt-discord-name`: `{ "discord_id": "..." }`; adopt a linked fetched Discord profile name; admin/CSRF required.
+- `PATCH /api/admin/accounts/:id/role`: `{ "is_admin": true|false }`. Protected admins and final administrator cannot be demoted; active merged accounts' roles cannot be modified until separation.
+- `DELETE /api/admin/accounts/:id/discord/:discordId`: unlink an existing identity (not the protected initial or final identity), revoke affected sessions. During an active merge, unlinking identities from either participant is forbidden to preserve reversibility.
+- `POST /api/admin/accounts/:id/minecraft`, `DELETE /api/admin/accounts/:id/minecraft/:identityId`: manage self-reported names. Do not remove transferred rows before separation.
+- `DELETE /api/admin/accounts/:id`: reject protected/final administrators, image owners and **any account ever involved in a merge**, even after separation, to retain history.
+- `POST /api/admin/accounts/merge`: `{ "target_account_id": "UUID", "source_account_id": "UUID" }`; merge two distinct existing active accounts after confirmation. Source must not be a protected initial administrator. Returns active account list.
+- `POST /api/admin/accounts/merges/:source/restore`: separate an active merged source; returns active account list. Admin/CSRF required; a source without an active merge returns 404. This restores available recorded ownership, not already physically deleted content.
 
-`PATCH /api/admin/accounts/:id/name` no longer exists. UI routes: `/account` for own profile, `/admin/accounts` for the list (Nuxt `pages/admin/accounts/index.vue`), `/admin/accounts/:id/edit` for individual editing, and `/admin/accounts/merge` for a merge initiated from an editor; the list has no merge shortcut. Header account icon offers login or details, using an accordion in the mobile drawer. Administrator-only “マスタメンテ” links to account administration.
+**Manual Discord ID creation is disabled:** `POST /api/admin/accounts/:id/discord` no longer exists. To link profiles, choose an existing account in the editor's merge dropdown. There is no separate `/admin/accounts/merge` frontend page; `/admin/accounts/:id/edit` is the merge source editor, and it provides a confirmation dialog and an existing-account destination dropdown. The destination editor displays its merged sources with confirmation-backed separation. `/admin/accounts` only lists accounts and opens their editors; `/account` edits the current user's permitted information. Mobile account navigation uses an accordion.
 
-All mutation APIs require an authenticated session, allowed `Origin` and `X-XPlay-CSRF` from `/api/auth/session`; admin endpoints recheck the role server-side per request. Cookies use HttpOnly, SameSite and Secure in production. When OAuth is unconfigured, no anonymous admin write access is allowed.
+### Merge and separation semantics (migration 004)
+
+- `account_merges` stores the immutable source/target UUIDs, their pre-merge `admin` flags, `merged_at`, optional `restored_at`. Source `accounts` record (UUID/name) is **never deleted by merging**. A merged source is merely excluded from active listings. Active-source and active-target uniqueness plus application checks prevent nested or concurrent multi-account chains; separate first before merging again.
+- A single database transaction and shared advisory lock move source Discord profiles, Minecraft identities and `images.uploaded_by` to the destination while writing original source UUID to each row's `merge_origin`. Source's administrator role is inherited by destination if needed; source's role is removed until restoration. Source sessions expire immediately. Destination name and UUID are retained. Protected initial administrator IDs can only be destinations. No external identity is fabricated.
+- Separation reassigns rows with this exact source `merge_origin` to their source UUID, resets ownership markers, restores the two recorded role states and sets `restored_at`; other destination information remains there. Both accounts' sessions are revoked, requiring fresh authentication so a former source identity cannot retain destination privileges. Unexpected ownership changes cause a conflict instead of silent mixed-account transfer.
+- Active merges prevent Discord unlinking, role changes, nested merges and deleting transferred Minecraft identities. Accounts with merge history cannot be physically deleted, preserving records. Existing images subsequently **physically deleted** by normal notice editing/deletion or temporary cleanup cannot be resurrected; separation restores only surviving rows. Audit and identity separation are not a backup system. Take DB backups for production data recovery.
+
+All mutation APIs require an authenticated session, an allowed `Origin` and `X-XPlay-CSRF` token from `/api/auth/session`. Administrator endpoints recheck DB roles server-side on every request. Cookies use HttpOnly, SameSite and Secure in production. If OAuth is unconfigured, anonymous writes remain denied.
 
 ## Administrator notice APIs
 
-- `GET /api/admin/notices[?status=draft|published|unpublished]`: list notices including tags and `created_at`, `updated_at`, `published_at`, `status`.
+- `GET /api/admin/notices[?status=draft|published|unpublished]`: notices including tags, `created_at`, `updated_at`, `published_at` and status.
 - `GET /api/admin/notices/:id`: detail by UUID.
-- `POST /api/admin/notices`: create a draft with `{ "title":"記事", "body_delta":{"ops":[{"insert":"本文\n"}]}, "tags":["重要"], "upload_session_id":"UUID" }`.
-- `PATCH /api/admin/notices/:id`: edit with the above fields and `expected_version`; published title is immutable; only drafts can be empty.
-- `POST /api/admin/notices/:id/publish`: `{ "expected_version": 1 }`; reset published/updated timestamps together, require at least one tag.
+- `POST /api/admin/notices`: draft creation with title, Quill `body_delta`, tags and optional upload-session reference.
+- `PATCH /api/admin/notices/:id`: update with `expected_version`; published titles immutable, only drafts may have empty bodies; published articles require at least one tag.
+- `POST /api/admin/notices/:id/publish`: `{ "expected_version": 1 }`; requires at least one tag, resets publication/update timestamps together.
 - `POST /api/admin/notices/:id/unpublish`: `{ "expected_version": 2 }`.
-- `DELETE /api/admin/notices/:id`: `{ "expected_version": 3 }`; physically delete drafts or unpublished articles only.
-- `GET /api/admin/tags`: all registered tags.
+- `DELETE /api/admin/notices/:id`: `{ "expected_version": 3 }`; drafts/unpublished only, physical deletion.
+- `GET /api/admin/tags`: master tags.
 
-State transitions increment version; stale version yields 409. Published articles must retain at least one tag. DB enforces unique exact titles; tag/article updates and image reconciliation are transactional. UI separates list `/admin/notices`, new `/admin/notices/new` and edit `/admin/notices/:id/edit`, with shared Quill editor. Save, publish, unpublish, discard, return to list and physical deletion use custom confirmation dialogs. The user is warned about lost unsaved edits/temporary uploads. Admin list shows title, tags, creation/update/publication timestamps, and status.
+Version increments on transitions; stale version returns 409. DB enforces exact unique titles. Article/tag changes and image reconciliation use transactions. Frontend routes: list `/admin/notices`, new `/admin/notices/new`, edit `/admin/notices/:id/edit`. Common editor uses Quill Delta and custom confirmation dialogs for save/publish/unpublish/discard/return/delete. Warn about unsaved edits and temporary uploads. Lists display title, tags, creation/update/publication times and status.
 
 ## Images
 
-- `POST /api/admin/images`: `{ "upload_session_id":"UUID", "purpose":"notice", "mime_type":"image/png", "data_base64":"..." }`; JPEG/PNG/WebP, <=5 MiB, validate signatures against MIME.
+- `POST /api/admin/images`: upload `{ "upload_session_id":"UUID", "purpose":"notice", "mime_type":"image/png", "data_base64":"..." }`; JPEG/PNG/WebP up to 5 MiB, signature checked against MIME.
 - `DELETE /api/admin/images/:id`: remove owned temporary image.
-- `DELETE /api/admin/images/sessions/:session`: discard owned unassociated temporary images.
+- `DELETE /api/admin/images/sessions/:session`: discard unassociated temporary images.
 - `POST /api/admin/images/sessions/:session/refresh`: extend temporary retention.
 
-Upload before first notice save, insert returned URL at arbitrary Quill cursor position. Saving associates referenced images and removes unreferenced temporary or previously attached-but-now-removed images in one transaction. Only published article images are publicly readable; withdrawing an article retains its images privately. Temporary unassociated images expire after 24 hours and are cleaned hourly. Physical article deletion removes owned image bytes. Image `purpose` supports future albums. Image ownership references `accounts.id`, never a Discord ID.
+Upload is possible before the first notice save; Quill inserts returned URLs at cursor. Save associates referenced images and transactionally deletes unrelated temporary or removed images. Public may fetch only images belonging to published articles. Unpublication retains images privately. Temporary images expire after about 24h, cleaned hourly. Physical article deletion removes owned image bytes. `images.uploaded_by` references internal UUID, not Discord ID. When a source was merged, provenance persists on **surviving** image rows for reversal.
 
 ## Verification
 
-The `Notice implementation verification` GitHub Actions workflow runs locked dependency install, PostgreSQL 18 migrations, backend unit/integration tests including populated legacy migration and protected-admin cases, frontend tests, both builds, backend production container, and public/unauthorized API smoke checks. Check results for the exact deployed revision. Production VPS deployment, actual Discord OAuth flow, production reverse proxy/cookie behavior, real production-data backup/migration and browser/mobile E2E require separate verification. Never commit credentials.
+The `Notice implementation verification` GitHub Actions workflow runs locked dependency installation, PostgreSQL 18 migrations, backend unit/integration tests (including populated legacy migration and protected admins), frontend tests, both builds, backend production Docker container and public/unauthorized API smoke tests. Check status for the exact deployed revision. Real Discord OAuth, browser/mobile E2E, production reverse proxy/cookie behavior, production migration with backup and VPS deployment require separate verification. Never commit credentials.

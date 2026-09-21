@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { AccountsService } from './accounts.service.js'
+import { AccountMergeService } from './account-merge.service.js'
 
 async function adoptFetchedName(accounts: AccountsService, accountId: string, discordId: unknown) {
   const account = await accounts.get(accountId)
@@ -38,7 +39,8 @@ export class SelfAccountsController {
 
 @Controller('admin/accounts')
 export class AccountsController {
-  constructor(private readonly accounts: AccountsService, private readonly auth: AuthService) {}
+  constructor(private readonly accounts: AccountsService, private readonly auth: AuthService,
+    private readonly merges: AccountMergeService) {}
 
   @Get()
   async list(@Req() req: any) {
@@ -76,12 +78,6 @@ export class AccountsController {
     return this.accounts.removeMinecraft(id, identity)
   }
 
-  @Post(':id/discord')
-  async addDiscord(@Req() req: any, @Param('id') id: string, @Body() body: any) {
-    await this.auth.requireAdmin(req, true)
-    return this.accounts.addDiscord(id, body?.discord_id)
-  }
-
   @Delete(':id/discord/:discord')
   async removeDiscord(@Req() req: any, @Param('id') id: string, @Param('discord') discord: string) {
     await this.auth.requireAdmin(req, true)
@@ -97,6 +93,14 @@ export class AccountsController {
   @Post('merge')
   async merge(@Req() req: any, @Body() body: any) {
     await this.auth.requireAdmin(req, true)
-    return this.accounts.merge(body?.target_account_id, body?.source_account_id)
+    await this.merges.merge(body?.target_account_id, body?.source_account_id)
+    return this.accounts.list()
+  }
+
+  @Post('merges/:source/restore')
+  async restore(@Req() req: any, @Param('source') source: string) {
+    await this.auth.requireAdmin(req, true)
+    await this.merges.restore(source)
+    return this.accounts.list()
   }
 }
