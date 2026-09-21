@@ -6,7 +6,7 @@
           <button type="button" class="navbar-toggler xplay-hamburger"
             :class="{ 'xplay-hamburger--open': openMobileMenu === 'side' }"
             aria-label="サイドメニュー" aria-controls="mobile-menu-drawer"
-            :aria-expanded="openMobileMenu === 'side'" @click="toggleMobileMenu('side', $event)">
+            :aria-expanded="openMobileMenu === 'side'" @click="toggleMobileMenu('side')">
             <span class="navbar-toggler-icon" aria-hidden="true" />
             <span class="xplay-hamburger__label" aria-hidden="true">{{ openMobileMenu === 'side' ? '閉じる' : 'サイド' }}</span>
           </button>
@@ -20,7 +20,7 @@
           <button type="button" class="navbar-toggler xplay-hamburger"
             :class="{ 'xplay-hamburger--open': openMobileMenu === 'navigation' }"
             aria-label="ナビゲーションメニュー" aria-controls="mobile-menu-drawer"
-            :aria-expanded="openMobileMenu === 'navigation'" @click="toggleMobileMenu('navigation', $event)">
+            :aria-expanded="openMobileMenu === 'navigation'" @click="toggleMobileMenu('navigation')">
             <span class="navbar-toggler-icon" aria-hidden="true" />
             <span class="xplay-hamburger__label" aria-hidden="true">{{ openMobileMenu === 'navigation' ? '閉じる' : 'メニュー' }}</span>
           </button>
@@ -48,11 +48,12 @@
         </div>
       </div>
     </div>
+    <!-- Nonmodal dialog: unlike showModal(), show() does not make the header inert. -->
     <dialog id="mobile-menu-drawer" ref="mobileDialog" class="xplay-mobile-drawer"
       :class="{ 'xplay-mobile-drawer--closing': drawerClosing }"
       :style="{ '--xplay-header-bottom': `${headerBottom}px` }"
       :aria-label="openMobileMenu === 'side' ? 'サイドメニュー' : 'ナビゲーションメニュー'"
-      @cancel.prevent="closeDrawer()" @close="onDrawerClose">
+      @cancel.prevent="closeDrawer()" @close="onDrawerClose" @keydown.esc.prevent="closeDrawer()">
       <div class="xplay-mobile-drawer__scrim" aria-hidden="true" @click="closeDrawer()" />
       <div class="xplay-mobile-drawer__panel"
         :class="openMobileMenu === 'navigation' ? 'xplay-mobile-drawer__panel--right' : 'xplay-mobile-drawer__panel--left'">
@@ -89,14 +90,6 @@
         </nav>
         <div v-else-if="openMobileMenu === 'side'" id="mobile-side-menu" @click="onSideMenuClick"><slot name="side-menu" /></div>
       </div>
-      <!-- showModal() makes the header inert; this button occupies the opener's exact viewport rectangle. -->
-      <button v-if="openMobileMenu" ref="closeButton" type="button"
-        class="navbar-toggler xplay-hamburger xplay-hamburger--open xplay-mobile-drawer__toggle xplay-mobile-drawer__close"
-        :style="openerStyle" :aria-label="openMobileMenu === 'side' ? 'サイドメニューを閉じる' : 'ナビゲーションメニューを閉じる'"
-        autofocus @click="closeDrawer()">
-        <span class="navbar-toggler-icon" aria-hidden="true" />
-        <span class="xplay-hamburger__label" aria-hidden="true">閉じる</span>
-      </button>
     </dialog>
   </header>
 </template>
@@ -110,15 +103,11 @@ const { authenticated } = useAccountSession()
 const route = useRoute()
 const openMobileMenu = ref<MobileMenu | null>(null)
 const drawerClosing = ref(false)
-const openerStyle = ref<Record<string, string>>({})
 const headerBottom = ref(0)
 const accountOpen = ref(false)
 const mobileDialog = ref<HTMLDialogElement | null>(null)
-const closeButton = ref<HTMLButtonElement | null>(null)
 const mobileAccordionCycle = ref(0), desktopDropdownCycle = ref(0)
-let opener: HTMLButtonElement | null = null
 let previousBodyOverflow: string | null = null
-let shouldRestoreFocus = true
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 function handleAccountFocusOut(event: FocusEvent) {
@@ -128,41 +117,30 @@ function handleAccountFocusOut(event: FocusEvent) {
 function onSideMenuClick(event: MouseEvent) {
   if (event.target instanceof Element && event.target.closest('a[href]')) closeNavigation()
 }
-function positionCloseButton() {
+function positionDrawer() {
   const header = mobileDialog.value?.parentElement
   headerBottom.value = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0
-  if (!opener) return
-  const rect = opener.getBoundingClientRect()
-  openerStyle.value = {
-    left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`,
-  }
 }
-async function toggleMobileMenu(menu: MobileMenu, event: MouseEvent) {
+async function toggleMobileMenu(menu: MobileMenu) {
   if (openMobileMenu.value === menu) { closeDrawer(); return }
-  if (openMobileMenu.value) {
-    shouldRestoreFocus = false
-    finishClose()
-  }
-  opener = event.currentTarget as HTMLButtonElement
-  shouldRestoreFocus = true
+  if (openMobileMenu.value) finishClose()
   openMobileMenu.value = menu
   drawerClosing.value = false
-  positionCloseButton()
   desktopDropdownCycle.value++
   if (menu === 'navigation') mobileAccordionCycle.value++
   await nextTick()
   if (openMobileMenu.value !== menu) return
+  positionDrawer()
   const dialog = mobileDialog.value
   if (!dialog) return
   if (!dialog.open) {
-    if (typeof dialog.showModal === 'function') dialog.showModal()
+    if (typeof dialog.show === 'function') dialog.show()
     else dialog.setAttribute('open', '')
   }
   if (previousBodyOverflow === null) {
     previousBodyOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
   }
-  closeButton.value?.focus()
 }
 function onDrawerClose() {
   if (mobileDialog.value?.open) return
@@ -174,9 +152,6 @@ function onDrawerClose() {
     document.body.style.overflow = previousBodyOverflow
     previousBodyOverflow = null
   }
-  if (shouldRestoreFocus) opener?.focus()
-  opener = null
-  shouldRestoreFocus = true
 }
 function finishClose() {
   if (closeTimer) clearTimeout(closeTimer)
@@ -188,33 +163,37 @@ function finishClose() {
   }
   onDrawerClose()
 }
-function closeDrawer(restoreFocus = true) {
-  if (!openMobileMenu.value || drawerClosing.value) return
-  shouldRestoreFocus = restoreFocus
+function closeDrawer() {
+  if (!openMobileMenu.value) return
   if (typeof window.matchMedia !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     finishClose()
     return
   }
+  if (drawerClosing.value) return
   drawerClosing.value = true
   closeTimer = setTimeout(finishClose, CLOSE_DURATION_MS)
 }
 function closeNavigation() {
-  if (openMobileMenu.value) closeDrawer(false)
+  if (openMobileMenu.value) closeDrawer()
   accountOpen.value = false
   desktopDropdownCycle.value++
 }
 function onViewportChange() {
-  if (window.innerWidth >= 992 && openMobileMenu.value) closeDrawer(false)
-  else if (openMobileMenu.value) positionCloseButton()
+  if (window.innerWidth >= 992 && openMobileMenu.value) finishClose()
+  else if (openMobileMenu.value) positionDrawer()
+}
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && openMobileMenu.value) { event.preventDefault(); closeDrawer() }
 }
 watch(() => route.fullPath, () => closeNavigation())
-onMounted(() => window.addEventListener('resize', onViewportChange))
+onMounted(() => {
+  window.addEventListener('resize', onViewportChange)
+  document.addEventListener('keydown', onKeydown)
+})
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onViewportChange)
-  if (openMobileMenu.value) {
-    shouldRestoreFocus = false
-    finishClose()
-  }
+  document.removeEventListener('keydown', onKeydown)
+  if (openMobileMenu.value) finishClose()
 })
 </script>
 
