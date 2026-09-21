@@ -26,7 +26,16 @@
       <NuxtLink to="/info/notice" class="btn btn-outline-primary">全てのお知らせを見る</NuxtLink>
     </div>
 
-    <!-- カード形式：ofuse -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-xl-4">
+        <UiCard
+          image="/images/card-ofuse.jpg"
+          title="ご支援はこちらから"
+          url="https://ofuse.me/mofupark"
+        />
+      </div>
+    </div>
+
     <!-- Bluemap見出し -->
     <!-- カード形式：Bluemap -->
     <!-- 場所案内見出し -->
