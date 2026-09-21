@@ -1,4 +1,4 @@
-// Modal drawers retain native dialog focus trapping and background inertness.
+// A nonmodal drawer starts below the header, leaving both toggles and the logo interactive.
 @keyframes xplay-drawer-enter-left {
   from { transform: translateX(-105%); }
   to { transform: translateX(0); }
@@ -27,11 +27,10 @@
   &:not([open]) { display: none; }
   &[open] {
     position: fixed;
-    inset: 0;
+    inset: var(--xplay-header-bottom, 0px) 0 0;
     display: block;
     width: 100%;
-    height: 100%;
-    height: 100dvh;
+    height: calc(100dvh - var(--xplay-header-bottom, 0px));
     max-width: none;
     max-height: none;
     margin: 0;
@@ -44,13 +43,13 @@
   &::backdrop { background: transparent; }
   &__scrim {
     position: absolute;
-    inset: var(--xplay-header-bottom, 0px) 0 0;
+    inset: 0;
     background: rgba(0, 0, 0, .66);
     animation: xplay-drawer-scrim-enter .24s ease-out both;
   }
   &__panel {
     position: absolute;
-    inset-block-start: var(--xplay-header-bottom, 0px);
+    inset-block-start: 0;
     inset-block-end: 0;
     width: min(90vw, 26rem);
     max-width: 100%;
@@ -91,14 +90,6 @@
     font-size: var(--xplay-font-lg);
     font-weight: 700;
     line-height: 1.5;
-  }
-  &__toggle {
-    position: fixed;
-    z-index: 3;
-    margin: 0;
-    background: var(--xplay-header);
-    border: 1px solid var(--xplay-main-heavy);
-    color: var(--xplay-header-text);
   }
   .accordion-body { padding: .4rem .75rem .75rem; }
   .accordion-button { min-height: 48px; }

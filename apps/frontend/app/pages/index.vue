@@ -14,12 +14,13 @@
       お知らせを取得できませんでした。
     </p>
     <p v-else-if="latest.length === 0">公開中のお知らせはありません。</p>
-    <div v-else class="d-grid gap-3">
+    <div v-else class="d-grid gap-2">
       <NoticeBanner
         v-for="notice in latest"
         :key="notice.id"
         :notice="notice"
-        :lines="3"
+        :heading-level="3"
+        :lines="2"
       />
     </div>
     <div class="text-end mt-3 mb-4">

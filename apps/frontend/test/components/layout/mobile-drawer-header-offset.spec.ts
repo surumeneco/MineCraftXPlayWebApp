@@ -10,7 +10,7 @@ const headerRect = (height: number) => ({
 })
 
 describe('mobile drawer header visibility', () => {
-  it('positions both drawers below the measured header and updates on resize', async () => {
+  it('positions both drawers below measured header, updates on resize and keeps header controls clickable', async () => {
     vi.stubGlobal('innerWidth', 375)
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
     const wrapper = await mountSuspended(HeaderMenu, {
@@ -20,22 +20,23 @@ describe('mobile drawer header visibility', () => {
     const header = wrapper.get('header')
     const getRect = vi.spyOn(header.element, 'getBoundingClientRect').mockReturnValue(headerRect(88))
     const drawer = wrapper.get('#mobile-menu-drawer')
-
-    await wrapper.get('button[aria-label="サイドメニュー"]').trigger('click')
+    const sideToggle = wrapper.get('button[aria-label="サイドメニュー"]')
+    const navToggle = wrapper.get('button[aria-label="ナビゲーションメニュー"]')
+    await sideToggle.trigger('click')
     expect(drawer.attributes('style')).toContain('--xplay-header-bottom: 88px')
     expect(drawer.attributes('open')).toBeDefined()
     expect(header.get('a.xplay-site-logo').text()).toBe('もふもふ広場')
-
     getRect.mockReturnValue(headerRect(102))
     window.dispatchEvent(new Event('resize'))
     await wrapper.vm.$nextTick()
     expect(drawer.attributes('style')).toContain('--xplay-header-bottom: 102px')
-
-    await drawer.get('.xplay-mobile-drawer__close').trigger('click')
-    await wrapper.get('button[aria-label="ナビゲーションメニュー"]').trigger('click')
+    await navToggle.trigger('click')
     expect(drawer.attributes('style')).toContain('--xplay-header-bottom: 102px')
     expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--right')
-    await drawer.get('.xplay-mobile-drawer__close').trigger('click')
+    expect(sideToggle.attributes('aria-expanded')).toBe('false')
+    expect(navToggle.attributes('aria-expanded')).toBe('true')
+    await navToggle.trigger('click')
+    expect(drawer.attributes('open')).toBeUndefined()
     wrapper.unmount()
   })
 })
