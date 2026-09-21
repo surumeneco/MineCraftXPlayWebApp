@@ -1,5 +1,6 @@
 export type DiscordIdentity = { discord_id: string; username: string; display_name: string }
 export type MinecraftIdentity = { id: string; edition: 'je' | 'be'; username: string }
+export type MergedAccount = { id: string; name: string; merged_at: string }
 export type AccountRecord = {
   id: string
   name: string
@@ -9,6 +10,7 @@ export type AccountRecord = {
   discord_ids: string[]
   discord_profiles: DiscordIdentity[]
   minecraft_ids: MinecraftIdentity[]
+  merged_sources: MergedAccount[]
 }
 
 export function useAccountApi() {
