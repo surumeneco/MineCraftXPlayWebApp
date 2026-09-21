@@ -13,6 +13,28 @@
       border-color: var(--xplay-border);
     }
 
+    // The standard Snow picker only styles its built-in dropdown names.
+    // Provide legible labels for the requested heading range and list modes.
+    .ql-picker.ql-header {
+      .ql-picker-label::before,
+      .ql-picker-item::before { content: '通常'; }
+      @for $level from 3 through 6 {
+        .ql-picker-label[data-value='#{$level}']::before,
+        .ql-picker-item[data-value='#{$level}']::before { content: 'H#{$level}'; }
+      }
+      .ql-picker-item::before { font-size: 1em; }
+    }
+
+    .ql-picker.ql-list {
+      width: 116px;
+      .ql-picker-label::before { content: 'リスト'; }
+      .ql-picker-options { min-width: 144px; }
+      .ql-picker-item::before { content: '通常'; }
+      .ql-picker-item[data-value='ordered']::before { content: '番号付きリスト'; }
+      .ql-picker-item[data-value='bullet']::before { content: '箇条書き'; }
+      .ql-picker-item[data-value='check']::before { content: 'チェックリスト'; }
+    }
+
     button:hover .ql-stroke,
     button:focus-visible .ql-stroke,
     button.ql-active .ql-stroke,
