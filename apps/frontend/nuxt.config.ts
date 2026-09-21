@@ -1,5 +1,10 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  app: {
+    head: {
+      htmlAttrs: { 'data-bs-theme': 'dark' },
+    },
+  },
   css: [
     'bootstrap/dist/css/bootstrap.min.css',
     'quill/dist/quill.snow.css',
