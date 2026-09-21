@@ -3,8 +3,8 @@
 @use 'sass:meta';
 @use './palette' as palette;
 
-// Palette contains physical colors; these maps contain purpose and UI state.
-// Both themes expose exactly the same keys. UI components never select a theme palette.
+// Physical colors are defined only in palette; theme maps assign meaning and state.
+// Both themes expose identical keys. Components never select a palette or a mode.
 $dark: (
   'concept': (
     'main': map.get(palette.$palette, 'sky', 'origin'),
@@ -20,8 +20,10 @@ $dark: (
     'button': (
       'primary': ('base': map.get(palette.$palette, 'sky', 'dark', '150'), 'hover': map.get(palette.$palette, 'sky', 'dark', '100'), 'active': map.get(palette.$palette, 'sky', 'dark', '100')),
       'secondary': ('base': map.get(palette.$palette, 'void', '40'), 'hover': map.get(palette.$palette, 'void', '80')),
+      'success': ('base': map.get(palette.$palette, 'grass', 'dark', '100'), 'hover': map.get(palette.$palette, 'grass', 'dark', '80')),
       'danger': ('base': map.get(palette.$palette, 'flame', 'dark', '130'), 'hover': map.get(palette.$palette, 'flame', 'dark', '110')),
-      'warning': ('base': map.get(palette.$palette, 'wind', 'origin'), 'hover': map.get(palette.$palette, 'wind', 'light', '50'))
+      'warning': ('base': map.get(palette.$palette, 'wind', 'origin'), 'hover': map.get(palette.$palette, 'wind', 'light', '50')),
+      'info': ('base': map.get(palette.$palette, 'flow', 'dark', '100'), 'hover': map.get(palette.$palette, 'flow', 'dark', '80'))
     ),
     'overlay': ('scrim': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .66), 'backdrop': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .67))
   ),
@@ -29,12 +31,15 @@ $dark: (
     'base': map.get(palette.$palette, 'void', '180'),
     'note': map.get(palette.$palette, 'void', '140'),
     'disabled': map.get(palette.$palette, 'void', '140'),
+    'toolbar': map.get(palette.$palette, 'void', 'light'),
     'link': ('base': map.get(palette.$palette, 'flow', 'dark', '180'), 'hover': map.get(palette.$palette, 'flow', 'light', '100'), 'visited': map.get(palette.$palette, 'flow', 'dark', '150')),
     'on-main': ('base': map.get(palette.$palette, 'sky', 'dark', '40'), 'hover': map.get(palette.$palette, 'sky', 'dark', '20')),
     'on-primary': map.get(palette.$palette, 'void', 'light'),
     'on-accent': map.get(palette.$palette, 'void', '20'),
+    'on-success': map.get(palette.$palette, 'void', 'light'),
     'on-danger': map.get(palette.$palette, 'void', 'light'),
     'on-warning': map.get(palette.$palette, 'void', '20'),
+    'on-info': map.get(palette.$palette, 'void', 'light'),
     'heading-accent': map.get(palette.$palette, 'sky', 'light', '50')
   ),
   'border': (
@@ -69,8 +74,10 @@ $light: (
     'button': (
       'primary': ('base': map.get(palette.$palette, 'sky', 'dark', '110'), 'hover': map.get(palette.$palette, 'sky', 'dark', '90'), 'active': map.get(palette.$palette, 'sky', 'dark', '90')),
       'secondary': ('base': map.get(palette.$palette, 'void', '180'), 'hover': map.get(palette.$palette, 'void', '160')),
+      'success': ('base': map.get(palette.$palette, 'grass', 'dark', '100'), 'hover': map.get(palette.$palette, 'grass', 'dark', '80')),
       'danger': ('base': map.get(palette.$palette, 'flame', 'dark', '130'), 'hover': map.get(palette.$palette, 'flame', 'dark', '110')),
-      'warning': ('base': map.get(palette.$palette, 'wind', 'origin'), 'hover': map.get(palette.$palette, 'wind', 'light', '50'))
+      'warning': ('base': map.get(palette.$palette, 'wind', 'origin'), 'hover': map.get(palette.$palette, 'wind', 'light', '50')),
+      'info': ('base': map.get(palette.$palette, 'flow', 'dark', '100'), 'hover': map.get(palette.$palette, 'flow', 'dark', '80'))
     ),
     'overlay': ('scrim': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .66), 'backdrop': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .67))
   ),
@@ -78,12 +85,15 @@ $light: (
     'base': map.get(palette.$palette, 'void', '30'),
     'note': map.get(palette.$palette, 'void', '70'),
     'disabled': map.get(palette.$palette, 'void', '100'),
+    'toolbar': map.get(palette.$palette, 'void', '30'),
     'link': ('base': map.get(palette.$palette, 'flow', 'dark', '100'), 'hover': map.get(palette.$palette, 'flow', 'dark', '70'), 'visited': map.get(palette.$palette, 'flow', 'dark', '90')),
     'on-main': ('base': map.get(palette.$palette, 'sky', 'dark', '40'), 'hover': map.get(palette.$palette, 'sky', 'dark', '20')),
     'on-primary': map.get(palette.$palette, 'void', 'light'),
     'on-accent': map.get(palette.$palette, 'void', '20'),
+    'on-success': map.get(palette.$palette, 'void', 'light'),
     'on-danger': map.get(palette.$palette, 'void', 'light'),
     'on-warning': map.get(palette.$palette, 'void', '20'),
+    'on-info': map.get(palette.$palette, 'void', 'light'),
     'heading-accent': map.get(palette.$palette, 'sky', 'dark', '100')
   ),
   'border': (
@@ -105,11 +115,11 @@ $light: (
 
 $themes: ('dark': $dark, 'light': $light);
 
-// Legacy aliases remain temporarily for components not yet migrated.
+// Old public names are temporary aliases. Never alias a name to itself.
 $legacy: (
   'main': 'concept-main', 'main-heavy': 'background-button-primary-hover',
   'main-bold': 'background-button-primary-base', 'main-soft': 'text-heading-accent',
-  'accent': 'concept-accent', 'accent-heavy': 'feedback-success-border',
+  'accent': 'concept-accent', 'accent-heavy': 'background-button-success-base',
   'page-start': 'background-page-base', 'page-end': 'background-page-end',
   'header': 'background-header-base', 'header-text': 'text-on-main-base',
   'header-text-hover': 'text-on-main-hover', 'footer': 'background-footer',
@@ -119,7 +129,7 @@ $legacy: (
   'text-muted': 'text-note', 'text-inverse': 'text-on-primary',
   'link': 'text-link-base', 'link-visited': 'text-link-visited',
   'link-hover': 'text-link-hover', 'border': 'border-base',
-  'border-soft': 'border-strong', 'border-focus': 'border-focus'
+  'border-soft': 'border-strong'
 );
 
 @mixin _emit($tokens, $prefix: '') {
@@ -144,6 +154,10 @@ $legacy: (
   --xplay-background-surface-base-rgb: #{_rgb(map.get($tokens, 'background', 'surface', 'base'))};
   --xplay-background-button-primary-base-rgb: #{_rgb(map.get($tokens, 'background', 'button', 'primary', 'base'))};
   --xplay-text-link-base-rgb: #{_rgb(map.get($tokens, 'text', 'link', 'base'))};
+  --xplay-feedback-success-icon-rgb: #{_rgb(map.get($tokens, 'feedback', 'success', 'icon'))};
+  --xplay-feedback-error-icon-rgb: #{_rgb(map.get($tokens, 'feedback', 'error', 'icon'))};
+  --xplay-feedback-warning-icon-rgb: #{_rgb(map.get($tokens, 'feedback', 'warning', 'icon'))};
+  --xplay-feedback-info-icon-rgb: #{_rgb(map.get($tokens, 'feedback', 'info', 'icon'))};
   @each $old, $new in $legacy {
     --xplay-#{$old}: var(--xplay-#{$new});
   }
