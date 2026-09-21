@@ -25,12 +25,14 @@ describe('Responsive header menus', () => {
     await sideToggle.trigger('click')
     expect(sideToggle.attributes('aria-expanded')).toBe('true')
     expect(drawer.attributes('open')).toBeDefined()
+    expect(drawer.classes()).toContain('xplay-mobile-drawer--visible')
     expect(drawer.attributes('aria-label')).toBe('サイドメニュー')
     expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--left')
     expect(drawer.get('#mobile-side-menu').text()).toContain('サイドメニューの内容')
     await navToggle.trigger('click')
     expect(sideToggle.attributes('aria-expanded')).toBe('false')
     expect(navToggle.attributes('aria-expanded')).toBe('true')
+    expect(drawer.classes()).toContain('xplay-mobile-drawer--visible')
     expect(drawer.attributes('aria-label')).toBe('ナビゲーションメニュー')
     expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--right')
     expect(drawer.find('#mobile-side-menu').exists()).toBe(false)
@@ -42,7 +44,7 @@ describe('Responsive header menus', () => {
     wrapper.unmount()
   })
 
-  it('renders accordion child links inside the drawer and resets on reopening', async () => {
+  it('renders navigation accordions collapsed and preserves their expansion across reopening', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       props: { items: [{ label: '情報', children: [{ label: 'お知らせ', to: '/news' }] }] },
     })
@@ -51,13 +53,11 @@ describe('Responsive header menus', () => {
     const drawer = wrapper.get('#mobile-menu-drawer')
     const accordionToggle = drawer.get('button.accordion-button')
     const panel = drawer.get('[role="region"]')
-    expect(accordionToggle.attributes('aria-expanded')).toBe('true')
+    expect(accordionToggle.attributes('aria-expanded')).toBe('false')
     expect(panel.classes()).not.toContain('collapse')
-    expect(panel.attributes('style') ?? '').not.toContain('display: none')
+    expect(panel.attributes('style')).toContain('display: none')
     expect(panel.get('a[href="/news"]').text()).toBe('お知らせ')
     expect(wrapper.get('#header-navigation').find('button.dropdown-toggle').exists()).toBe(true)
-    await accordionToggle.trigger('click')
-    expect(panel.attributes('style')).toContain('display: none')
     await accordionToggle.trigger('click')
     expect(panel.attributes('style') ?? '').not.toContain('display: none')
     await navToggle.trigger('click')
