@@ -12,7 +12,8 @@ suite('notice integration (PostgreSQL)', () => {
   let app: INestApplication
   let sql: ReturnType<typeof postgres>
   let root = ''
-  const admin = `test-${randomUUID()}`
+  const accountId = randomUUID()
+  const discordId = `test-${randomUUID()}`
   const session = randomUUID(), csrf = randomUUID()
   const hash = (text: string) => createHash('sha256').update(text).digest('hex')
   const origin = 'http://localhost:3000'
@@ -36,11 +37,12 @@ suite('notice integration (PostgreSQL)', () => {
   beforeAll(async () => {
     process.env.FRONTEND_ORIGIN = origin
     process.env.PUBLIC_API_BASE = 'http://localhost:3001/api'
-    process.env.ADMIN_DISCORD_IDS = admin
     sql = postgres(databaseUrl!, { max: 2 })
-    await sql`INSERT INTO admin_users (discord_id) VALUES (${admin}) ON CONFLICT DO NOTHING`
-    await sql`INSERT INTO admin_sessions (token_hash, discord_id, csrf_hash, expires_at)
-      VALUES (${hash(session)}, ${admin}, ${hash(csrf)}, now() + interval '1 hour')`
+    await sql`INSERT INTO accounts (id) VALUES (${accountId})`
+    await sql`INSERT INTO account_discord_identities (discord_id, account_id) VALUES (${discordId}, ${accountId})`
+    await sql`INSERT INTO account_roles (account_id, role) VALUES (${accountId}, 'admin')`
+    await sql`INSERT INTO account_sessions (token_hash, account_id, csrf_hash, expires_at)
+      VALUES (${hash(session)}, ${accountId}, ${hash(csrf)}, now() + interval '1 hour')`
     app = await NestFactory.create(AppModule, { logger: false })
     app.setGlobalPrefix('api')
     await app.listen(0, '127.0.0.1')
@@ -55,8 +57,8 @@ suite('notice integration (PostgreSQL)', () => {
         await sql`DELETE FROM images WHERE id IN (SELECT image_id FROM notice_images WHERE notice_id=${id})`
         await sql`DELETE FROM notices WHERE id=${id}`
       }
-      await sql`DELETE FROM images WHERE uploaded_by=${admin}`
-      await sql`DELETE FROM admin_users WHERE discord_id=${admin}`
+      await sql`DELETE FROM images WHERE uploaded_by=${accountId}`
+      await sql`DELETE FROM accounts WHERE id=${accountId}`
       await sql.end()
     }
   })
