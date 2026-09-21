@@ -168,7 +168,7 @@ export function decodeSiteImage(raw: unknown): { data: Buffer; mime: string } {
   const encoded = value.data_base64
   if (typeof encoded !== 'string' || encoded.length > Math.ceil(SITE_IMAGE_MAX_BYTES / 3) * 4 + 4 ||
       !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) throw new Error('画像データまたは容量が不正です。')
-  let bytes = Buffer.from(encoded, 'base64')
+  let bytes: Buffer = Buffer.from(encoded, 'base64')
   if (!bytes.length || bytes.length > SITE_IMAGE_MAX_BYTES || bytes.toString('base64') !== encoded) throw new Error('画像データまたは容量が不正です。')
   let mime: string
   if (bytes.length >= 3 && bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) {
