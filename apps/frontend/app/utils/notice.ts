@@ -20,16 +20,18 @@ export function noticeUrl(title: string): string {
   return `/info/notice/${encodeURIComponent(title)}`
 }
 
-export function noticeDate(value: string | null): string {
+function formatDate(value: string | null, includeTime: boolean): string {
   if (!value) return '未設定'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '未設定'
   return new Intl.DateTimeFormat('ja-JP', {
-    timeZone: 'Asia/Tokyo',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit',
+    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+    ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
   }).format(date)
 }
+
+export function noticeDate(value: string | null): string { return formatDate(value, true) }
+export function noticeDateOnly(value: string | null): string { return formatDate(value, false) }
 
 export function sortNotices(notices: Notice[], field: 'published_at' | 'updated_at'): Notice[] {
   return [...notices].sort((left, right) => {

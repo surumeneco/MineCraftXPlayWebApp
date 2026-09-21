@@ -6,7 +6,6 @@
 
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
       <UiSectionHeading title="最新のお知らせ" class="mb-0 flex-grow-1" />
-      <NuxtLink to="/info/notice" class="flex-shrink-0">お知らせ一覧</NuxtLink>
     </div>
     <p v-if="status === 'pending' || status === 'idle'" role="status">
       お知らせを読み込んでいます…
@@ -22,6 +21,9 @@
         :notice="notice"
         :lines="3"
       />
+    </div>
+    <div class="text-end mt-3 mb-4">
+      <NuxtLink to="/info/notice" class="btn btn-outline-primary">全てのお知らせを見る</NuxtLink>
     </div>
 
     <!-- カード形式：ofuse -->

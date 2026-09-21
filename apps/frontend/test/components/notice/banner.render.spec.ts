@@ -14,21 +14,25 @@ const notice: Notice = {
 }
 
 describe('NoticeBanner', () => {
-  it('fills the parent and sets an exact preview height based on the lines prop', async () => {
+  it('fills parent and fixes preview height based on the lines prop', async () => {
     const wrapper = await mountSuspended(Banner, { props: { notice, lines: 2, previewLength: 4 } })
-    const article = wrapper.get('article')
-    expect(article.classes()).toContain('w-100')
-    expect(article.attributes('style')).toContain('--notice-lines: 2')
-    expect(article.attributes('style')).toContain('--notice-preview-height: 3em')
+    const banner = wrapper.get('a.notice-banner')
+    expect(banner.classes()).toContain('w-100')
+    expect(banner.attributes('style')).toContain('--notice-lines: 2')
+    expect(banner.attributes('style')).toContain('--notice-preview-height: 3em')
     expect(wrapper.get('.notice-preview').text()).toBe('長い本文…')
   })
 
-  it('shows both times in a wrapping row and links to the title route', async () => {
+  it('links the entire banner and displays accessible times and tags with Bootstrap icons', async () => {
     const wrapper = await mountSuspended(Banner, { props: { notice } })
     expect(wrapper.findAll('time')).toHaveLength(2)
     expect(wrapper.get('time').element.parentElement?.classList.contains('flex-wrap')).toBe(true)
     expect(wrapper.get('[aria-label="タグ"]').text()).toContain('運営')
-    expect(wrapper.get('a').attributes('href')).toContain('/info/notice/')
-    expect(wrapper.get('a').text()).toBe('詳細を見る')
+    expect(wrapper.get('a.notice-banner').attributes('href')).toContain('/info/notice/')
+    expect(wrapper.get('a.notice-banner').text()).toContain('メンテナンスのお知らせ')
+    expect(wrapper.find('button').exists()).toBe(false)
+    expect(wrapper.findAll('svg.bi')).toHaveLength(3)
+    expect(wrapper.findAll('.notice-meta__short')).toHaveLength(2)
+    expect(wrapper.get('.notice-meta__short').text()).toBe('2026/09/18')
   })
 })

@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feature/notice-backend
+      - feature/navigation-accounts
+      - develop
+  pull_request:
+    branches:
       - develop
   workflow_dispatch:
 

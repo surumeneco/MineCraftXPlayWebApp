@@ -1,25 +1,18 @@
 <template>
-  <article class="notice-banner card w-100" :style="{ '--notice-lines': previewLines, '--notice-preview-height': `${previewLines * 1.5}em` }">
+  <NuxtLink :to="noticeUrl(notice.title)" class="notice-banner card w-100 text-decoration-none text-body"
+    :style="{ '--notice-lines': previewLines, '--notice-preview-height': `${previewLines * 1.5}em` }"
+    :aria-label="`${notice.title} の詳細を見る`">
     <div class="card-body d-flex flex-column gap-2">
       <h3 class="h5 card-title mb-0 text-break">{{ notice.title }}</h3>
-      <div class="d-flex flex-wrap gap-2 small text-body-secondary">
-        <time v-if="notice.published_at" :datetime="notice.published_at">投稿日時：{{ noticeDate(notice.published_at) }}</time>
-        <time v-if="notice.updated_at" :datetime="notice.updated_at">更新日時：{{ noticeDate(notice.updated_at) }}</time>
-      </div>
-      <div v-if="notice.tags.length" class="d-flex flex-wrap gap-1" aria-label="タグ">
-        <span v-for="tag in notice.tags" :key="tag.id" class="badge text-bg-secondary">{{ tag.name }}</span>
-      </div>
+      <NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" />
       <p class="notice-preview card-text mb-0">{{ preview }}</p>
-      <div class="text-end mt-auto">
-        <UiButton :to="noticeUrl(notice.title)" variant="outline-primary" size="sm">詳細を見る</UiButton>
-      </div>
     </div>
-  </article>
+  </NuxtLink>
 </template>
 
 <script setup lang="ts">
 import type { Notice } from '../../types/notice'
-import { noticeDate, noticePreview, noticeUrl } from '../../utils/notice'
+import { noticePreview, noticeUrl } from '../../utils/notice'
 
 const props = withDefaults(defineProps<{
   notice: Notice
@@ -32,7 +25,9 @@ const preview = computed(() => noticePreview(props.notice.body_delta, props.prev
 </script>
 
 <style scoped>
-.notice-banner { min-width: 0; }
+.notice-banner { min-width: 0; container-type: inline-size; transition: border-color .15s, box-shadow .15s; }
+.notice-banner:hover { border-color: var(--bs-primary); box-shadow: 0 .15rem .55rem rgba(0, 0, 0, .18); }
+.notice-banner:focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 3px; }
 .notice-preview {
   line-height: 1.5;
   height: var(--notice-preview-height);
@@ -42,4 +37,5 @@ const preview = computed(() => noticePreview(props.notice.body_delta, props.prev
   overflow: hidden;
   overflow-wrap: anywhere;
 }
+@media (prefers-reduced-motion: reduce) { .notice-banner { transition: none; } }
 </style>
