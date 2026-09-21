@@ -17,7 +17,7 @@
     <p v-if="status === 'pending' || status === 'idle'" role="status">お知らせを読み込んでいます…</p>
     <div v-else-if="error" class="alert alert-danger" role="alert">
       お知らせを取得できませんでした。
-      <UiButton variant="outline-secondary" size="sm" @click="refresh()">再読み込み</UiButton>
+      <button type="button" class="btn btn-sm btn-primary" aria-label="お知らせ一覧を再読み込み" title="再読み込み" @click="refresh()"><UiBootstrapIcon name="arrow-clockwise" /></button>
     </div>
     <p v-else-if="displayed.length === 0" role="status">該当するお知らせはありません。</p>
     <div v-else class="d-grid gap-3">
