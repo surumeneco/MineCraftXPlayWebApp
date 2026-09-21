@@ -1,5 +1,5 @@
 <template>
-  <div id="page-top" class="xplay-shell d-flex min-vh-100 flex-column" data-bs-theme="dark">
+  <div id="page-top" class="xplay-shell d-flex min-vh-100 flex-column">
     <LayoutHeaderMenu :items="navigationItems">
       <template v-if="$slots.logo" #logo>
         <slot name="logo" />
