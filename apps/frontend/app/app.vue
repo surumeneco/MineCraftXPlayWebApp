@@ -70,6 +70,8 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
           children: [
             { label: "マスタメンテトップ", to: "/admin/master" },
             { label: "アカウント管理", to: "/admin/accounts" },
+            { label: "画像管理", to: "/admin/images" },
+            { label: "画像プリセット管理", to: "/admin/image-presets" },
           ],
         },
       ]
