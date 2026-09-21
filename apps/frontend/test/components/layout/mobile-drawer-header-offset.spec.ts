@@ -11,6 +11,7 @@ const headerRect = (height: number) => ({
 
 describe('mobile drawer header visibility', () => {
   it('positions both drawers below the measured header and updates on resize', async () => {
+    vi.stubGlobal('innerWidth', 375)
     vi.stubGlobal('matchMedia', () => ({ matches: true }))
     const wrapper = await mountSuspended(HeaderMenu, {
       props: { items: [{ label: '情報', to: '/info' }] },
