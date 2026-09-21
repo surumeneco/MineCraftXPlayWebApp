@@ -202,6 +202,7 @@ export class SiteImagesService {
   private async resolved(key?: string, bytes = false) {
     // Prefer an explicit event override (even NULL), otherwise inherit the default row.
     if (bytes) {
+      if (key === undefined) throw new BadRequestException('画像キーが指定されていません。')
       return this.database.sql`
         SELECT r.key, v.id AS version_id, v.static_path, i.mime_type, i.data
         FROM site_image_resources r CROSS JOIN site_image_settings s
