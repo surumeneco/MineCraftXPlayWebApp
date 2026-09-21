@@ -6,6 +6,7 @@ export default defineNuxtConfig({
     'quill/dist/quill.bubble.css',
     '~/assets/styles/theme.scss',
     '~/assets/styles/mobile-drawer.scss',
+    '~/assets/styles/quill-dark-ui.scss',
   ],
   runtimeConfig: {
     public: {

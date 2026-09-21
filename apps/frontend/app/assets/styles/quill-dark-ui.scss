@@ -1,0 +1,70 @@
+// Quill's Snow theme defaults to dark controls intended for light backgrounds.
+// Keep this UI-only override separate from editor content formatting.
+.xplay-shell {
+  .ql-toolbar.ql-snow {
+    .ql-stroke { stroke: #fff; }
+    .ql-fill:not(.ql-color-label) { fill: #fff; }
+    .ql-picker,
+    .ql-picker-label,
+    .ql-picker-item { color: #fff; }
+
+    .ql-picker-options {
+      background: var(--xplay-panel);
+      border-color: var(--xplay-border);
+    }
+
+    // The standard Snow picker only styles its built-in dropdown names.
+    // Provide legible labels for the requested heading range and list modes.
+    .ql-picker.ql-header {
+      .ql-picker-label::before,
+      .ql-picker-item::before { content: '通常'; }
+      @for $level from 3 through 6 {
+        .ql-picker-label[data-value='#{$level}']::before,
+        .ql-picker-item[data-value='#{$level}']::before { content: 'H#{$level}'; }
+      }
+      .ql-picker-item::before { font-size: 1em; }
+    }
+
+    .ql-picker.ql-list {
+      width: 116px;
+      .ql-picker-label::before { content: 'リスト'; }
+      .ql-picker-options { min-width: 144px; }
+      .ql-picker-item::before { content: '通常'; }
+      .ql-picker-item[data-value='ordered']::before { content: '番号付きリスト'; }
+      .ql-picker-item[data-value='bullet']::before { content: '箇条書き'; }
+      .ql-picker-item[data-value='check']::before { content: 'チェックリスト'; }
+    }
+
+    button:hover .ql-stroke,
+    button:focus-visible .ql-stroke,
+    button.ql-active .ql-stroke,
+    .ql-picker-label:hover .ql-stroke,
+    .ql-picker.ql-expanded .ql-stroke { stroke: var(--xplay-main-soft); }
+
+    button:hover .ql-fill:not(.ql-color-label),
+    button:focus-visible .ql-fill:not(.ql-color-label),
+    button.ql-active .ql-fill:not(.ql-color-label),
+    .ql-picker-label:hover .ql-fill:not(.ql-color-label),
+    .ql-picker.ql-expanded .ql-fill:not(.ql-color-label) { fill: var(--xplay-main-soft); }
+
+    .ql-picker-item:hover,
+    .ql-picker-item.ql-selected,
+    .ql-picker-label:hover,
+    .ql-picker.ql-expanded .ql-picker-label { color: var(--xplay-main-soft); }
+  }
+
+  .ql-snow .ql-tooltip {
+    background: var(--xplay-panel);
+    border-color: var(--xplay-border);
+    color: #fff;
+
+    input[type='text'] {
+      background: var(--xplay-input);
+      border-color: var(--xplay-border);
+      color: #fff;
+    }
+
+    a.ql-action,
+    a.ql-remove { color: #fff; }
+  }
+}
