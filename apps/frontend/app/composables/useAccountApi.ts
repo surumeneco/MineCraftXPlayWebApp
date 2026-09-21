@@ -1,3 +1,5 @@
+import { userFacingError } from '../utils/user-error'
+
 export type DiscordIdentity = { discord_id: string; username: string; display_name: string }
 export type MinecraftIdentity = { id: string; edition: 'je' | 'be'; username: string }
 export type MergedAccount = { id: string; name: string; merged_at: string }
@@ -26,9 +28,4 @@ export function useAccountApi() {
   return { get, mutate }
 }
 
-export function accountError(error: unknown): string {
-  const issue = error as { data?: { message?: string | string[] }; message?: string }
-  return Array.isArray(issue?.data?.message)
-    ? issue.data.message.join('、')
-    : issue?.data?.message || issue?.message || '操作に失敗しました。'
-}
+export const accountError = userFacingError
