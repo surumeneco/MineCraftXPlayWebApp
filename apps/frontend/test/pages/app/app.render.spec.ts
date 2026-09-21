@@ -33,9 +33,9 @@ describe('App rendering', () => {
     expect(card.attributes('rel')).toBe('noopener noreferrer')
   })
 
-  it('renders the Bluemap heading and a same-origin native navigation card', async () => {
+  it('renders the Bluemap card inside the current quick links section with native navigation', async () => {
     const wrapper = await mountSuspended(App, { route: '/' })
-    expect(wrapper.findAll('main h2').some(heading => heading.text() === 'Bluemap')).toBe(true)
+    expect(wrapper.findAll('main h2').some(heading => heading.text() === 'クイックリンク')).toBe(true)
     const card = wrapper.get('main a.xplay-card--link[href="/bluemap/"]')
     expect(card.get('.xplay-card__title').text()).toBe('Bluemapを見る')
     expect(card.get('img.xplay-card__image').attributes('src')).toBe('/images/bluemap.png')

@@ -1,28 +1,4 @@
-// A nonmodal drawer starts below the header, leaving both toggles and the logo interactive.
-@keyframes xplay-drawer-enter-left {
-  from { transform: translateX(-105%); }
-  to { transform: translateX(0); }
-}
-@keyframes xplay-drawer-enter-right {
-  from { transform: translateX(105%); }
-  to { transform: translateX(0); }
-}
-@keyframes xplay-drawer-exit-left {
-  from { transform: translateX(0); }
-  to { transform: translateX(-105%); }
-}
-@keyframes xplay-drawer-exit-right {
-  from { transform: translateX(0); }
-  to { transform: translateX(105%); }
-}
-@keyframes xplay-drawer-scrim-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes xplay-drawer-scrim-exit {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
+// Start both panels outside the viewport; transition only after the dialog's visible layout is committed.
 .xplay-mobile-drawer {
   &:not([open]) { display: none; }
   &[open] {
@@ -45,7 +21,8 @@
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, .66);
-    animation: xplay-drawer-scrim-enter .24s ease-out both;
+    opacity: 0;
+    transition: opacity .26s ease-out;
   }
   &__panel {
     position: absolute;
@@ -60,21 +37,25 @@
     border: 1px solid var(--xplay-border-soft);
     box-shadow: var(--xplay-drawer-shadow);
     padding: clamp(1rem, 4vw, 1.5rem);
+    transition: transform .26s cubic-bezier(.2,.75,.3,1);
     &--left {
       inset-inline-start: 0;
       inset-inline-end: auto;
-      animation: xplay-drawer-enter-left .26s cubic-bezier(.2,.75,.3,1) both;
+      transform: translateX(-105%);
     }
     &--right {
       inset-inline-start: auto;
       inset-inline-end: 0;
-      animation: xplay-drawer-enter-right .26s cubic-bezier(.2,.75,.3,1) both;
+      transform: translateX(105%);
     }
   }
+  &--visible {
+    .xplay-mobile-drawer__scrim { opacity: 1; }
+    .xplay-mobile-drawer__panel { transform: translateX(0); }
+  }
   &--closing {
-    .xplay-mobile-drawer__scrim { animation: xplay-drawer-scrim-exit .26s ease-in both; }
-    .xplay-mobile-drawer__panel--left { animation: xplay-drawer-exit-left .26s ease-in both; }
-    .xplay-mobile-drawer__panel--right { animation: xplay-drawer-exit-right .26s ease-in both; }
+    .xplay-mobile-drawer__scrim { transition-timing-function: ease-in; }
+    .xplay-mobile-drawer__panel { transition-timing-function: ease-in; }
   }
   &__heading {
     display: flex;
@@ -158,7 +139,7 @@
 @media (prefers-reduced-motion: reduce) {
   .xplay-mobile-drawer__scrim,
   .xplay-mobile-drawer__panel--left,
-  .xplay-mobile-drawer__panel--right { animation: none !important; }
+  .xplay-mobile-drawer__panel--right { transition: none !important; }
 }
 @media (forced-colors: active) {
   .xplay-mobile-drawer__panel { border: 2px solid CanvasText; }
