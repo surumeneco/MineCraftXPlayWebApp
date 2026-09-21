@@ -2,8 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { parse } from '@vue/compiler-sfc'
 
-const path = new URL('../../../app/pages/admin/accounts/[id]/edit.vue', import.meta.url)
-const { descriptor } = parse(await readFile(path, 'utf8'))
+const { descriptor } = parse(await readFile('app/pages/admin/accounts/[id]/edit.vue', 'utf8'))
 const template = descriptor.template?.content ?? ''
 const script = descriptor.scriptSetup?.content ?? ''
 
