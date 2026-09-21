@@ -39,7 +39,7 @@ describe('account merge direction', () => {
     })
     vi.stubGlobal('$fetch', fetchMock)
     const wrapper = await mountSuspended(AccountEdit, { route: `/admin/accounts/${destinationId}/edit` })
-    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.find('#merge-source').exists()).toBe(true), { timeout: 5000 })
 
     const select = wrapper.get<HTMLSelectElement>('#merge-source')
     expect(select.element.options).toHaveLength(2)
@@ -48,16 +48,15 @@ describe('account merge direction', () => {
 
     await select.setValue(sourceId)
     await wrapper.get('section[aria-labelledby="merge-title"] form').trigger('submit')
-    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.get('dialog').text()).toContain(`統合元：統合元 / ${sourceId}`))
     const dialog = wrapper.get('dialog')
-    expect(dialog.text()).toContain(`統合元：統合元 / ${sourceId}`)
     expect(dialog.text()).toContain(`統合先：統合先 / ${destinationId}`)
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/admin/accounts/merge'))).toBe(false)
 
     await dialog.get('footer button:last-child').trigger('click')
     await flushPromises()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('アカウントを統合しました。'))
     expect(merged).toBe(true)
-    expect(wrapper.text()).toContain('アカウントを統合しました。')
     expect(wrapper.text()).toContain('分離する')
     wrapper.unmount()
   })
