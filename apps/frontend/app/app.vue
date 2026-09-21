@@ -43,7 +43,10 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
     ],
   }, {
     label: 'マスタメンテ',
-    children: [{ label: 'アカウント管理', to: '/admin/accounts' }],
+    children: [
+      { label: 'マスタメンテトップ', to: '/admin/master' },
+      { label: 'アカウント管理', to: '/admin/accounts' },
+    ],
   }] : []),
 ])
 
@@ -52,7 +55,7 @@ const footerExternalLinks: FooterExternalLink[] = [
 ]
 
 const footerInternalLinks: FooterInternalLink[] = [
-  { label: '運営メンバー紹介', to: '/info/operators' },
+  { label: '運営メンバー紹介', to: '/info/operators', icon: 'person-circle' },
   { label: '運営方針とルール', to: '/info/rules' },
 ]
 </script>
