@@ -65,14 +65,14 @@ jobs:
           }
           console.log(`Theme Sass OK: ${darkNames.size} shared semantic color variable names`)
           NODE
+      - name: Build workspaces
+        run: npm run build
       - name: Database migrations
         run: npm run db:migrate --workspace @xplay/backend
       - name: Backend unit and database integration tests
         run: npm run test:backend
       - name: Frontend tests
         run: npm run test:frontend
-      - name: Build workspaces
-        run: npm run build
       - name: Build backend production container
         run: docker build --target production -t xplay-notices-backend ./apps/backend
       - name: Public and unauthorized API smoke test
