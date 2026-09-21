@@ -7,6 +7,12 @@
   >
     <NuxtPage />
   </NuxtLayout>
+  <div v-if="success" class="xplay-feedback alert alert-success shadow" role="status">
+    <span>{{ success }}</span>
+    <button type="button" class="btn-close ms-3" aria-label="通知を閉じる" @click="closeSuccess" />
+  </div>
+  <UiDialog :open="!!feedback" :kind="feedback?.kind ?? 'information'" :title="feedback?.title ?? ''"
+    :message="feedback?.message ?? ''" preset="close" @action="closeFeedback" @close="closeFeedback" />
 </template>
 
 <script setup lang="ts">
@@ -14,6 +20,7 @@ import type { HeaderNavigationItem } from './types/header-navigation'
 import type { FooterExternalLink, FooterInternalLink } from './types/footer-links'
 
 const { isAdmin, refresh } = useAccountSession()
+const { feedback, success, closeFeedback, closeSuccess } = useUiFeedback()
 onMounted(() => { void refresh() })
 
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
@@ -49,3 +56,8 @@ const footerInternalLinks: FooterInternalLink[] = [
   { label: '運営方針とルール', to: '/info/rules' },
 ]
 </script>
+
+<style scoped>
+.xplay-feedback { position: fixed; z-index: 1200; bottom: 1rem; right: 1rem; max-width: min(90vw, 32rem);
+  display: flex; align-items: center; justify-content: space-between; margin: 0; }
+</style>

@@ -14,18 +14,20 @@ const notice: Notice = {
 }
 
 describe('NoticeBanner', () => {
-  it('fills parent and clamps preview to at most the configured lines without a fixed bottom gap', async () => {
+  it('fills parent and clamps compact preview to configured lines without a fixed bottom gap', async () => {
     const wrapper = await mountSuspended(Banner, { props: { notice, lines: 2, previewLength: 4 } })
     const banner = wrapper.get('a.notice-banner')
     expect(banner.classes()).toContain('w-100')
     expect(banner.attributes('style')).toContain('--notice-lines: 2')
-    expect(banner.attributes('style')).toContain('--notice-preview-max-height: 3em')
+    expect(banner.attributes('style')).toContain('--notice-preview-max-height: 2.8em')
     expect(banner.attributes('style')).not.toContain('--notice-preview-height:')
     expect(wrapper.get('.notice-preview').text()).toBe('長い本文…')
+    expect(wrapper.get('h2').text()).toBe(notice.title)
   })
 
-  it('links the whole banner, renders accessible times and shows tags without badge backgrounds', async () => {
-    const wrapper = await mountSuspended(Banner, { props: { notice } })
+  it('links whole banner, renders accessible times and tags without badge backgrounds', async () => {
+    const wrapper = await mountSuspended(Banner, { props: { notice, headingLevel: 3 } })
+    expect(wrapper.get('h3').text()).toBe(notice.title)
     expect(wrapper.findAll('time')).toHaveLength(2)
     expect(wrapper.get('time').element.parentElement?.classList.contains('flex-wrap')).toBe(true)
     const tags = wrapper.get('[aria-label="タグ"]')

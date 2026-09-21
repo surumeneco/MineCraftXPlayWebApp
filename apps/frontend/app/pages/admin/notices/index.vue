@@ -36,6 +36,7 @@
 
 <script setup lang="ts">
 import { noticeDate } from '../../../utils/notice'
+import { userFacingError } from '../../../utils/user-error'
 type AdminNotice = {
   id: string; title: string; status: 'draft' | 'published' | 'unpublished'
   tags: { id: string; name: string }[]
@@ -43,6 +44,7 @@ type AdminNotice = {
 }
 const { public: { apiBase } } = useRuntimeConfig()
 const { isAdmin, refresh } = useAccountSession()
+const { showError } = useUiFeedback()
 const loading = ref(true), busy = ref(false), errorMessage = ref('')
 const notices = ref<AdminNotice[]>([])
 const statusLabel = (status: AdminNotice['status']) => ({ draft: '下書き', published: '公開', unpublished: '非公開' })[status]
@@ -50,12 +52,12 @@ const statusClass = (status: AdminNotice['status']) => ({ draft: 'text-bg-second
 async function reload() {
   busy.value = true; errorMessage.value = ''
   try { notices.value = await $fetch<AdminNotice[]>(`${apiBase}/admin/notices`, { credentials: 'include' }) }
-  catch { errorMessage.value = '記事一覧を取得できませんでした。' }
+  catch (error) { errorMessage.value = userFacingError(error); showError(error) }
   finally { busy.value = false }
 }
 onMounted(async () => {
-  await refresh()
-  if (isAdmin.value) await reload()
-  loading.value = false
+  try { await refresh(); if (isAdmin.value) await reload() }
+  catch (error) { errorMessage.value = userFacingError(error); showError(error) }
+  finally { loading.value = false }
 })
 </script>

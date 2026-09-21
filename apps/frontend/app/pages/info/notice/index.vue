@@ -20,8 +20,8 @@
       <button type="button" class="btn btn-sm btn-primary" aria-label="お知らせ一覧を再読み込み" title="再読み込み" @click="refresh()"><UiBootstrapIcon name="arrow-clockwise" /></button>
     </div>
     <p v-else-if="displayed.length === 0" role="status">該当するお知らせはありません。</p>
-    <div v-else class="d-grid gap-3">
-      <NoticeBanner v-for="notice in displayed" :key="notice.id" :notice="notice" :lines="3" />
+    <div v-else class="d-grid gap-2">
+      <NoticeBanner v-for="notice in displayed" :key="notice.id" :notice="notice" :heading-level="2" :lines="2" />
     </div>
   </section>
 </template>
