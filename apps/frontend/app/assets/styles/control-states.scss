@@ -1,0 +1,46 @@
+// Interactive controls are filled; readonly/disabled states keep only their outline and text.
+// Keep this bridge scoped to the site shell so Quill and Bootstrap internals retain their semantics.
+.xplay-shell {
+  .btn-outline-primary:not(:disabled):not(.disabled) {
+    --bs-btn-bg: var(--xplay-main-bold);
+    --bs-btn-color: var(--xplay-text-inverse);
+    --bs-btn-hover-bg: var(--xplay-main-heavy);
+    --bs-btn-hover-color: var(--xplay-text-inverse);
+  }
+  .btn-outline-secondary:not(:disabled):not(.disabled) {
+    --bs-btn-bg: var(--xplay-panel-soft);
+    --bs-btn-color: var(--xplay-text);
+    --bs-btn-hover-bg: var(--xplay-border);
+    --bs-btn-hover-color: var(--xplay-text-inverse);
+  }
+  .btn-outline-danger:not(:disabled):not(.disabled) {
+    --bs-btn-bg: #9c2636;
+    --bs-btn-color: #fff;
+    --bs-btn-hover-bg: #842029;
+    --bs-btn-hover-color: #fff;
+  }
+  .btn-outline-warning:not(:disabled):not(.disabled) {
+    --bs-btn-bg: #ffc107;
+    --bs-btn-color: #191919;
+    --bs-btn-hover-bg: #ffcd39;
+    --bs-btn-hover-color: #191919;
+  }
+  .btn:disabled,
+  .btn.disabled {
+    background: transparent;
+    border-color: var(--bs-btn-disabled-border-color, var(--xplay-border));
+    color: var(--bs-btn-disabled-color, var(--xplay-text-muted));
+    box-shadow: none;
+    opacity: .65;
+  }
+  .form-control:read-only,
+  .form-control:disabled,
+  .form-select:disabled {
+    background-color: transparent;
+    color: var(--xplay-text-muted);
+    border-color: var(--xplay-border);
+    box-shadow: none;
+    opacity: 1;
+  }
+  .form-control:read-only:focus { background-color: transparent; }
+}
