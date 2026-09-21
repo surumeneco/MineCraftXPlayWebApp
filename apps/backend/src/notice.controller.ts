@@ -119,6 +119,7 @@ export class AdminImagesController {
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
   @Get('discord') login(@Res() res: any) { this.auth.begin(res) }
+  @Get('discord/refresh') refreshProfile(@Res() res: any) { this.auth.begin(res, true) }
   @Get('discord/callback') callback(@Req() req: any, @Res() res: any,
     @Query('code') code: string, @Query('state') state: string) {
     return this.auth.callback(req, res, code, state)
