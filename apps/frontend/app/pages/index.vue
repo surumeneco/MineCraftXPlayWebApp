@@ -3,18 +3,19 @@
     <UiPageTitle id="home-heading" title="ホーム" />
 
     <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6 col-xl-4">
+      <div class="col-12">
         <UiCard
           image="/images/discord.png"
           title="参加はこちらから！"
           url="https://discord.gg/h8NNfn4qPg"
           new-tab
+          height="100px"
         />
       </div>
     </div>
 
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-      <UiSectionHeading title="最新のお知らせ" class="mb-0 flex-grow-1" />
+      <UiSectionHeading title="最近のお知らせ" class="mb-0 flex-grow-1" />
     </div>
     <p v-if="status === 'pending' || status === 'idle'" role="status">
       お知らせを読み込んでいます…
@@ -28,13 +29,16 @@
         v-for="notice in latest"
         :key="notice.id"
         :notice="notice"
-        :lines="2"
+        :lines="1"
       />
     </div>
     <div class="text-end mt-3 mb-4">
-      <NuxtLink to="/info/notice" class="btn btn-outline-primary">全てのお知らせを見る</NuxtLink>
+      <NuxtLink to="/info/notice" class="btn btn-outline-primary"
+        >全てのお知らせを見る</NuxtLink
+      >
     </div>
 
+    <UiSectionHeading title="クイックリンク" class="mb-3" />
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-6 col-xl-4">
         <UiCard
@@ -44,10 +48,6 @@
           new-tab
         />
       </div>
-    </div>
-
-    <UiSectionHeading title="Bluemap" class="mb-3" />
-    <div class="row g-3 mb-4">
       <div class="col-12 col-md-6 col-xl-4">
         <UiCard
           image="/images/bluemap.png"

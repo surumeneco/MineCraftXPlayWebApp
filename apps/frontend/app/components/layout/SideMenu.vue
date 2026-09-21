@@ -16,7 +16,7 @@
           v-for="notice in latest"
           :key="notice.id"
           :notice="notice"
-          :lines="2"
+          :lines="1"
           :preview-length="120"
         />
       </div>
@@ -33,6 +33,6 @@ const latest = computed(() =>
   sortNotices(
     notices.value.filter((notice) => !notice.is_draft && notice.published_at),
     "published_at",
-  ).slice(0, 2),
+  ).slice(0, 3),
 );
 </script>
