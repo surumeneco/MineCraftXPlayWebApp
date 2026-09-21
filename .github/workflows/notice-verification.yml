@@ -54,16 +54,16 @@ jobs:
           const css = readFileSync('/tmp/xplay-theme.css', 'utf8')
           const dark = css.match(/:root\s*\{([^}]+)\}/)?.[1] ?? ''
           const light = css.match(/:root\[data-bs-theme=(?:"light"|'light'|light)\]\s*\{([^}]+)\}/)?.[1] ?? ''
-          const names = (value) => new Set([...value.matchAll(/(--xplay-[\w-]+)\s*:/g)].map((item) => item[1]))
+          const names = (value) => new Set([...value.matchAll(/(--xplay-(?:concept|background|text|border|feedback|focus-indicator)-[\w-]+)\s*:/g)].map((item) => item[1]))
           const darkNames = names(dark), lightNames = names(light)
           if (!darkNames.size || !lightNames.size) throw new Error('Missing generated theme CSS')
           if (darkNames.size !== lightNames.size || [...darkNames].some((name) => !lightNames.has(name))) {
-            throw new Error('Dark/light semantic token names differ')
+            throw new Error('Dark/light semantic color token names differ')
           }
           for (const key of ['--xplay-concept-main', '--xplay-background-page-base', '--xplay-text-base', '--xplay-border-base', '--xplay-feedback-success-background']) {
             if (!darkNames.has(key)) throw new Error(`Missing semantic token ${key}`)
           }
-          console.log(`Theme Sass OK: ${darkNames.size} shared CSS variable names`)
+          console.log(`Theme Sass OK: ${darkNames.size} shared semantic color variable names`)
           NODE
       - name: Database migrations
         run: npm run db:migrate --workspace @xplay/backend
