@@ -13,11 +13,23 @@ describe('App rendering', () => {
     expect(wrapper.find('nav[aria-label="モバイルナビゲーション"] a[href="/"]').exists()).toBe(false)
   })
 
-  it('renders the Ofuse card with the requested destination and no note', async () => {
+  it('renders the OFUSE card in a new tab with the requested destination and no note', async () => {
     const wrapper = await mountSuspended(App, { route: '/' })
     const card = wrapper.get('main a.xplay-card--link[href="https://ofuse.me/mofupark"]')
     expect(card.get('.xplay-card__title').text()).toBe('ご支援はこちらから')
     expect(card.get('img.xplay-card__image').attributes('src')).toBe('/images/card-ofuse.jpg')
     expect(card.find('.xplay-card__note').exists()).toBe(false)
+    expect(card.attributes('target')).toBe('_blank')
+    expect(card.attributes('rel')).toBe('noopener noreferrer')
+  })
+
+  it('shows an OFUSE external footer link alongside unchanged internal links', async () => {
+    const wrapper = await mountSuspended(App, { route: '/' })
+    const external = wrapper.get('footer nav[aria-label="外部リンク"] a[href="https://ofuse.me/mofupark"]')
+    expect(external.text()).toBe('OFUSE')
+    expect(external.attributes('target')).toBe('_blank')
+    expect(external.attributes('rel')).toBe('noopener noreferrer')
+    expect(wrapper.get('footer nav[aria-label="内部リンク"] a[href="/info/operators"]').text()).toBe('運営メンバー紹介')
+    expect(wrapper.get('footer nav[aria-label="内部リンク"] a[href="/info/rules"]').text()).toBe('運営方針とルール')
   })
 })
