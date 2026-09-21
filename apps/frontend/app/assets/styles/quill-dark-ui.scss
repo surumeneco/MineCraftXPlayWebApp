@@ -1,11 +1,11 @@
 // Quill toolbar chrome follows semantic text/background tokens; editor content colors remain user-defined.
 .xplay-shell {
   .ql-toolbar.ql-snow {
-    .ql-stroke { stroke: var(--xplay-text-base); }
-    .ql-fill:not(.ql-color-label) { fill: var(--xplay-text-base); }
+    .ql-stroke { stroke: var(--xplay-text-toolbar); }
+    .ql-fill:not(.ql-color-label) { fill: var(--xplay-text-toolbar); }
     .ql-picker,
     .ql-picker-label,
-    .ql-picker-item { color: var(--xplay-text-base); }
+    .ql-picker-item { color: var(--xplay-text-toolbar); }
 
     .ql-picker-options {
       background: var(--xplay-background-surface-base);
@@ -53,15 +53,15 @@
   .ql-snow .ql-tooltip {
     background: var(--xplay-background-surface-base);
     border-color: var(--xplay-border-base);
-    color: var(--xplay-text-base);
+    color: var(--xplay-text-toolbar);
 
     input[type='text'] {
       background: var(--xplay-background-input-base);
       border-color: var(--xplay-border-input-base);
-      color: var(--xplay-text-base);
+      color: var(--xplay-text-toolbar);
     }
 
     a.ql-action,
-    a.ql-remove { color: var(--xplay-text-base); }
+    a.ql-remove { color: var(--xplay-text-toolbar); }
   }
 }
