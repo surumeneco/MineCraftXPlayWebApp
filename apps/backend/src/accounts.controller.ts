@@ -11,11 +11,6 @@ export class SelfAccountsController {
     return this.accounts.get(await this.auth.requireUser(req))
   }
 
-  @Patch('me/name')
-  async rename(@Req() req: any, @Body() body: any) {
-    return this.accounts.rename(await this.auth.requireUser(req, true), body?.name)
-  }
-
   @Post('me/adopt-discord-name')
   async adoptDiscordName(@Req() req: any, @Body() body: any) {
     return this.accounts.adoptDiscordName(await this.auth.requireUser(req, true), body?.discord_id)
@@ -48,10 +43,10 @@ export class AccountsController {
     return this.accounts.get(id)
   }
 
-  @Patch(':id/name')
-  async rename(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+  @Post(':id/adopt-discord-name')
+  async adoptDiscordName(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     await this.auth.requireAdmin(req, true)
-    return this.accounts.rename(id, body?.name)
+    return this.accounts.adoptDiscordName(id, body?.discord_id)
   }
 
   @Patch(':id/role')
