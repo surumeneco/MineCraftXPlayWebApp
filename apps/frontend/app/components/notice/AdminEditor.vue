@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import type { NoticeDelta, NoticeTag } from '../../types/notice'
+import { noticeToolbarOptions } from './toolbar-options'
 
 type AdminNotice = {
   id: string; title: string; status: 'draft' | 'published' | 'unpublished'; version: number;
@@ -71,8 +72,7 @@ async function ensureQuill() {
   const Quill = await $loadQuill()
   if (!editor.value) return
   quill = new Quill(editor.value, {
-    theme: 'snow', modules: { toolbar: [['bold', 'italic', 'underline'], [{ header: [1, 2, 3, false] }],
-      [{ list: 'ordered' }, { list: 'bullet' }], ['link', 'image'], ['clean']] },
+    theme: 'snow', modules: { toolbar: noticeToolbarOptions },
   })
   quill.getModule('toolbar')?.addHandler('image', () => void uploadImage())
   quill.on('text-change', () => {
