@@ -1,4 +1,16 @@
-// Mobile modal drawer: use the site's semantic tokens, not external branding.
+// Modal drawers retain native dialog focus trapping and background inertness.
+@keyframes xplay-drawer-enter-left {
+  from { transform: translateX(-105%); }
+  to { transform: translateX(0); }
+}
+@keyframes xplay-drawer-enter-right {
+  from { transform: translateX(105%); }
+  to { transform: translateX(0); }
+}
+@keyframes xplay-drawer-scrim-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 .xplay-mobile-drawer {
   &:not([open]) { display: none; }
   &[open] {
@@ -22,6 +34,7 @@
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, .66);
+    animation: xplay-drawer-scrim-enter .24s ease-out both;
   }
   &__panel {
     position: absolute;
@@ -35,8 +48,14 @@
     border: 1px solid var(--xplay-border-soft);
     box-shadow: var(--xplay-drawer-shadow);
     padding: clamp(1rem, 4vw, 1.5rem);
-    &--left { inset-inline-start: 0; }
-    &--right { inset-inline-end: 0; }
+    &--left {
+      inset-inline-start: 0;
+      animation: xplay-drawer-enter-left .26s cubic-bezier(.2,.75,.3,1) both;
+    }
+    &--right {
+      inset-inline-end: 0;
+      animation: xplay-drawer-enter-right .26s cubic-bezier(.2,.75,.3,1) both;
+    }
   }
   &__heading {
     display: flex;
@@ -81,7 +100,6 @@
     }
     &:focus-visible { outline: 3px solid var(--xplay-header-text); outline-offset: 2px; }
   }
-  // Override the bright-header link selector for dark overlay links, including visited and hover states.
   .xplay-mobile-drawer .nav-link,
   .xplay-mobile-drawer .nav-link:visited {
     color: var(--xplay-text-inverse);
@@ -107,6 +125,11 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .xplay-mobile-drawer__scrim,
+  .xplay-mobile-drawer__panel--left,
+  .xplay-mobile-drawer__panel--right { animation: none !important; }
+}
 @media (forced-colors: active) {
   .xplay-mobile-drawer__panel { border: 2px solid CanvasText; }
   .xplay-mobile-drawer__scrim { background: rgba(0, 0, 0, .8); }
