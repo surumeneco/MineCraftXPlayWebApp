@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     '~/assets/styles/mobile-drawer.scss',
     '~/assets/styles/quill-dark-ui.scss',
     '~/assets/styles/control-states.scss',
+    '~/assets/styles/theme-adapters.scss',
   ],
   runtimeConfig: {
     public: {
