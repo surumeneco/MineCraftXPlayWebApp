@@ -12,6 +12,10 @@
     <template v-else-if="name === 'arrow-left'">
       <path fill-rule="evenodd" d="M15 8a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 7.5H14.5A.5.5 0 0 1 15 8" />
     </template>
+    <template v-else-if="name === 'arrow-clockwise'">
+      <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l4.781 3.932a.25.25 0 0 1 0 .384L8.41 8.59A.25.25 0 0 1 8 8.398z" />
+    </template>
     <template v-else-if="name === 'person-circle'">
       <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
       <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 5.017 10 8 10s4.758 1.226 5.468 2.37A7 7 0 0 0 8 1" />
@@ -24,5 +28,5 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ name: 'calendar' | 'clock' | 'tag' | 'arrow-left' | 'person-circle' }>()
+defineProps<{ name: 'calendar' | 'clock' | 'tag' | 'arrow-left' | 'arrow-clockwise' | 'person-circle' }>()
 </script>
