@@ -80,9 +80,18 @@ const footerExternalLinks: FooterExternalLink[] = [
   {
     label: "くまモフ様YouTube",
     href: "https://www.youtube.com/@くまモフKumamov",
+    icon: "youtube",
   },
-  { label: "くまモフ公民館", href: "https://discord.gg/7Yv7DtHhXw" },
-  { label: "運営へのOFUSE", href: "https://ofuse.me/mofupark" },
+  {
+    label: "くまモフ公民館",
+    href: "https://discord.gg/7Yv7DtHhXw",
+    icon: "discord",
+  },
+  {
+    label: "運営へのOFUSE",
+    href: "https://ofuse.me/mofupark",
+    icon: "envelope",
+  },
 ];
 
 const footerInternalLinks: FooterInternalLink[] = [

@@ -1,9 +1,12 @@
 export type BootstrapIconName =
-  | 'calendar'
-  | 'clock'
-  | 'tag'
-  | 'arrow-left'
-  | 'arrow-clockwise'
-  | 'person-circle'
-  | 'pencil-square'
-  | 'box-arrow-up-right'
+  | "calendar"
+  | "clock"
+  | "tag"
+  | "arrow-left"
+  | "arrow-clockwise"
+  | "person-circle"
+  | "pencil-square"
+  | "box-arrow-up-right"
+  | "youtube"
+  | "discord"
+  | "envelope";
