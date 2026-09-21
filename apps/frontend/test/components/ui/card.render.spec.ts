@@ -63,4 +63,24 @@ describe('UiCard', () => {
     expect(card.get('img').attributes('src')).toBe('/images/card-default.svg')
     expect(card.get('p.xplay-card__note').text()).toBe('詳細')
   })
+
+  it('uses a native same-origin link for server-served BlueMap and does not open a new tab', async () => {
+    const card = await mountSuspended(Card, {
+      props: { to: '/bluemap/', title: 'Bluemapを見る', image: '/images/bluemap.png', native: true },
+    })
+    expect(card.get('a.xplay-card--link').attributes('href')).toBe('/bluemap/')
+    expect(card.get('a').attributes('target')).toBeUndefined()
+    expect(card.get('a').attributes('rel')).toBeUndefined()
+    expect(card.get('img').attributes('src')).toBe('/images/bluemap.png')
+  })
+
+  it('falls back to the default image if a configured image is not yet available', async () => {
+    const card = await mountSuspended(Card, { props: { image: '/images/discord.png' } })
+    const image = card.get('img.xplay-card__image')
+    expect(image.attributes('src')).toBe('/images/discord.png')
+    await image.trigger('error')
+    expect(image.attributes('src')).toBe('/images/card-default.svg')
+    await card.setProps({ image: '/images/bluemap.png' })
+    expect(image.attributes('src')).toBe('/images/bluemap.png')
+  })
 })

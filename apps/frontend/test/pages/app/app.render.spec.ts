@@ -23,6 +23,26 @@ describe('App rendering', () => {
     expect(card.attributes('rel')).toBe('noopener noreferrer')
   })
 
+  it('renders the Discord invite card as an external link without a note', async () => {
+    const wrapper = await mountSuspended(App, { route: '/' })
+    const card = wrapper.get('main a.xplay-card--link[href="https://discord.gg/h8NNfn4qPg"]')
+    expect(card.get('.xplay-card__title').text()).toBe('参加はこちらから！')
+    expect(card.get('img.xplay-card__image').attributes('src')).toBe('/images/discord.png')
+    expect(card.find('.xplay-card__note').exists()).toBe(false)
+    expect(card.attributes('target')).toBe('_blank')
+    expect(card.attributes('rel')).toBe('noopener noreferrer')
+  })
+
+  it('renders the Bluemap heading and a same-origin native navigation card', async () => {
+    const wrapper = await mountSuspended(App, { route: '/' })
+    expect(wrapper.findAll('main h2').some(heading => heading.text() === 'Bluemap')).toBe(true)
+    const card = wrapper.get('main a.xplay-card--link[href="/bluemap/"]')
+    expect(card.get('.xplay-card__title').text()).toBe('Bluemapを見る')
+    expect(card.get('img.xplay-card__image').attributes('src')).toBe('/images/bluemap.png')
+    expect(card.find('.xplay-card__note').exists()).toBe(false)
+    expect(card.attributes('target')).toBeUndefined()
+  })
+
   it('shows an OFUSE external footer link alongside unchanged internal links', async () => {
     const wrapper = await mountSuspended(App, { route: '/' })
     const external = wrapper.get('footer nav[aria-label="外部リンク"] a[href="https://ofuse.me/mofupark"]')

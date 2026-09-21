@@ -1,16 +1,17 @@
 <template>
   <component
-    :is="destination ? NuxtLink : 'article'"
+    :is="destination ? (native ? 'a' : NuxtLink) : 'article'"
     class="xplay-card"
     :class="{ 'xplay-card--link': Boolean(destination) }"
-    :to="destination || undefined"
+    :to="destination && !native ? destination : undefined"
+    :href="destination && native ? destination : undefined"
     :target="destination && newTab ? '_blank' : undefined"
     :rel="destination && newTab ? 'noopener noreferrer' : undefined"
     :style="{ height: cardHeight }"
     :aria-label="destination && !title && !note ? 'リンク先を開く' : undefined"
   >
     <div class="xplay-card__media">
-      <img class="xplay-card__image" :src="image?.trim() || defaultImage" alt="" loading="lazy" />
+      <img class="xplay-card__image" :src="imageSource" alt="" loading="lazy" @error="onImageError" />
     </div>
     <div v-if="title || note" class="xplay-card__content">
       <h3 v-if="title" class="xplay-card__title">{{ title }}</h3>
@@ -34,12 +35,20 @@ const props = withDefaults(defineProps<{
   url?: string
   /** Open the link in a new tab. Has no effect when no destination is specified. */
   newTab?: boolean
+  /** Use a native anchor for server-served paths outside Nuxt routes (e.g. BlueMap). */
+  native?: boolean
   /** Fixed height in pixels (number) or as a CSS length (string). */
   height?: number | string
-}>(), { height: 320, newTab: false })
+}>(), { height: 320, newTab: false, native: false })
 
 const destination = computed(() => props.to?.trim() || props.url?.trim() || '')
 const cardHeight = computed(() => typeof props.height === 'number' ? `${props.height}px` : props.height)
+const imageFailed = ref(false)
+const imageSource = computed(() => imageFailed.value ? defaultImage : props.image?.trim() || defaultImage)
+watch(() => props.image, () => { imageFailed.value = false })
+function onImageError() {
+  if (imageSource.value !== defaultImage) imageFailed.value = true
+}
 </script>
 
 <style scoped>
