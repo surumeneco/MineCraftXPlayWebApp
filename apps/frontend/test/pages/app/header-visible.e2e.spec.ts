@@ -7,8 +7,8 @@ test('both mobile drawers leave the entire header above the shade and panel', as
   const header = page.locator('header')
   const drawer = page.locator('#mobile-menu-drawer')
   const logo = header.locator('a.xplay-site-logo')
-  const side = header.getByRole('button', { name: 'サイドメニュー', exact: true })
-  const navigation = header.getByRole('button', { name: 'ナビゲーションメニュー', exact: true })
+  const side = header.locator('button[aria-label="サイドメニュー"]')
+  const navigation = header.locator('button[aria-label="ナビゲーションメニュー"]')
 
   for (const opener of [side, navigation]) {
     await opener.click()
