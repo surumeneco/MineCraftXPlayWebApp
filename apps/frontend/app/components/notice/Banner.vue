@@ -1,11 +1,11 @@
 <template>
   <NuxtLink :to="noticeUrl(notice.title)" class="notice-banner card w-100 text-decoration-none text-body"
-    :style="{ '--notice-lines': previewLines, '--notice-preview-height': `${previewLines * 1.5}em` }"
+    :style="{ '--notice-lines': previewLines, '--notice-preview-max-height': `${previewLines * 1.5}em` }"
     :aria-label="`${notice.title} の詳細を見る`">
     <div class="card-body d-flex flex-column gap-2">
       <h3 class="h5 card-title mb-0 text-break">{{ notice.title }}</h3>
       <NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" />
-      <p class="notice-preview card-text mb-0">{{ preview }}</p>
+      <p v-if="preview" class="notice-preview card-text mb-0">{{ preview }}</p>
     </div>
   </NuxtLink>
 </template>
@@ -30,7 +30,7 @@ const preview = computed(() => noticePreview(props.notice.body_delta, props.prev
 .notice-banner:focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 3px; }
 .notice-preview {
   line-height: 1.5;
-  height: var(--notice-preview-height);
+  max-height: var(--notice-preview-max-height);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--notice-lines);
