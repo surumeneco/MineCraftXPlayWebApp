@@ -58,19 +58,26 @@ suite('account profiles and protected initial administrator (PostgreSQL)', () =>
     delete process.env.ADMIN_DISCORD_IDS
   })
 
-  it('allows ordinary profile changes, including a protected administrator name', async () => {
+  it('only adopts stored Discord names, including for protected administrators', async () => {
     const listing = await request('/api/admin/accounts', 'GET')
     expect(listing.status).toBe(200)
     expect(listing.data.find((entry: any) => entry.id === protectedId).is_protected).toBe(true)
     expect(listing.data.find((entry: any) => entry.id === adminId).is_protected).toBe(false)
-    const renamed = await request(`/api/admin/accounts/${protectedId}/name`, 'PATCH', { name: 'Updated protected' })
-    expect(renamed.status).toBe(200)
+    expect((await request(`/api/admin/accounts/${protectedId}/name`, 'PATCH', { name: 'Arbitrary' })).status).toBe(404)
+    expect((await request('/api/accounts/me/name', 'PATCH', { name: 'Arbitrary' }, memberSession)).status).toBe(404)
+    await sql`UPDATE account_discord_identities SET display_name='Updated protected' WHERE discord_id=${protectedDiscord}`
+    const renamed = await request(`/api/admin/accounts/${protectedId}/adopt-discord-name`, 'POST', { discord_id: protectedDiscord })
+    expect(renamed.status).toBe(201)
     expect(renamed.data.name).toBe('Updated protected')
-    const mine = await request('/api/accounts/me/name', 'PATCH', { name: 'My name' }, memberSession)
-    expect(mine.status).toBe(200)
-    expect(mine.data.name).toBe('My name')
-    expect((await request('/api/accounts/me/name', 'PATCH', { name: ' ' }, memberSession)).status).toBe(400)
-    expect((await request(`/api/admin/accounts/${adminId}/name`, 'PATCH', { name: 'unauthorized' }, memberSession)).status).toBe(403)
+    await sql`UPDATE account_discord_identities SET display_name='My Discord name' WHERE discord_id=${memberDiscord}`
+    const mine = await request('/api/accounts/me/adopt-discord-name', 'POST', { discord_id: memberDiscord }, memberSession)
+    expect(mine.status).toBe(201)
+    expect(mine.data.name).toBe('My Discord name')
+    expect((await request('/api/accounts/me/adopt-discord-name', 'POST', { discord_id: adminDiscord }, memberSession)).status).toBe(400)
+    expect((await request(`/api/admin/accounts/${adminId}/adopt-discord-name`, 'POST', { discord_id: adminDiscord }, memberSession)).status).toBe(403)
+    const placeholder = '981000000000000099'
+    await sql`INSERT INTO account_discord_identities(discord_id,account_id,username,display_name) VALUES (${placeholder},${adminId},${placeholder},${placeholder})`
+    expect((await request(`/api/admin/accounts/${adminId}/adopt-discord-name`, 'POST', { discord_id: placeholder })).status).toBe(400)
   })
 
   it('stores multiple unverified JE and BE names without treating them as authenticated identities', async () => {
