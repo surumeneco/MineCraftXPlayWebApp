@@ -55,7 +55,7 @@
       </form>
       <section class="border rounded p-3 mb-4" aria-labelledby="merge-title">
         <h2 id="merge-title" class="h4">アカウント統合・分離</h2>
-        <p class="small text-body-secondary">このアカウントを統合元とし、既存の別アカウントを統合先に選びます。元のアカウントと所有者情報はDBに残るため、後から分離できます。</p>
+        <p class="small text-body-secondary">このアカウントを統合先とし、既存の別アカウントを統合元に選びます。元のアカウントと所有者情報はDBに残るため、後から分離できます。</p>
         <template v-if="account.merged_sources.length">
           <p class="small text-body-secondary">このアカウントは現在、次のアカウントの統合先です。新たな統合を行う場合は先に分離してください。</p>
           <div v-for="source in account.merged_sources" :key="source.id" class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
@@ -63,18 +63,15 @@
             <button type="button" class="btn btn-warning" :disabled="busy" @click="askRestore(source.id, source.name)">分離する</button>
           </div>
         </template>
-        <template v-else-if="account.is_protected">
-          <p class="small text-body-secondary mb-0">初期管理者は統合元に指定できません。別のアカウントを編集し、このアカウントを統合先に選んでください。</p>
-        </template>
         <form v-else class="d-flex flex-wrap align-items-end gap-2" @submit.prevent="askMerge">
           <div class="flex-grow-1">
-            <label class="form-label" for="merge-target">統合先アカウント</label>
-            <select id="merge-target" v-model="mergeTargetId" class="form-select" required :disabled="busy">
+            <label class="form-label" for="merge-source">統合元アカウント</label>
+            <select id="merge-source" v-model="mergeSourceId" class="form-select" required :disabled="busy">
               <option value="">既存のアカウントを選択</option>
               <option v-for="candidate in mergeCandidates" :key="candidate.id" :value="candidate.id">{{ candidate.name }} / {{ candidate.discord_ids.join('、') }} / {{ candidate.id }}</option>
             </select>
           </div>
-          <button type="submit" class="btn btn-warning" :disabled="busy || !mergeTarget">統合する</button>
+          <button type="submit" class="btn btn-warning" :disabled="busy || !mergeSource">統合する</button>
         </form>
       </section>
       <div class="d-flex gap-2 flex-wrap mt-4">
@@ -100,12 +97,12 @@ const auth = useAccountSession()
 const { get, mutate } = useAccountApi()
 const id = computed(() => String(route.params.id))
 const account = ref<AccountRecord | null>(null), accounts = ref<AccountRecord[]>([])
-const minecraftName = ref(''), mergeTargetId = ref('')
+const minecraftName = ref(''), mergeSourceId = ref('')
 const edition = ref<'je' | 'be'>('je')
 const loading = ref(true), busy = ref(false), error = ref(''), message = ref('')
 const decision = ref<Decision | null>(null)
-const mergeCandidates = computed(() => accounts.value.filter(candidate => candidate.id !== id.value && !candidate.merged_sources.length))
-const mergeTarget = computed(() => mergeCandidates.value.find(candidate => candidate.id === mergeTargetId.value))
+const mergeCandidates = computed(() => accounts.value.filter(candidate => candidate.id !== id.value && !candidate.is_protected && !candidate.merged_sources.length))
+const mergeSource = computed(() => mergeCandidates.value.find(candidate => candidate.id === mergeSourceId.value))
 const hasDiscordName = (identity: DiscordIdentity) => [identity.display_name, identity.username].some(value => !!value && value !== identity.discord_id)
 function protectedDiscord(discord: string) { return account.value?.is_protected && account.value.discord_profiles.length <= 1 && !!discord }
 async function load() {
@@ -126,9 +123,9 @@ async function addMinecraft() {
 }
 function ask(kind: Decision['kind'], value: string, text: string) { decision.value = { kind, value, title: '操作の確認', message: text } }
 function askMerge() {
-  if (!account.value || account.value.is_protected || account.value.merged_sources.length || !mergeTarget.value || busy.value) return
-  decision.value = { kind: 'merge', value: mergeTarget.value.id, title: 'アカウント統合の最終確認',
-    message: `統合元：${account.value.name} / ${account.value.id}\n統合先：${mergeTarget.value.name} / ${mergeTarget.value.id}\n\n同一人物であることを確認してください。統合元は一覧から非表示になり、Discord・Minecraft名、権限、画像の所有情報が統合先へ移動します。統合元のセッションは失効します。元の所有関係はDBに保存され、後から分離できます。` }
+  if (!account.value || account.value.merged_sources.length || !mergeSource.value || busy.value) return
+  decision.value = { kind: 'merge', value: mergeSource.value.id, title: 'アカウント統合の最終確認',
+    message: `統合元：${mergeSource.value.name} / ${mergeSource.value.id}\n統合先：${account.value.name} / ${account.value.id}\n\n同一人物であることを確認してください。統合元は一覧から非表示になり、Discord・Minecraft名、権限、画像の所有情報が統合先へ移動します。統合元のセッションは失効します。元の所有関係はDBに保存され、後から分離できます。` }
 }
 function askRestore(sourceId: string, sourceName: string) {
   if (!account.value || busy.value) return
@@ -148,9 +145,10 @@ async function execute() {
   busy.value = true; error.value = ''; message.value = ''
   try {
     if (selected.kind === 'merge') {
-      await mutate<AccountRecord[]>('/admin/accounts/merge', 'POST', { target_account_id: selected.value, source_account_id: id.value })
+      await mutate<AccountRecord[]>('/admin/accounts/merge', 'POST', { target_account_id: id.value, source_account_id: selected.value })
       decision.value = null; await auth.refresh()
-      await navigateTo(auth.isAdmin.value ? `/admin/accounts/${selected.value}/edit` : '/login')
+      if (!auth.isAdmin.value) { await navigateTo('/login'); return }
+      await load(); message.value = 'アカウントを統合しました。'
       return
     }
     if (selected.kind === 'restore') {
