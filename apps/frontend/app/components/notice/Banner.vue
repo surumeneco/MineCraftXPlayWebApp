@@ -1,11 +1,11 @@
 <template>
   <NuxtLink :to="noticeUrl(notice.title)" class="notice-banner card w-100 text-decoration-none text-body"
-    :style="{ '--notice-lines': previewLines, '--notice-preview-max-height': `${previewLines * 1.5}em` }"
+    :style="{ '--notice-lines': previewLines, '--notice-preview-max-height': `${previewLines * 1.4}em` }"
     :aria-label="`${notice.title} の詳細を見る`">
-    <div class="card-body d-flex flex-column gap-2">
-      <h3 class="h5 card-title mb-0 text-break">{{ notice.title }}</h3>
+    <div class="card-body notice-banner__body d-flex flex-column gap-1">
+      <component :is="`h${headingLevel}`" class="h6 card-title mb-0 text-break">{{ notice.title }}</component>
       <NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" />
-      <p v-if="preview" class="notice-preview card-text mb-0">{{ preview }}</p>
+      <p v-if="preview" class="notice-preview card-text mb-0 small text-body-secondary">{{ preview }}</p>
     </div>
   </NuxtLink>
 </template>
@@ -18,18 +18,20 @@ const props = withDefaults(defineProps<{
   notice: Notice
   lines?: number
   previewLength?: number
-}>(), { lines: 3, previewLength: 200 })
+  headingLevel?: 2 | 3
+}>(), { lines: 2, previewLength: 120, headingLevel: 2 })
 
-const previewLines = computed(() => Number.isInteger(props.lines) && props.lines > 0 ? props.lines : 3)
+const previewLines = computed(() => Number.isInteger(props.lines) && props.lines > 0 ? props.lines : 2)
 const preview = computed(() => noticePreview(props.notice.body_delta, props.previewLength))
 </script>
 
 <style scoped>
 .notice-banner { min-width: 0; container-type: inline-size; transition: border-color .15s, box-shadow .15s; }
+.notice-banner__body { padding: .65rem .85rem; }
 .notice-banner:hover { border-color: var(--bs-primary); box-shadow: 0 .15rem .55rem rgba(0, 0, 0, .18); }
 .notice-banner:focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 3px; }
 .notice-preview {
-  line-height: 1.5;
+  line-height: 1.4;
   max-height: var(--notice-preview-max-height);
   display: -webkit-box;
   -webkit-box-orient: vertical;
