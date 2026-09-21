@@ -8,7 +8,7 @@
     <template v-else>
       <div v-if="errorMessage" class="alert alert-danger" role="alert">{{ errorMessage }}</div>
       <div v-if="infoMessage" class="alert alert-success" role="status">{{ infoMessage }}</div>
-      <form @submit.prevent="save()">
+      <form @submit.prevent="request('save')">
         <label class="form-label" for="notice-admin-title">タイトル</label>
         <input id="notice-admin-title" v-model="heading" class="form-control mb-3" required
           :readonly="selected?.status === 'published'" @input="dirty = true" />
@@ -17,15 +17,18 @@
         <ClientOnly><div ref="editor" class="mb-3" aria-label="お知らせ本文" /></ClientOnly>
         <p class="form-text">本文中の任意位置に画像を挿入できます。画像の変更は保存時に確定します。</p>
         <div class="d-flex flex-wrap gap-2">
-          <button type="submit" class="btn btn-primary" :disabled="busy">{{ busy ? '処理中…' : '保存' }}</button>
-          <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published'" @click="publish">公開する</button>
-          <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="unpublish">公開取り消し</button>
-          <button v-else-if="selected" type="button" class="btn btn-danger" :disabled="busy" @click="remove">物理削除</button>
-          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="cancel">変更を破棄</button>
-          <NuxtLink to="/admin/notices" class="btn btn-outline-secondary">お知らせ一覧</NuxtLink>
+          <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
+          <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published'" @click="request('publish')">公開する</button>
+          <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="request('unpublish')">公開取り消し</button>
+          <button v-else-if="selected" type="button" class="btn btn-danger" :disabled="busy" @click="request('remove')">物理削除</button>
+          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('discard')">変更を破棄</button>
+          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('back')">一覧に戻る</button>
         </div>
       </form>
     </template>
+    <UiConfirmDialog :open="!!decision" :title="decision?.title ?? ''" :message="dialogMessage"
+      :confirm-label="decision?.label ?? '実行する'" :danger="decision?.danger ?? false" :busy="busy"
+      @confirm="executeDecision" @cancel="cancelDecision" />
   </section>
 </template>
 
@@ -37,6 +40,8 @@ type AdminNotice = {
   id: string; title: string; status: 'draft' | 'published' | 'unpublished'; version: number;
   body_delta: NoticeDelta; tags: NoticeTag[]; created_at: string; updated_at: string; published_at: string | null
 }
+type Action = 'save' | 'publish' | 'unpublish' | 'remove' | 'discard' | 'back'
+type Decision = { action: Action; title: string; message: string; label: string; danger: boolean }
 const props = defineProps<{ noticeId?: string }>()
 const { public: { apiBase } } = useRuntimeConfig()
 const { $loadQuill } = useNuxtApp()
@@ -46,12 +51,47 @@ const loading = ref(true), busy = ref(false), dirty = ref(false)
 const errorMessage = ref(''), infoMessage = ref('')
 const allTags = ref<NoticeTag[]>([]), selected = ref<AdminNotice | null>(null)
 const heading = ref(''), selectedTags = ref<string[]>([]), editor = ref<HTMLDivElement | null>(null)
+const decision = ref<Decision | null>(null)
+const dialogMessage = computed(() => [decision.value?.message ?? '', errorMessage.value].filter(Boolean).join('\n\n'))
 let quill: InstanceType<Awaited<ReturnType<typeof $loadQuill>>> | null = null
 let uploadSession = ''
 const pending = new Set<string>()
 let heartbeat: ReturnType<typeof setInterval> | undefined
 const newSession = () => { uploadSession = crypto.randomUUID(); pending.clear() }
 
+function request(action: Action) {
+  if (busy.value) return
+  errorMessage.value = ''
+  const messages: Record<Action, Omit<Decision, 'action'>> = {
+    save: { title: '保存の確認', message: '現在の編集内容を保存しますか？', label: '保存する', danger: false },
+    publish: { title: '公開の確認', message: dirty.value || !selected.value
+      ? '現在の編集内容を保存してから記事を公開します。公開すると一般ユーザーが閲覧できます。続行しますか？'
+      : 'この記事を一般公開しますか？', label: '公開する', danger: false },
+    unpublish: { title: '公開取り消しの確認', message: dirty.value
+      ? '未保存の編集内容は破棄されます。この記事の公開を取り消しますか？'
+      : 'この記事の公開を取り消しますか？', label: '公開を取り消す', danger: true },
+    remove: { title: '物理削除の確認', message: 'この記事と所属画像を完全に削除します。取り消せません。続行しますか？', label: '完全に削除する', danger: true },
+    discard: { title: '変更破棄の確認', message: '未保存の編集内容と仮アップロード画像を破棄しますか？', label: '破棄する', danger: true },
+    back: { title: '一覧へ戻る確認', message: dirty.value
+      ? '未保存の変更と仮アップロード画像を破棄してお知らせ一覧へ戻りますか？'
+      : 'お知らせ一覧へ戻りますか？', label: '一覧へ戻る', danger: dirty.value },
+  }
+  decision.value = { action, ...messages[action] }
+}
+function cancelDecision() { if (!busy.value) decision.value = null }
+async function executeDecision() {
+  if (!decision.value || busy.value) return
+  const action = decision.value.action
+  try {
+    if (action === 'save') await save()
+    else if (action === 'publish') await publish()
+    else if (action === 'unpublish') await unpublish()
+    else if (action === 'remove') await remove()
+    else if (action === 'discard') await cancel()
+    else if (action === 'back') { await discard(); await navigateTo('/admin/notices') }
+    if (!errorMessage.value) decision.value = null
+  } catch (error) { errorMessage.value = describeError(error) }
+}
 function api<T>(path: string, options: Record<string, unknown> = {}) {
   return $fetch<T>(`${apiBase}${path}`, { credentials: 'include', ...options })
 }
@@ -71,9 +111,7 @@ async function ensureQuill() {
   if (!editor.value || quill) return
   const Quill = await $loadQuill()
   if (!editor.value) return
-  quill = new Quill(editor.value, {
-    theme: 'snow', modules: { toolbar: noticeToolbarOptions },
-  })
+  quill = new Quill(editor.value, { theme: 'snow', modules: { toolbar: noticeToolbarOptions } })
   quill.getModule('toolbar')?.addHandler('image', () => void uploadImage())
   quill.on('text-change', () => {
     dirty.value = true
@@ -139,7 +177,6 @@ async function publish() {
 }
 async function unpublish() {
   if (!selected.value || selected.value.status !== 'published') return
-  if (dirty.value && !confirm('未保存の編集内容は破棄されます。公開を取り消しますか？')) return
   busy.value = true; errorMessage.value = ''
   try {
     const result = await mutation<AdminNotice>(`/admin/notices/${selected.value.id}/unpublish`, 'POST', { expected_version: selected.value.version })
@@ -149,7 +186,6 @@ async function unpublish() {
 }
 async function remove() {
   if (!selected.value || selected.value.status === 'published') return
-  if (!confirm('この記事と画像を完全に削除します。取り消せません。続行しますか？')) return
   busy.value = true; errorMessage.value = ''
   try {
     await mutation(`/admin/notices/${selected.value.id}`, 'DELETE', { expected_version: selected.value.version })
@@ -159,11 +195,14 @@ async function remove() {
   finally { busy.value = false }
 }
 async function cancel() {
-  if (dirty.value && !confirm('未保存の変更を破棄しますか？')) return
+  if (busy.value) return
+  busy.value = true; errorMessage.value = ''
   try {
     await discard()
     await resetForm(props.noticeId ? await api<AdminNotice>(`/admin/notices/${props.noticeId}`) : null)
+    infoMessage.value = '変更を破棄しました。'
   } catch (error) { errorMessage.value = describeError(error) }
+  finally { busy.value = false }
 }
 async function uploadImage() {
   if (!quill || busy.value) return

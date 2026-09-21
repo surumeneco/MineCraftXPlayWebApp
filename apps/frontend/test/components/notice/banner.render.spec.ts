@@ -14,20 +14,23 @@ const notice: Notice = {
 }
 
 describe('NoticeBanner', () => {
-  it('fills parent and fixes preview height based on the lines prop', async () => {
+  it('fills parent and clamps preview to at most the configured lines without a fixed bottom gap', async () => {
     const wrapper = await mountSuspended(Banner, { props: { notice, lines: 2, previewLength: 4 } })
     const banner = wrapper.get('a.notice-banner')
     expect(banner.classes()).toContain('w-100')
     expect(banner.attributes('style')).toContain('--notice-lines: 2')
-    expect(banner.attributes('style')).toContain('--notice-preview-height: 3em')
+    expect(banner.attributes('style')).toContain('--notice-preview-max-height: 3em')
+    expect(banner.attributes('style')).not.toContain('--notice-preview-height:')
     expect(wrapper.get('.notice-preview').text()).toBe('長い本文…')
   })
 
-  it('links the entire banner and displays accessible times and tags with Bootstrap icons', async () => {
+  it('links the whole banner, renders accessible times and shows tags without badge backgrounds', async () => {
     const wrapper = await mountSuspended(Banner, { props: { notice } })
     expect(wrapper.findAll('time')).toHaveLength(2)
     expect(wrapper.get('time').element.parentElement?.classList.contains('flex-wrap')).toBe(true)
-    expect(wrapper.get('[aria-label="タグ"]').text()).toContain('運営')
+    const tags = wrapper.get('[aria-label="タグ"]')
+    expect(tags.text()).toContain('運営')
+    expect(tags.find('.badge').exists()).toBe(false)
     expect(wrapper.get('a.notice-banner').attributes('href')).toContain('/info/notice/')
     expect(wrapper.get('a.notice-banner').text()).toContain('メンテナンスのお知らせ')
     expect(wrapper.find('button').exists()).toBe(false)
