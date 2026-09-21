@@ -20,9 +20,9 @@
 </template>
 
 <script setup lang="ts">
-export type DialogKind = 'confirmation' | 'information' | 'error'
-export type DialogPreset = 'yes-no' | 'confirm-cancel' | 'close' | 'cancel' | 'none'
-export type DialogButton = { value: string; label: string; color?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark' | 'outline-primary' | 'outline-secondary' | 'outline-danger' }
+type DialogKind = 'confirmation' | 'information' | 'error'
+type DialogPreset = 'yes-no' | 'confirm-cancel' | 'close' | 'cancel' | 'none'
+type DialogButton = { value: string; label: string; color?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark' | 'outline-primary' | 'outline-secondary' | 'outline-danger' }
 const props = withDefaults(defineProps<{
   open: boolean
   title: string
