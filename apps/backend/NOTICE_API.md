@@ -1,12 +1,12 @@
 # Notice API and database operations
 
-Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webアプリ設計詳細/お知らせ設計.md`, especially the second UI/account extension in section 11. The application has not been deployed to the production VPS.
+Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webアプリ設計詳細/お知らせ設計.md`, including the most recent account/UI amendments. The application has not been deployed to the production VPS.
 
 ## Local setup
 
 1. Copy root `.env.example` to `.env` and configure PostgreSQL.
 2. Configure `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI`. Register `http://localhost:3001/api/auth/discord/callback` verbatim as a Discord OAuth2 redirect for local development. Login is available to any Discord user, not only administrators.
-3. `ADMIN_DISCORD_IDS` (comma-separated Discord IDs) grants admin on login **only when no DB administrator exists**. Once set up, administrator role is managed in `/admin/accounts/:id/edit`. **Keep the initial administrator Discord IDs in this environment variable:** an account currently holding admin rights and linked to one of these IDs cannot be demoted, deleted, or used as a merge source. Its name and non-role profile information remain editable. The final admin cannot be removed.
+3. `ADMIN_DISCORD_IDS` (comma-separated Discord IDs) grants admin on login **only when no DB administrator exists**. Once set up, administrator role is managed in `/admin/accounts/:id/edit`. **Keep the initial administrator Discord IDs in this environment variable:** an account currently holding admin rights and linked to one of these IDs cannot be demoted, deleted, or used as a merge source. Its Discord identity, Minecraft information and Discord-derived name may be edited; arbitrary name entry is not supported. The final admin cannot be removed.
 4. Set `FRONTEND_ORIGIN` to the browser origin, and both `NUXT_PUBLIC_API_BASE` and `PUBLIC_API_BASE` to the external API base URL without a trailing slash. Configure HTTPS/reverse proxy and Secure cookies in production. Never expose PostgreSQL publicly.
 5. Run `npm ci` from repository root, then `npm run dev`; Docker PostgreSQL, Nuxt and NestJS start, with migrations before backend listen. Explicit migration: `npm run db:migrate --workspace @xplay/backend` with `DATABASE_URL`.
 
@@ -29,21 +29,22 @@ Canonical requirements: Google Drive `forGPT/XPlayServer/周辺アプリ/Webア�
 
 `accounts` holds UUID, name (non-unique, required) and created time. `account_discord_identities` maps globally unique Discord IDs to accounts and stores username/display name. `account_roles` holds `admin`; `account_sessions` references the internal account ID. `account_minecraft_identities` contains JE/BE edition and Minecraft **username**, not UUID, with multiple names per internal account and uniqueness on edition+name. Minecraft names are self-reported, **not authenticated**; never infer admin rights or confirmed ownership from them. Migration 002 preserves legacy administrators, sessions and image ownership; migration 003 backfills account/profile names and adds Minecraft identity records without rewriting 001/002.
 
-Internal account names initialize from Discord global display name or username (fallback ID) at first login; subsequent logins refresh only their corresponding Discord profile. Existing manually chosen master names are not silently overwritten. Linked Discord IDs remain independent identifiers; accounts are never automatically merged from similar names.
+Internal account names initialize from Discord global display name or username (fallback ID) at first login; subsequent logins refresh only their corresponding Discord profile. The account name is read-only in the UI and changes **only** by explicitly adopting a stored, fetched Discord profile name. Arbitrary name mutation endpoints have been removed. Newly linked placeholder-only Discord IDs cannot be adopted until real profile information is fetched through login. Existing account names are not silently overwritten. Linked Discord IDs remain independent identifiers; accounts are never automatically merged from similar names.
 
 ### User account APIs (authenticated user)
 
 - `GET /api/accounts/me`: own account record including internal name, role, Discord identities and Minecraft identities.
-- `PATCH /api/accounts/me/name`: `{ "name": "表示名" }` (1–100 chars, non-unique).
-- `POST /api/accounts/me/adopt-discord-name`: `{ "discord_id": "..." }`; copy name from a linked saved Discord profile into the internal account name.
+- `POST /api/accounts/me/adopt-discord-name`: `{ "discord_id": "..." }`; copy a name from a linked, fetched Discord profile. Reject an unlinked or placeholder-only identity.
 - `POST /api/accounts/me/minecraft`: `{ "edition": "je"|"be", "username": "surumeneko164" }`; self-reported registration.
 - `DELETE /api/accounts/me/minecraft/:identityId`: unlink own Minecraft username.
+
+`PATCH /api/accounts/me/name` no longer exists; arbitrary names cannot be submitted.
 
 ### Administrator account APIs
 
 - `GET /api/admin/accounts`: all accounts with `name`, `discord_profiles`, `discord_ids`, `minecraft_ids`, `is_admin`, `is_protected` and creation date.
 - `GET /api/admin/accounts/:id`: one account.
-- `PATCH /api/admin/accounts/:id/name`: rename an account.
+- `POST /api/admin/accounts/:id/adopt-discord-name`: `{ "discord_id": "..." }`; adopt this account's linked Discord profile name, rejecting unlinked/placeholder identities. Requires admin authorization and CSRF.
 - `PATCH /api/admin/accounts/:id/role`: `{ "is_admin": true|false }`; protected initial admins and final admin cannot be demoted.
 - `POST /api/admin/accounts/:id/discord`: `{ "discord_id": "..." }`; explicitly associate an unclaimed Discord ID. An ID cannot belong to two accounts.
 - `DELETE /api/admin/accounts/:id/discord/:discordId`: unlink an identity, but not a protected initial identity or the last identity; sessions of modified accounts are invalidated.
@@ -52,22 +53,22 @@ Internal account names initialize from Discord global display name or username (
 - `DELETE /api/admin/accounts/:id`: delete account only if not protected, not the final administrator, and with no images it owns. If images exist, merge into another account first.
 - `POST /api/admin/accounts/merge`: `{ "target_account_id": "UUID", "source_account_id": "UUID" }`. Target preserves its UUID/name and inherits source admin role, Discord identities, Minecraft identities and image ownership. Source sessions expire and source account is deleted in one DB transaction. Initial protected admins can be targets, never sources. Confirm both accounts represent the same person before merging.
 
-UI routes: `/account` for own profile, `/admin/accounts` for the master list, `/admin/accounts/:id/edit` for individual editing, and `/admin/accounts/merge` for a dedicated merge workflow. Header account icon shows login for unauthenticated users or details for signed-in users; administrator-only “マスタメンテ” menu includes account administration.
+`PATCH /api/admin/accounts/:id/name` no longer exists. UI routes: `/account` for own profile, `/admin/accounts` for the list (Nuxt `pages/admin/accounts/index.vue`), `/admin/accounts/:id/edit` for individual editing, and `/admin/accounts/merge` for a merge initiated from an editor; the list has no merge shortcut. Header account icon offers login or details, using an accordion in the mobile drawer. Administrator-only “マスタメンテ” links to account administration.
 
 All mutation APIs require an authenticated session, allowed `Origin` and `X-XPlay-CSRF` from `/api/auth/session`; admin endpoints recheck the role server-side per request. Cookies use HttpOnly, SameSite and Secure in production. When OAuth is unconfigured, no anonymous admin write access is allowed.
 
 ## Administrator notice APIs
 
-- `GET /api/admin/notices[?status=draft|published|unpublished]`: list notices.
+- `GET /api/admin/notices[?status=draft|published|unpublished]`: list notices including tags and `created_at`, `updated_at`, `published_at`, `status`.
 - `GET /api/admin/notices/:id`: detail by UUID.
 - `POST /api/admin/notices`: create a draft with `{ "title":"記事", "body_delta":{"ops":[{"insert":"本文\n"}]}, "tags":["重要"], "upload_session_id":"UUID" }`.
 - `PATCH /api/admin/notices/:id`: edit with the above fields and `expected_version`; published title is immutable; only drafts can be empty.
-- `POST /api/admin/notices/:id/publish`: `{ "expected_version": 1 }`; reset published/updated timestamps together.
+- `POST /api/admin/notices/:id/publish`: `{ "expected_version": 1 }`; reset published/updated timestamps together, require at least one tag.
 - `POST /api/admin/notices/:id/unpublish`: `{ "expected_version": 2 }`.
 - `DELETE /api/admin/notices/:id`: `{ "expected_version": 3 }`; physically delete drafts or unpublished articles only.
 - `GET /api/admin/tags`: all registered tags.
 
-State transitions increment version; stale version yields 409. DB enforces unique exact titles; tag/article updates and image reconciliation are transactional. UI separates list `/admin/notices`, new `/admin/notices/new` and edit `/admin/notices/:id/edit`, with shared Quill editor. Save, publish, unpublish, discard, return to list and physical deletion use custom confirmation dialogs. The user is warned about lost unsaved edits/temporary uploads.
+State transitions increment version; stale version yields 409. Published articles must retain at least one tag. DB enforces unique exact titles; tag/article updates and image reconciliation are transactional. UI separates list `/admin/notices`, new `/admin/notices/new` and edit `/admin/notices/:id/edit`, with shared Quill editor. Save, publish, unpublish, discard, return to list and physical deletion use custom confirmation dialogs. The user is warned about lost unsaved edits/temporary uploads. Admin list shows title, tags, creation/update/publication timestamps, and status.
 
 ## Images
 
