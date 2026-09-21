@@ -1,12 +1,2 @@
-export type BootstrapIconName =
-  | "calendar"
-  | "clock"
-  | "tag"
-  | "arrow-left"
-  | "arrow-clockwise"
-  | "person-circle"
-  | "pencil-square"
-  | "box-arrow-up-right"
-  | "youtube"
-  | "discord"
-  | "envelope";
+/** Bootstrap Icons name without the `bi-` prefix (e.g. `chevron-right`). */
+export type BootstrapIconName = string

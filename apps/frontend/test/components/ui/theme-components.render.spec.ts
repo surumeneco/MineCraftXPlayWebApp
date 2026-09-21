@@ -34,6 +34,7 @@ describe('Eternalia-inspired shared components', () => {
     })
     expect(link.get('a.xplay-card-link').attributes('href')).toBe('/info/rules')
     expect(link.get('a.xplay-card-link').text()).toContain('ルール')
-    expect(link.get('[aria-hidden="true"]').text()).toBe('→')
+    expect(link.get('.xplay-card-link__arrow').get('.bi-arrow-right-circle').attributes('aria-hidden')).toBe('true')
+    expect(link.get('.xplay-card-link__arrow').text()).toBe('')
   })
 })

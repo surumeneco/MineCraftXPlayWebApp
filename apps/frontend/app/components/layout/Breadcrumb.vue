@@ -8,6 +8,7 @@
       <li v-for="(item, index) in items" :key="`${item.to ?? 'current'}-${index}`"
         class="breadcrumb-item" :class="{ active: index === items.length - 1 }"
         :aria-current="index === items.length - 1 ? 'page' : undefined">
+        <UiBootstrapIcon v-if="index > 0" name="chevron-right" />
         <NuxtLink v-if="index < items.length - 1 && item.to" :to="item.to">{{ item.label }}</NuxtLink>
         <span v-else class="text-break">{{ item.label }}</span>
       </li>
@@ -60,8 +61,10 @@ function goBack() {
   padding: .35rem; border: 0; background: transparent; color: var(--bs-body-color); border-radius: .3rem; cursor: pointer; }
 .xplay-breadcrumb__back:hover { color: var(--xplay-main-soft); background: var(--xplay-panel-soft); }
 .xplay-breadcrumb__divider { flex: 0 0 1px; align-self: stretch; min-height: 1.4rem; background: var(--bs-border-color); }
-.breadcrumb { --bs-breadcrumb-divider: '>'; align-items: center; min-width: 0; }
-.breadcrumb-item { overflow-wrap: anywhere; }
+.breadcrumb { align-items: center; min-width: 0; }
+.breadcrumb-item { display: inline-flex; align-items: center; gap: .5rem; overflow-wrap: anywhere; }
+.breadcrumb-item + .breadcrumb-item::before { content: none; }
+.breadcrumb-item :deep(.bi::before) { font-size: .75rem; }
 .breadcrumb-item a { color: var(--bs-link-color); }
 .breadcrumb-item.active { color: var(--bs-body-color); font-weight: 600; }
 @media (max-width: 575.98px) { .xplay-breadcrumb { padding: .65rem; gap: .5rem; } }

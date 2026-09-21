@@ -3,8 +3,8 @@
     @cancel.prevent="emit('close')" @click="handleBackdrop">
     <div class="xplay-dialog__surface" role="document">
       <header class="d-flex align-items-center gap-3 pb-3 border-bottom">
-        <span class="xplay-dialog__icon" :class="[`xplay-dialog__icon--${kind}`, { 'xplay-dialog__icon--triangle': kind === 'error' && errorShape === 'triangle' }]" aria-hidden="true">
-          {{ kind === 'confirmation' ? '?' : kind === 'information' ? 'i' : '!' }}
+        <span class="xplay-dialog__icon" :class="`xplay-dialog__icon--${kind}`" aria-hidden="true">
+          <UiBootstrapIcon :name="kind === 'confirmation' ? 'question-circle' : kind === 'information' ? 'info-circle' : errorShape === 'triangle' ? 'exclamation-triangle' : 'exclamation-circle'" />
         </span>
         <h2 :id="titleId" class="h5 mb-0">{{ title }}</h2>
       </header>
@@ -63,9 +63,8 @@ onBeforeUnmount(() => { if (dialog.value?.open) dialog.value.close() })
 .xplay-dialog__surface { padding: 1.3rem; }
 .xplay-dialog__message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .xplay-dialog__icon { display: inline-flex; flex: 0 0 2rem; align-items: center; justify-content: center; width: 2rem; height: 2rem;
-  font-size: 1.25rem; font-weight: 800; border: 2px solid currentColor; border-radius: 50%; line-height: 1; }
+  font-size: 2rem; line-height: 1; }
 .xplay-dialog__icon--confirmation { color: var(--bs-success); }
 .xplay-dialog__icon--information { color: var(--bs-info); }
 .xplay-dialog__icon--error { color: var(--bs-danger); }
-.xplay-dialog__icon--triangle { border-radius: .15rem; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 </style>
