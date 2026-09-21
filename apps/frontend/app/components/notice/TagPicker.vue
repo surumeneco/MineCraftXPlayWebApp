@@ -1,15 +1,23 @@
 <template>
   <fieldset class="border-0 p-0 m-0" :disabled="disabled">
     <legend class="fs-6">タグ</legend>
-    <div class="row g-2 align-items-end">
-      <div class="col-12 col-md-5">
-        <UiSelect v-model="selectedTag" label="既存タグ" :options="choices" :disabled="disabled" />
+    <div class="row g-2 align-items-start">
+      <div class="col-12 col-md-6">
+        <div class="d-flex align-items-end gap-2">
+          <div class="flex-grow-1 min-width-0">
+            <UiSelect v-model="selectedTag" label="既存タグ" :options="choices" :disabled="disabled" @keydown.enter.prevent="addExisting" />
+          </div>
+          <UiButton variant="outline-secondary" class="flex-shrink-0" :disabled="disabled || !selectedTag" @click="addExisting">追加</UiButton>
+        </div>
       </div>
-      <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled || !selectedTag" @click="addExisting">追加</UiButton></div>
-      <div class="col-12 col-md">
-        <UiTextInput v-model="newTag" label="新規タグ" placeholder="空白不可・20文字以内" :disabled="disabled" :error="error" @update:model-value="error = ''" />
+      <div class="col-12 col-md-6">
+        <div class="d-flex align-items-end gap-2">
+          <div class="flex-grow-1 min-width-0" @keydown.enter.prevent="addNew">
+            <UiTextInput v-model="newTag" label="新規タグ" placeholder="空白不可・20文字以内" :disabled="disabled" :error="error" @update:model-value="error = ''" />
+          </div>
+          <UiButton variant="outline-secondary" class="flex-shrink-0" :disabled="disabled" @click="addNew">追加</UiButton>
+        </div>
       </div>
-      <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled" @click="addNew">追加</UiButton></div>
     </div>
     <div class="d-flex flex-wrap gap-2 mt-2" aria-label="選択済みタグ">
       <span v-for="name in modelValue" :key="name" class="badge text-bg-secondary d-inline-flex align-items-center gap-2">
