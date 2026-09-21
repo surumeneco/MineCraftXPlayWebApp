@@ -4,7 +4,7 @@ import { Database } from './database.js'
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 const token = () => randomBytes(32).toString('base64url')
-const names = { session: 'xplay_session', state: 'xplay_oauth_state', csrf: 'xplay_csrf' }
+const names = { session: 'xplay_session', state: 'xplay_oauth_state', csrf: 'xplay_csrf', refresh: 'xplay_oauth_refresh' }
 const origins = () => (process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000').split(',').map(value => value.trim())
 const secure = () => process.env.NODE_ENV === 'production' ? '; Secure' : ''
 const cookie = (name: string, value: string, path: string, age: number) =>
@@ -21,14 +21,16 @@ export type AccountSession = { account_id: string; csrf_hash: string; token_hash
 export class AuthService {
   constructor(private readonly database: Database) {}
 
-  begin(res: any): void {
+  begin(res: any, refresh = false): void {
     const client = process.env.DISCORD_CLIENT_ID
     const redirect = process.env.DISCORD_REDIRECT_URI
     if (!client || !redirect || !process.env.DISCORD_CLIENT_SECRET) {
       throw new ServiceUnavailableException('Discord login is not configured')
     }
     const state = token()
-    res.setHeader('Set-Cookie', cookie(names.state, state, '/api/auth/discord/callback', 600))
+    const path = '/api/auth/discord/callback'
+    res.setHeader('Set-Cookie', [cookie(names.state, state, path, 600),
+      cookie(names.refresh, refresh ? '1' : '0', path, 600)])
     const url = new URL('https://discord.com/oauth2/authorize')
     url.search = new URLSearchParams({ response_type: 'code', client_id: client, redirect_uri: redirect, scope: 'identify', state }).toString()
     res.redirect(302, url.toString())
@@ -36,10 +38,14 @@ export class AuthService {
 
   async callback(req: any, res: any, code: unknown, state: unknown): Promise<void> {
     const expected = readCookie(req, names.state)
-    res.setHeader('Set-Cookie', cookie(names.state, '', '/api/auth/discord/callback', 0))
+    const refresh = readCookie(req, names.refresh) === '1'
+    const path = '/api/auth/discord/callback'
+    res.setHeader('Set-Cookie', [cookie(names.state, '', path, 0), cookie(names.refresh, '', path, 0)])
     if (!expected || typeof state !== 'string' || !safeEqual(expected, state) || typeof code !== 'string' || !code) {
       throw new UnauthorizedException('Invalid OAuth callback')
     }
+    const original = refresh ? await this.resolve(req) : null
+    if (refresh && !original) throw new UnauthorizedException('Login required to refresh profile')
     const client = process.env.DISCORD_CLIENT_ID
     const secret = process.env.DISCORD_CLIENT_SECRET
     const redirect = process.env.DISCORD_REDIRECT_URI
@@ -56,40 +62,45 @@ export class AuthService {
       headers: { Authorization: `Bearer ${credentials.access_token}` }, signal: AbortSignal.timeout(10000),
     })
     if (!response.ok) throw new UnauthorizedException('Discord identity lookup failed')
-    const profile = await response.json() as { id?: string }
+    const profile = await response.json() as { id?: string; username?: string; global_name?: string | null }
     if (!profile.id || !/^\d{15,22}$/.test(profile.id)) throw new UnauthorizedException('Missing Discord identity')
-
+    const discordId = profile.id
+    const username = typeof profile.username === 'string' && profile.username.trim() ? profile.username.slice(0, 100) : discordId
+    const displayName = typeof profile.global_name === 'string' && profile.global_name.trim() ? profile.global_name.slice(0, 100) : username
     const session = token(), csrf = token()
     const sql = this.database.sql
-    const accountId = await sql.begin(async tx => {
-      // Serialize first-login creation and bootstrap across all application workers.
+    await sql.begin(async tx => {
+      // Serialize login, initial administrator bootstrap, role mutation and merges.
       await tx`SELECT pg_advisory_xact_lock(79412502)`
-      const linked = await tx`SELECT account_id FROM account_discord_identities WHERE discord_id=${profile.id!}`
+      const linked = await tx`SELECT account_id FROM account_discord_identities WHERE discord_id=${discordId}`
       let id: string
-      if (linked.length) id = String(linked[0].account_id)
-      else {
-        const created = await tx`INSERT INTO accounts DEFAULT VALUES RETURNING id`
+      if (linked.length) {
+        id = String(linked[0].account_id)
+        if (original && id !== original.account_id) throw new ForbiddenException('Select the Discord identity linked to this account')
+        await tx`UPDATE account_discord_identities SET username=${username}, display_name=${displayName} WHERE discord_id=${discordId}`
+      } else {
+        if (original) throw new ForbiddenException('Cannot refresh with a different Discord identity')
+        const created = await tx`INSERT INTO accounts(name) VALUES (${displayName}) RETURNING id`
         id = String(created[0].id)
-        await tx`INSERT INTO account_discord_identities(discord_id, account_id) VALUES (${profile.id!}, ${id})`
+        await tx`INSERT INTO account_discord_identities(discord_id, account_id, username, display_name)
+          VALUES (${discordId}, ${id}, ${username}, ${displayName})`
       }
       const admins = await tx`SELECT account_id FROM account_roles WHERE role='admin' LIMIT 1`
       const bootstrapIds = (process.env.ADMIN_DISCORD_IDS ?? '').split(',').map(value => value.trim())
-      if (!admins.length && bootstrapIds.includes(profile.id!)) {
+      if (!admins.length && bootstrapIds.includes(discordId)) {
         await tx`INSERT INTO account_roles(account_id, role) VALUES (${id}, 'admin') ON CONFLICT DO NOTHING`
       }
       await tx`DELETE FROM account_sessions WHERE expires_at <= now()`
       await tx`INSERT INTO account_sessions(token_hash, account_id, csrf_hash, expires_at)
         VALUES (${hash(session)}, ${id}, ${hash(csrf)}, now() + interval '7 days')`
-      return id
+      if (original) await tx`DELETE FROM account_sessions WHERE token_hash=${original.token_hash}`
     })
     res.setHeader('Set-Cookie', [
       cookie(names.session, session, '/api', 604800),
       cookie(names.csrf, csrf, '/api', 604800),
-      cookie(names.state, '', '/api/auth/discord/callback', 0),
+      cookie(names.state, '', path, 0), cookie(names.refresh, '', path, 0),
     ])
-    // All authenticated users land on the same account page, even without administration rights.
     res.redirect(302, origins()[0] + '/account')
-    void accountId
   }
 
   private async resolve(req: any): Promise<AccountSession | null> {
