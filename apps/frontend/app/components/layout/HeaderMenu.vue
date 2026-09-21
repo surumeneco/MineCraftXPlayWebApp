@@ -50,7 +50,7 @@
     </div>
     <!-- Nonmodal dialog: unlike showModal(), show() does not make the header inert. -->
     <dialog id="mobile-menu-drawer" ref="mobileDialog" class="xplay-mobile-drawer"
-      :class="{ 'xplay-mobile-drawer--closing': drawerClosing }"
+      :class="{ 'xplay-mobile-drawer--visible': drawerVisible, 'xplay-mobile-drawer--closing': drawerClosing }"
       :style="{ '--xplay-header-bottom': `${headerBottom}px` }"
       :aria-label="openMobileMenu === 'side' ? 'サイドメニュー' : 'ナビゲーションメニュー'"
       @cancel.prevent="closeDrawer()" @close="onDrawerClose" @keydown.esc.prevent="closeDrawer()">
@@ -61,11 +61,12 @@
           :class="openMobileMenu === 'navigation' ? 'xplay-mobile-drawer__heading--right' : 'xplay-mobile-drawer__heading--left'">
           <h2 class="xplay-mobile-drawer__title">{{ openMobileMenu === 'side' ? 'サイドメニュー' : 'ナビゲーション' }}</h2>
         </div>
-        <nav v-if="openMobileMenu === 'navigation'" id="mobile-navigation" aria-label="モバイルナビゲーション">
+        <!-- Keep the navigation mounted so opening the drawer never creates expanded accordions mid-animation. -->
+        <nav v-show="openMobileMenu === 'navigation'" id="mobile-navigation" aria-label="モバイルナビゲーション">
           <ul class="navbar-nav flex-column gap-2">
-            <li v-for="(item, index) in items" :key="item.label" class="nav-item">
+            <li v-for="item in items" :key="item.label" class="nav-item">
               <div v-if="item.children?.length" class="accordion accordion-flush w-100">
-                <UiAccordion :key="`${index}-${mobileAccordionCycle}`" :title="item.label" :default-open="true">
+                <UiAccordion :title="item.label" :default-open="false">
                   <ul class="list-unstyled mb-0">
                     <li v-for="child in item.children" :key="child.to">
                       <NuxtLink :to="child.to" class="nav-link xplay-mobile-drawer__link" @click="closeNavigation">{{ child.label }}</NuxtLink>
@@ -88,7 +89,7 @@
             </li>
           </ul>
         </nav>
-        <div v-else-if="openMobileMenu === 'side'" id="mobile-side-menu" @click="onSideMenuClick"><slot name="side-menu" /></div>
+        <div v-if="openMobileMenu === 'side'" id="mobile-side-menu" @click="onSideMenuClick"><slot name="side-menu" /></div>
       </div>
     </dialog>
   </header>
@@ -102,6 +103,7 @@ const CLOSE_DURATION_MS = 260
 const { authenticated } = useAccountSession()
 const route = useRoute()
 const openMobileMenu = ref<MobileMenu | null>(null)
+const drawerVisible = ref(false)
 const drawerClosing = ref(false)
 const headerBottom = ref(0)
 const accountOpen = ref(false)
@@ -125,6 +127,7 @@ async function toggleMobileMenu(menu: MobileMenu) {
   if (openMobileMenu.value === menu) { closeDrawer(); return }
   if (openMobileMenu.value) finishClose()
   openMobileMenu.value = menu
+  drawerVisible.value = false
   drawerClosing.value = false
   desktopDropdownCycle.value++
   if (menu === 'navigation') mobileAccordionCycle.value++
@@ -141,11 +144,16 @@ async function toggleMobileMenu(menu: MobileMenu) {
     previousBodyOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
   }
+  // Commit the off-screen layout while the dialog is visible, before transitioning to its final position.
+  // In particular, this avoids starting the right-hand animation before the navigation is painted.
+  void dialog.querySelector('.xplay-mobile-drawer__panel')?.getBoundingClientRect()
+  if (openMobileMenu.value === menu && !drawerClosing.value) drawerVisible.value = true
 }
 function onDrawerClose() {
   if (mobileDialog.value?.open) return
   if (closeTimer) clearTimeout(closeTimer)
   closeTimer = undefined
+  drawerVisible.value = false
   drawerClosing.value = false
   openMobileMenu.value = null
   if (previousBodyOverflow !== null) {
@@ -170,6 +178,7 @@ function closeDrawer() {
     return
   }
   if (drawerClosing.value) return
+  drawerVisible.value = false
   drawerClosing.value = true
   closeTimer = setTimeout(finishClose, CLOSE_DURATION_MS)
 }
