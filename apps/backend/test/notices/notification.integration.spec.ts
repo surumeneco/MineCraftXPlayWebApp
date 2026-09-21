@@ -12,8 +12,11 @@ suite('notice notification transaction boundaries (PostgreSQL)', () => {
   let notification: NoticeNotificationService
   let noticeId: string
   let tagId: string
+  let addedTagId: string | undefined
   const heading = `通知試験${randomUUID()}`
   const body = { ops: [{ insert: '公開前の本文\n' }] }
+  const tagName = `通知${randomUUID().slice(0, 8)}`
+  const extraTagName = `追加${randomUUID().slice(0, 8)}`
 
   beforeAll(async () => {
     database = new Database()
@@ -23,9 +26,8 @@ suite('notice notification transaction boundaries (PostgreSQL)', () => {
       INSERT INTO notices (title, body_delta, status)
       VALUES (${heading}, ${database.sql.json(body)}, 'draft') RETURNING id`
     noticeId = String(created[0].id)
-    const key = `notify-${randomUUID()}`
     const tag = await database.sql`INSERT INTO tags (name, normalized_name)
-      VALUES (${key}, ${key}) RETURNING id`
+      VALUES (${tagName}, ${tagName}) RETURNING id`
     tagId = String(tag[0].id)
     await database.sql`INSERT INTO notice_tags (notice_id, tag_id) VALUES (${noticeId}, ${tagId})`
   })
@@ -34,6 +36,7 @@ suite('notice notification transaction boundaries (PostgreSQL)', () => {
     if (!database) return
     if (noticeId) await database.sql`DELETE FROM notices WHERE id=${noticeId}`
     if (tagId) await database.sql`DELETE FROM tags WHERE id=${tagId}`
+    if (addedTagId) await database.sql`DELETE FROM tags WHERE id=${addedTagId}`
     await database.onApplicationShutdown()
     vi.restoreAllMocks()
   })
@@ -61,9 +64,11 @@ suite('notice notification transaction boundaries (PostgreSQL)', () => {
     expect(unchanged[0].body_delta).toEqual(body)
 
     sender.mockClear()
-    const edited = await notices.update(noticeId, { expected_version: 2, tags: ['追加タグ'] }, randomUUID())
+    const edited = await notices.update(noticeId, { expected_version: 2, tags: [tagName, extraTagName] }, randomUUID())
     expect(edited.version).toBe(3)
     expect(sender).not.toHaveBeenCalled()
+    const tag = await database.sql`SELECT id FROM tags WHERE normalized_name=${extraTagName}`
+    addedTagId = String(tag[0].id)
     sender.mockResolvedValueOnce(undefined)
     const update = await notices.update(noticeId, { expected_version: 3, body_delta: changedBody }, randomUUID())
     expect(update.body_delta).toEqual(changedBody)
