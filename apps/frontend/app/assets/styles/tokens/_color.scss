@@ -1,38 +1,150 @@
+@use 'sass:color';
 @use 'sass:map';
+@use 'sass:meta';
 @use './palette' as palette;
 
-// 既存のセマンティックトークン名・色値・CSS変数は維持し、参照元だけをパレットに統一する。
-$colors: (
-  'main': map.get(palette.$palette, 'sky', 'origin'),
-  'main-heavy': map.get(palette.$palette, 'sky', 'dark', '100'),
-  'main-bold': map.get(palette.$palette, 'sky', 'dark', '150'),
-  'main-soft': map.get(palette.$palette, 'sky', 'light', '50'),
-  'accent': map.get(palette.$palette, 'grass', 'origin'),
-  'accent-heavy': map.get(palette.$palette, 'grass', 'dark', '100'),
-  'page-start': map.get(palette.$palette, 'sky', 'moss', '100'),
-  'page-end': map.get(palette.$palette, 'grass', 'dark', '50'),
-  'header': map.get(palette.$palette, 'sky', 'origin'),
-  'header-text': map.get(palette.$palette, 'sky', 'dark', '40'),
-  'header-text-hover': map.get(palette.$palette, 'sky', 'dark', '20'),
-  'footer': map.get(palette.$palette, 'sky', 'moss', '50'),
-  'panel': map.get(palette.$palette, 'void', '30'),
-  'panel-bold': map.get(palette.$palette, 'void', '20'),
-  'panel-soft': map.get(palette.$palette, 'void', '40'),
-  'input': map.get(palette.$palette, 'void', '50'),
-  'input-focus': map.get(palette.$palette, 'flow', 'moss', '50'),
-  'text': map.get(palette.$palette, 'void', '180'),
-  'text-muted': map.get(palette.$palette, 'void', '140'),
-  'text-inverse': map.get(palette.$palette, 'void', 'light'),
-  'link': map.get(palette.$palette, 'flow', 'dark', '180'),
-  'link-visited': map.get(palette.$palette, 'flow', 'dark', '150'),
-  'link-hover': map.get(palette.$palette, 'flow', 'light', '100'),
-  'border': map.get(palette.$palette, 'void', '80'),
-  'border-soft': map.get(palette.$palette, 'void', '100'),
-  'border-focus': map.get(palette.$palette, 'flow', 'moss', '100')
+// Palette contains physical colors; these maps contain purpose and UI state.
+// Both themes expose exactly the same keys. UI components never select a theme palette.
+$dark: (
+  'concept': (
+    'main': map.get(palette.$palette, 'sky', 'origin'),
+    'sub': map.get(palette.$palette, 'void', '100'),
+    'accent': map.get(palette.$palette, 'grass', 'origin')
+  ),
+  'background': (
+    'page': ('base': map.get(palette.$palette, 'sky', 'moss', '100'), 'end': map.get(palette.$palette, 'grass', 'dark', '50')),
+    'header': ('base': map.get(palette.$palette, 'sky', 'origin'), 'hover': color.change(map.get(palette.$palette, 'sky', 'dark', '100'), $alpha: .15)),
+    'footer': map.get(palette.$palette, 'sky', 'moss', '50'),
+    'surface': ('base': map.get(palette.$palette, 'void', '30'), 'emphasis': map.get(palette.$palette, 'void', '20'), 'subtle': map.get(palette.$palette, 'void', '40')),
+    'input': ('base': map.get(palette.$palette, 'void', '50'), 'focus': map.get(palette.$palette, 'flow', 'moss', '50')),
+    'button': (
+      'primary': ('base': map.get(palette.$palette, 'sky', 'dark', '150'), 'hover': map.get(palette.$palette, 'sky', 'dark', '100'), 'active': map.get(palette.$palette, 'sky', 'dark', '100')),
+      'secondary': ('base': map.get(palette.$palette, 'void', '40'), 'hover': map.get(palette.$palette, 'void', '80')),
+      'danger': ('base': map.get(palette.$palette, 'flame', 'dark', '130'), 'hover': map.get(palette.$palette, 'flame', 'dark', '110')),
+      'warning': ('base': map.get(palette.$palette, 'wind', 'origin'), 'hover': map.get(palette.$palette, 'wind', 'light', '50'))
+    ),
+    'overlay': ('scrim': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .66), 'backdrop': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .67))
+  ),
+  'text': (
+    'base': map.get(palette.$palette, 'void', '180'),
+    'note': map.get(palette.$palette, 'void', '140'),
+    'disabled': map.get(palette.$palette, 'void', '140'),
+    'link': ('base': map.get(palette.$palette, 'flow', 'dark', '180'), 'hover': map.get(palette.$palette, 'flow', 'light', '100'), 'visited': map.get(palette.$palette, 'flow', 'dark', '150')),
+    'on-main': ('base': map.get(palette.$palette, 'sky', 'dark', '40'), 'hover': map.get(palette.$palette, 'sky', 'dark', '20')),
+    'on-primary': map.get(palette.$palette, 'void', 'light'),
+    'on-accent': map.get(palette.$palette, 'void', '20'),
+    'on-danger': map.get(palette.$palette, 'void', 'light'),
+    'on-warning': map.get(palette.$palette, 'void', '20'),
+    'heading-accent': map.get(palette.$palette, 'sky', 'light', '50')
+  ),
+  'border': (
+    'base': map.get(palette.$palette, 'void', '80'),
+    'subtle': map.get(palette.$palette, 'void', '60'),
+    'strong': map.get(palette.$palette, 'void', '100'),
+    'focus': map.get(palette.$palette, 'flow', 'moss', '100'),
+    'header': map.get(palette.$palette, 'sky', 'dark', '100'),
+    'input': ('base': map.get(palette.$palette, 'void', '80'), 'focus': map.get(palette.$palette, 'sky', 'origin'))
+  ),
+  'feedback': (
+    'success': ('background': map.get(palette.$palette, 'grass', 'dark', '40'), 'text': map.get(palette.$palette, 'grass', 'light', '140'), 'border': map.get(palette.$palette, 'grass', 'dark', '120'), 'icon': map.get(palette.$palette, 'grass', 'origin')),
+    'error': ('background': map.get(palette.$palette, 'flame', 'dark', '50'), 'text': map.get(palette.$palette, 'flame', 'light', '140'), 'border': map.get(palette.$palette, 'flame', 'dark', '130'), 'icon': map.get(palette.$palette, 'flame', 'origin')),
+    'warning': ('background': map.get(palette.$palette, 'wind', 'dark', '40'), 'text': map.get(palette.$palette, 'wind', 'light', '140'), 'border': map.get(palette.$palette, 'wind', 'dark', '120'), 'icon': map.get(palette.$palette, 'wind', 'origin')),
+    'info': ('background': map.get(palette.$palette, 'flow', 'dark', '40'), 'text': map.get(palette.$palette, 'flow', 'light', '140'), 'border': map.get(palette.$palette, 'flow', 'dark', '120'), 'icon': map.get(palette.$palette, 'flow', 'origin'))
+  ),
+  'focus-indicator': ('outer': map.get(palette.$palette, 'wind', 'origin'), 'inner': map.get(palette.$palette, 'void', 'dark'))
 );
 
-@mixin expose() {
-  @each $name, $value in $colors {
-    --xplay-#{$name}: #{$value};
+$light: (
+  'concept': (
+    'main': map.get(palette.$palette, 'sky', 'origin'),
+    'sub': map.get(palette.$palette, 'void', '100'),
+    'accent': map.get(palette.$palette, 'grass', 'origin')
+  ),
+  'background': (
+    'page': ('base': map.get(palette.$palette, 'sky', 'light', '180'), 'end': map.get(palette.$palette, 'grass', 'light', '190')),
+    'header': ('base': map.get(palette.$palette, 'sky', 'light', '120'), 'hover': color.change(map.get(palette.$palette, 'sky', 'dark', '100'), $alpha: .15)),
+    'footer': map.get(palette.$palette, 'sky', 'light', '170'),
+    'surface': ('base': map.get(palette.$palette, 'void', 'light'), 'emphasis': map.get(palette.$palette, 'void', '190'), 'subtle': map.get(palette.$palette, 'void', '180')),
+    'input': ('base': map.get(palette.$palette, 'void', 'light'), 'focus': map.get(palette.$palette, 'flow', 'light', '180')),
+    'button': (
+      'primary': ('base': map.get(palette.$palette, 'sky', 'dark', '110'), 'hover': map.get(palette.$palette, 'sky', 'dark', '90'), 'active': map.get(palette.$palette, 'sky', 'dark', '90')),
+      'secondary': ('base': map.get(palette.$palette, 'void', '180'), 'hover': map.get(palette.$palette, 'void', '160')),
+      'danger': ('base': map.get(palette.$palette, 'flame', 'dark', '130'), 'hover': map.get(palette.$palette, 'flame', 'dark', '110')),
+      'warning': ('base': map.get(palette.$palette, 'wind', 'origin'), 'hover': map.get(palette.$palette, 'wind', 'light', '50'))
+    ),
+    'overlay': ('scrim': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .66), 'backdrop': color.change(map.get(palette.$palette, 'void', 'dark'), $alpha: .67))
+  ),
+  'text': (
+    'base': map.get(palette.$palette, 'void', '30'),
+    'note': map.get(palette.$palette, 'void', '70'),
+    'disabled': map.get(palette.$palette, 'void', '100'),
+    'link': ('base': map.get(palette.$palette, 'flow', 'dark', '100'), 'hover': map.get(palette.$palette, 'flow', 'dark', '70'), 'visited': map.get(palette.$palette, 'flow', 'dark', '90')),
+    'on-main': ('base': map.get(palette.$palette, 'sky', 'dark', '40'), 'hover': map.get(palette.$palette, 'sky', 'dark', '20')),
+    'on-primary': map.get(palette.$palette, 'void', 'light'),
+    'on-accent': map.get(palette.$palette, 'void', '20'),
+    'on-danger': map.get(palette.$palette, 'void', 'light'),
+    'on-warning': map.get(palette.$palette, 'void', '20'),
+    'heading-accent': map.get(palette.$palette, 'sky', 'dark', '100')
+  ),
+  'border': (
+    'base': map.get(palette.$palette, 'void', '120'),
+    'subtle': map.get(palette.$palette, 'void', '160'),
+    'strong': map.get(palette.$palette, 'void', '80'),
+    'focus': map.get(palette.$palette, 'flow', 'dark', '100'),
+    'header': map.get(palette.$palette, 'sky', 'dark', '100'),
+    'input': ('base': map.get(palette.$palette, 'void', '120'), 'focus': map.get(palette.$palette, 'sky', 'dark', '100'))
+  ),
+  'feedback': (
+    'success': ('background': map.get(palette.$palette, 'grass', 'light', '180'), 'text': map.get(palette.$palette, 'grass', 'dark', '90'), 'border': map.get(palette.$palette, 'grass', 'dark', '110'), 'icon': map.get(palette.$palette, 'grass', 'dark', '100')),
+    'error': ('background': map.get(palette.$palette, 'flame', 'light', '180'), 'text': map.get(palette.$palette, 'flame', 'dark', '110'), 'border': map.get(palette.$palette, 'flame', 'dark', '130'), 'icon': map.get(palette.$palette, 'flame', 'dark', '120')),
+    'warning': ('background': map.get(palette.$palette, 'wind', 'light', '170'), 'text': map.get(palette.$palette, 'wind', 'dark', '80'), 'border': map.get(palette.$palette, 'wind', 'dark', '110'), 'icon': map.get(palette.$palette, 'wind', 'dark', '100')),
+    'info': ('background': map.get(palette.$palette, 'flow', 'light', '180'), 'text': map.get(palette.$palette, 'flow', 'dark', '100'), 'border': map.get(palette.$palette, 'flow', 'dark', '120'), 'icon': map.get(palette.$palette, 'flow', 'dark', '100'))
+  ),
+  'focus-indicator': ('outer': map.get(palette.$palette, 'wind', 'origin'), 'inner': map.get(palette.$palette, 'void', 'dark'))
+);
+
+$themes: ('dark': $dark, 'light': $light);
+
+// Legacy aliases remain temporarily for components not yet migrated.
+$legacy: (
+  'main': 'concept-main', 'main-heavy': 'background-button-primary-hover',
+  'main-bold': 'background-button-primary-base', 'main-soft': 'text-heading-accent',
+  'accent': 'concept-accent', 'accent-heavy': 'feedback-success-border',
+  'page-start': 'background-page-base', 'page-end': 'background-page-end',
+  'header': 'background-header-base', 'header-text': 'text-on-main-base',
+  'header-text-hover': 'text-on-main-hover', 'footer': 'background-footer',
+  'panel': 'background-surface-base', 'panel-bold': 'background-surface-emphasis',
+  'panel-soft': 'background-surface-subtle', 'input': 'background-input-base',
+  'input-focus': 'background-input-focus', 'text': 'text-base',
+  'text-muted': 'text-note', 'text-inverse': 'text-on-primary',
+  'link': 'text-link-base', 'link-visited': 'text-link-visited',
+  'link-hover': 'text-link-hover', 'border': 'border-base',
+  'border-soft': 'border-strong', 'border-focus': 'border-focus'
+);
+
+@mixin _emit($tokens, $prefix: '') {
+  @each $key, $value in $tokens {
+    $name: if($prefix == '', $key, '#{$prefix}-#{$key}');
+    @if meta.type-of($value) == 'map' {
+      @include _emit($value, $name);
+    } @else {
+      --xplay-#{$name}: #{$value};
+    }
+  }
+}
+
+@function _rgb($value) {
+  @return #{color.channel($value, 'red', $space: rgb)}, #{color.channel($value, 'green', $space: rgb)}, #{color.channel($value, 'blue', $space: rgb)};
+}
+
+@mixin expose($mode) {
+  $tokens: map.get($themes, $mode);
+  @include _emit($tokens);
+  --xplay-text-base-rgb: #{_rgb(map.get($tokens, 'text', 'base'))};
+  --xplay-background-surface-base-rgb: #{_rgb(map.get($tokens, 'background', 'surface', 'base'))};
+  --xplay-background-button-primary-base-rgb: #{_rgb(map.get($tokens, 'background', 'button', 'primary', 'base'))};
+  --xplay-text-link-base-rgb: #{_rgb(map.get($tokens, 'text', 'link', 'base'))};
+  @each $old, $new in $legacy {
+    --xplay-#{$old}: var(--xplay-#{$new});
   }
 }
