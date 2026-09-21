@@ -1,6 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { AccountsService } from './accounts.service.js'
+
+async function adoptFetchedName(accounts: AccountsService, accountId: string, discordId: unknown) {
+  const account = await accounts.get(accountId)
+  const identity = account.discord_profiles.find(profile => profile.discord_id === discordId)
+  if (!identity || ![identity.display_name, identity.username].some(value => value && value !== discordId)) {
+    throw new BadRequestException('A Discord profile name must be retrieved before adoption')
+  }
+  return accounts.adoptDiscordName(accountId, discordId)
+}
 
 @Controller('accounts')
 export class SelfAccountsController {
@@ -13,7 +22,7 @@ export class SelfAccountsController {
 
   @Post('me/adopt-discord-name')
   async adoptDiscordName(@Req() req: any, @Body() body: any) {
-    return this.accounts.adoptDiscordName(await this.auth.requireUser(req, true), body?.discord_id)
+    return adoptFetchedName(this.accounts, await this.auth.requireUser(req, true), body?.discord_id)
   }
 
   @Post('me/minecraft')
@@ -46,7 +55,7 @@ export class AccountsController {
   @Post(':id/adopt-discord-name')
   async adoptDiscordName(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     await this.auth.requireAdmin(req, true)
-    return this.accounts.adoptDiscordName(id, body?.discord_id)
+    return adoptFetchedName(this.accounts, id, body?.discord_id)
   }
 
   @Patch(':id/role')
