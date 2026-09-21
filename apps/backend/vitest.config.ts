@@ -10,5 +10,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['test/**/*.{test,spec}.ts'],
+    setupFiles: ['test/setup-notice-notification.ts'],
   },
 })

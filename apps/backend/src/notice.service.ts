@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { Database } from './database.js'
+import { NoticeNotificationService } from './notice-notification.service.js'
 import { delta, EMPTY_DELTA, expectedVersion, hasContent, imageIds, tags, title, uuid, type Delta } from './notice-validation.js'
 
 const isDuplicate = (error: unknown) => typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
@@ -10,7 +11,7 @@ const duplicate = (error: unknown): never => {
 
 @Injectable()
 export class NoticeService {
-  constructor(private readonly database: Database) {}
+  constructor(private readonly database: Database, private readonly notifications: NoticeNotificationService) {}
 
   async publicList() {
     return this.database.sql`
@@ -131,10 +132,16 @@ export class NoticeService {
         if (old.status === 'published' && next.heading !== old.title) throw new ConflictException('Published title cannot change')
         if (old.status !== 'draft' && !hasContent(next.body)) throw new BadRequestException('Body cannot be empty')
         if (old.status === 'published' && !next.selectedTags.length) throw new BadRequestException('At least one tag is required for a published notice')
+        // Compare JSONB structurally: tag-only edits and equivalent JSON do not notify.
+        const comparison = await tx`SELECT ${tx.json(old.body_delta)}::jsonb IS DISTINCT FROM ${tx.json(next.body as any)}::jsonb AS changed`
         await tx`UPDATE notices SET title=${next.heading}, body_delta=${tx.json(next.body as any)},
           updated_at=clock_timestamp(), version=version+1 WHERE id=${id}`
         await this.saveTags(tx, id, next.selectedTags)
         await this.saveImages(tx, id, next.ids, admin, next.session)
+        if (old.status === 'published' && comparison[0].changed) {
+          await this.notifications.send({ id, version: old.version + 1, kind: 'update',
+            title: next.heading, tags: next.selectedTags.map((tag) => tag.name) })
+        }
         return id
       })
     } catch (error) { return duplicate(error) }
@@ -144,17 +151,21 @@ export class NoticeService {
   async publish(idRaw: string, raw: any) {
     const id = uuid(idRaw), expected = expectedVersion(raw?.expected_version)
     await this.database.sql.begin(async (tx) => {
-      const rows = await tx`SELECT status, version, body_delta FROM notices WHERE id=${id} FOR UPDATE`
+      const rows = await tx`SELECT status, version, body_delta, title FROM notices WHERE id=${id} FOR UPDATE`
       if (!rows.length) throw new NotFoundException('Notice not found')
       const old = rows[0]
       if (old.version !== expected) throw new ConflictException('Notice was modified; reload it')
       if (old.status === 'published') throw new ConflictException('Already published')
       if (!hasContent(delta(old.body_delta))) throw new BadRequestException('Body cannot be empty')
-      const assignedTags = await tx`SELECT 1 FROM notice_tags WHERE notice_id=${id} LIMIT 1`
+      const assignedTags = await tx`SELECT t.name FROM notice_tags nt JOIN tags t ON t.id=nt.tag_id
+        WHERE nt.notice_id=${id} ORDER BY t.name`
       if (!assignedTags.length) throw new BadRequestException('At least one tag is required to publish a notice')
       await tx`WITH stamp AS MATERIALIZED (SELECT clock_timestamp() AS at)
         UPDATE notices SET status='published', published_at=stamp.at, updated_at=stamp.at,
           version=version+1 FROM stamp WHERE id=${id}`
+      // A failed notification aborts this transaction and leaves the notice non-public.
+      await this.notifications.send({ id, version: old.version + 1, kind: 'publish',
+        title: old.title, tags: assignedTags.map((tag: any) => String(tag.name)) })
     })
     return this.adminDetail(id)
   }
