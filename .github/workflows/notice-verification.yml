@@ -1,0 +1,70 @@
+name: Notice implementation verification
+
+on:
+  push:
+    branches:
+      - feature/notice-backend
+      - feature/navigation-accounts
+      - develop
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: xplay_test
+          POSTGRES_USER: xplay_test
+          POSTGRES_PASSWORD: local-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U xplay_test -d xplay_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://xplay_test:local-ci-only@127.0.0.1:5432/xplay_test
+      NODE_ENV: test
+      FRONTEND_ORIGIN: http://localhost:3000
+      PUBLIC_API_BASE: http://localhost:3001/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Database migrations
+        run: npm run db:migrate --workspace @xplay/backend
+      - name: Backend unit and database integration tests
+        run: npm run test:backend
+      - name: Frontend tests
+        run: npm run test:frontend
+      - name: Build workspaces
+        run: npm run build
+      - name: Build backend production container
+        run: docker build --target production -t xplay-notices-backend ./apps/backend
+      - name: Public and unauthorized API smoke test
+        shell: bash
+        run: |
+          npm run start:prod --workspace @xplay/backend > /tmp/xplay-backend.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; cat /tmp/xplay-backend.log' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:3001/api/health; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          test "$(curl -s -o /tmp/list.json -w '%{http_code}' http://localhost:3001/api/notices)" = 200
+          node -e 'const a=JSON.parse(require("node:fs").readFileSync("/tmp/list.json"));if(!Array.isArray(a))process.exit(1)'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:3001/api/admin/notices)" = 401

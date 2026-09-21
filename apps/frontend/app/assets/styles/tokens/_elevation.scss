@@ -1,0 +1,13 @@
+// Shared shadow levels: components refer to these instead of repeating values.
+$elevations: (
+  'panel-shadow': 0 0 15px 2px rgba(0, 0, 0, .34),
+  'card-shadow': 0 0 12px rgba(0, 0, 0, .17),
+  'dropdown-shadow': 0 8px 22px rgba(0, 0, 0, .35),
+  'drawer-shadow': 0 0 30px rgba(0, 0, 0, .55),
+);
+
+@mixin expose() {
+  @each $name, $value in $elevations {
+    --xplay-#{$name}: #{$value};
+  }
+}

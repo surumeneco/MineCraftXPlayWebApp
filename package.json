@@ -6,8 +6,11 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "node scripts/dev.mjs",
     "dev:frontend": "npm run dev --workspace @xplay/frontend",
     "dev:backend": "npm run start:dev --workspace @xplay/backend",
+    "dev:db": "docker compose -f compose.yaml -f compose.dev.yaml up -d --wait db",
+    "dev:db:stop": "docker compose -f compose.yaml -f compose.dev.yaml stop db",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:backend": "npm run test --workspace @xplay/backend",

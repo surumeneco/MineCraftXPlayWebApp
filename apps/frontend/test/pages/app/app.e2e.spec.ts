@@ -1,7 +1,58 @@
 import { expect, test } from '@nuxt/test-utils/playwright'
 
-test('renders the application page', async ({ page, goto }) => {
+test('navigates from the centered hover menu and returns home through the logo', async ({ page, goto }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
   await goto('/', { waitUntil: 'hydration' })
 
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('MineCraftXPlayWebApp')
+  await expect(page.getByRole('heading', { name: 'ホーム' })).toBeVisible()
+  const logo = page.locator('header a.xplay-site-logo')
+  await expect(logo).toHaveText('もふもふ広場')
+  await expect(logo).toHaveAttribute('href', '/')
+  await expect(page.locator('#header-navigation')).toHaveCSS('justify-content', 'center')
+  await expect(page.locator('#header-navigation a[href="/"]')).toHaveCount(0)
+  await page.getByRole('button', { name: '情報' }).hover()
+  await expect(page.getByRole('link', { name: 'お知らせ', exact: true }).first()).toBeVisible()
+  await page.locator('#header-navigation a[href="/info/notice"]').click()
+  await expect(page).toHaveURL(/\/info\/notice$/)
+  await logo.click()
+  await expect(page).toHaveURL(/\/$/)
+})
+
+test('mobile hamburgers open modal overlays with legible white links without pushing content down', async ({ page, goto }) => {
+  await page.setViewportSize({ width: 375, height: 720 })
+  await goto('/', { waitUntil: 'hydration' })
+  const main = page.locator('main')
+  const initialTop = (await main.boundingBox())?.y
+  const side = page.getByRole('button', { name: 'サイドメニュー' })
+  const navigation = page.getByRole('button', { name: 'ナビゲーションメニュー' })
+  const drawer = page.locator('#mobile-menu-drawer')
+
+  await side.click()
+  await expect(drawer).toHaveAttribute('open', '')
+  await expect(drawer).toHaveCSS('position', 'fixed')
+  await expect(drawer.locator('#mobile-side-menu')).toBeVisible()
+  await expect(page.locator('body')).toHaveCSS('overflow', 'hidden')
+  await expect.poll(async () => (await main.boundingBox())?.y).toBe(initialTop)
+  await drawer.getByRole('button', { name: /閉じる/ }).click()
+  await expect(drawer).not.toHaveAttribute('open', '')
+  await expect(side).toBeFocused()
+
+  await navigation.click()
+  await expect(drawer.locator('#mobile-navigation')).toBeVisible()
+  await expect(drawer.locator('#mobile-navigation a[href="/"]')).toHaveCount(0)
+  const accordion = drawer.getByRole('button', { name: '情報' })
+  await expect(accordion).toHaveAttribute('aria-expanded', 'true')
+  const noticeLink = drawer.locator('#mobile-navigation a[href="/info/notice"]')
+  await expect(noticeLink).toBeVisible()
+  await expect(noticeLink).toHaveCSS('color', 'rgb(255, 255, 255)')
+  await page.keyboard.press('Escape')
+  await expect(drawer).not.toHaveAttribute('open', '')
+  await expect(navigation).toBeFocused()
+
+  await navigation.click()
+  await drawer.locator('.xplay-mobile-drawer__scrim').click({ position: { x: 2, y: 2 }, force: true })
+  await expect(drawer).not.toHaveAttribute('open', '')
+  await navigation.click()
+  await noticeLink.click()
+  await expect(page).toHaveURL(/\/info\/notice$/)
 })

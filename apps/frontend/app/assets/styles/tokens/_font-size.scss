@@ -1,0 +1,15 @@
+// Matches the reusable Eternalia_frontend font scale.
+$font-sizes: (
+  'font-xs': 12px,
+  'font-sm': 14px,
+  'font-md': 16px,
+  'font-lg': 20px,
+  'font-xl': 24px,
+  'font-xxl': 28px,
+);
+
+@mixin expose() {
+  @each $name, $value in $font-sizes {
+    --xplay-#{$name}: #{$value};
+  }
+}

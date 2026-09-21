@@ -1,0 +1,35 @@
+// Semantic colors adapted from Eternalia_frontend; omit game-specific palettes.
+$colors: (
+  'main': #00bfff,
+  'main-heavy': #005f7f,
+  'main-bold': #008fbf,
+  'main-soft': #3fcfff,
+  'accent': #00ff55,
+  'accent-heavy': #007f2a,
+  'page-start': #3f6f7f,
+  'page-end': #003f15,
+  'header': #00bfff,
+  'header-text': #002633,
+  'header-text-hover': #001319,
+  'footer': #2f3b3f,
+  'panel': #262626,
+  'panel-bold': #191919,
+  'panel-soft': #333333,
+  'input': #3f3f3f,
+  'input-focus': #2f3d3f,
+  'text': #e5e5e5,
+  'text-muted': #b2b2b2,
+  'text-inverse': #ffffff,
+  'link': #00bfe5,
+  'link-visited': #009fbf,
+  'link-hover': #7fe9ff,
+  'border': #666666,
+  'border-soft': #7f7f7f,
+  'border-focus': #3f747f,
+);
+
+@mixin expose() {
+  @each $name, $value in $colors {
+    --xplay-#{$name}: #{$value};
+  }
+}

@@ -1,0 +1,11 @@
+$radii: (
+  'panel-radius': 10px,
+  'input-radius': 4px,
+  'button-radius': 0px,
+);
+
+@mixin expose() {
+  @each $name, $value in $radii {
+    --xplay-#{$name}: #{$value};
+  }
+}

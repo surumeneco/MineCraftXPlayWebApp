@@ -8,24 +8,25 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "nuxt prepare && vitest run",
+    "test:watch": "nuxt prepare && vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
-    "nuxt": "^4.5.2"
+    "nuxt": "^4.5.2",
+    "quill": "^2.0.3"
   },
   "devDependencies": {
     "@nuxt/test-utils": "^4.3.2",
     "@playwright/test": "^1.63.0",
     "@vue/test-utils": "^2.5.0",
     "happy-dom": "^20.14.5",
+    "sass": "^1.104.1",
     "vitest": "^5.0.1"
   },
   "engines": {
-    "node": ">=24"
-  }
+    "node": ">=24" }
 }

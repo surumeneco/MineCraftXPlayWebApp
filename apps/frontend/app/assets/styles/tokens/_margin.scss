@@ -1,0 +1,18 @@
+// Spacing tokens include margins and related content padding from Eternalia_frontend.
+$spacing: (
+  'content-margin-y': 10px,
+  'content-margin-x': 15px,
+  'content-padding-y': 10px,
+  'content-padding-x': 20px,
+  'page-title-bottom': 1.5rem,
+  'section-heading-bottom': 1rem,
+  'drawer-heading-bottom': 1rem,
+  'drawer-item-padding-y': .75rem,
+  'drawer-item-padding-x': 1rem,
+);
+
+@mixin expose() {
+  @each $name, $value in $spacing {
+    --xplay-#{$name}: #{$value};
+  }
+}
