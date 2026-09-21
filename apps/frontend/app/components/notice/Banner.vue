@@ -3,7 +3,7 @@
     :style="{ '--notice-lines': previewLines, '--notice-preview-max-height': `${previewLines * 1.4}em` }"
     :aria-label="`${notice.title} の詳細を見る`">
     <div class="card-body notice-banner__body d-flex flex-column gap-1">
-      <component :is="`h${headingLevel}`" class="h6 card-title mb-0 text-break">{{ notice.title }}</component>
+      <span class="notice-banner__title d-block fs-5 fw-semibold card-title mb-0 text-break">{{ notice.title }}</span>
       <NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" />
       <p v-if="preview" class="notice-preview card-text mb-0 small text-body-secondary">{{ preview }}</p>
     </div>
@@ -18,8 +18,7 @@ const props = withDefaults(defineProps<{
   notice: Notice
   lines?: number
   previewLength?: number
-  headingLevel?: 2 | 3
-}>(), { lines: 2, previewLength: 120, headingLevel: 2 })
+}>(), { lines: 2, previewLength: 120 })
 
 const previewLines = computed(() => Number.isInteger(props.lines) && props.lines > 0 ? props.lines : 2)
 const preview = computed(() => noticePreview(props.notice.body_delta, props.previewLength))
