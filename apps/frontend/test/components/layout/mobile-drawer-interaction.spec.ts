@@ -16,13 +16,38 @@ describe('mobile drawer toggle and motion', () => {
     expect(sideToggle.classes()).toContain('xplay-hamburger--open')
     expect(sideToggle.text()).toContain('閉じる')
     expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--left')
+    expect(drawer.classes()).toContain('xplay-mobile-drawer--visible')
     expect(sideToggle.element.closest('header')).not.toBeNull()
     await sideToggle.trigger('click')
     expect(drawer.classes()).toContain('xplay-mobile-drawer--closing')
+    expect(drawer.classes()).not.toContain('xplay-mobile-drawer--visible')
     expect(drawer.attributes('open')).toBeDefined()
     await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
     expect(sideToggle.attributes('aria-expanded')).toBe('false')
     expect(sideToggle.classes()).not.toContain('xplay-hamburger--open')
+    wrapper.unmount()
+  })
+
+  it('opens the right drawer from a closed state and on every subsequent opening', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const wrapper = await mountSuspended(HeaderMenu, {
+      props: { items: [{ label: '情報', children: [{ label: 'お知らせ', to: '/info/notice' }] }] },
+    })
+    const navToggle = wrapper.get('button[aria-label="ナビゲーションメニュー"]')
+    const drawer = wrapper.get('#mobile-menu-drawer')
+    // Pre-render the navigation before the first opening instead of mounting expanded accordions during entry.
+    expect(drawer.get('#mobile-navigation').attributes('style')).toContain('display: none')
+    for (let count = 0; count < 2; count++) {
+      await navToggle.trigger('click')
+      expect(drawer.attributes('open')).toBeDefined()
+      expect(drawer.classes()).toContain('xplay-mobile-drawer--visible')
+      expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--right')
+      expect(drawer.get('button.accordion-button').attributes('aria-expanded')).toBe('false')
+      await navToggle.trigger('click')
+      expect(drawer.classes()).toContain('xplay-mobile-drawer--closing')
+      expect(drawer.classes()).not.toContain('xplay-mobile-drawer--visible')
+      await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
+    }
     wrapper.unmount()
   })
 
@@ -40,6 +65,7 @@ describe('mobile drawer toggle and motion', () => {
     await navToggle.trigger('click')
     expect(sideToggle.attributes('aria-expanded')).toBe('false')
     expect(navToggle.attributes('aria-expanded')).toBe('true')
+    expect(drawer.classes()).toContain('xplay-mobile-drawer--visible')
     const panel = drawer.get('.xplay-mobile-drawer__panel')
     expect(panel.classes()).toContain('xplay-mobile-drawer__panel--right')
     expect(document.body.style.overflow).toBe('hidden')
