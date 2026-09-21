@@ -31,7 +31,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
     label: 'お知らせ管理',
     children: [
       { label: 'お知らせ一覧', to: '/admin/notices' },
-      { label: 'お知らせ投稿', to: '/admin/notices/new' },
+      { label: '新規投稿', to: '/admin/notices/new' },
     ],
   }, {
     label: 'マスタメンテ',

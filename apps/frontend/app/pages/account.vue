@@ -5,13 +5,10 @@
     <template v-else-if="authenticated && profile">
       <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
       <p v-if="message" class="alert alert-success" role="status">{{ message }}</p>
-      <form class="mb-4" @submit.prevent="saveName">
-        <label for="account-name" class="form-label">アカウント名（他のアカウントと重複可）</label>
-        <div class="d-flex gap-2 flex-wrap">
-          <input id="account-name" v-model="name" class="form-control flex-grow-1" maxlength="100" required :disabled="busy" />
-          <button class="btn btn-primary" type="submit" :disabled="busy || !name.trim()">名前を保存</button>
-        </div>
-      </form>
+      <div class="mb-4">
+        <input id="account-name" class="form-control" :value="profile.name" placeholder="アカウント名（他のアカウントと重複可）" aria-label="アカウント名" readonly />
+        <p class="small text-body-secondary mt-1 mb-0">名前は連携済みのDiscord名からのみ反映できます。</p>
+      </div>
       <p class="small text-body-secondary text-break">アカウントID：{{ profile.id }}</p>
       <p>権限：{{ isAdmin ? '管理者' : '一般ユーザー' }}</p>
       <h2 class="h4 mt-4">Discordアカウント</h2>
@@ -20,10 +17,10 @@
         <div class="fw-semibold">{{ identity.display_name || identity.username || identity.discord_id }}</div>
         <div class="small text-body-secondary">ユーザー名：{{ identity.username || '未取得' }}</div>
         <div class="small text-body-secondary text-break">Discord ID：{{ identity.discord_id }}</div>
-        <button type="button" class="btn btn-sm btn-outline-primary mt-2" :disabled="busy"
+        <button type="button" class="btn btn-sm btn-primary mt-2" :disabled="busy || !hasDiscordName(identity)"
           @click="adoptName(identity.discord_id)">このDiscord名をアカウント名へ反映</button>
       </div>
-      <a :href="`${apiBase}/auth/discord/refresh`" class="btn btn-outline-secondary mt-2">ログイン中のDiscord名を再取得</a>
+      <a :href="`${apiBase}/auth/discord/refresh`" class="btn btn-secondary mt-2">ログイン中のDiscord名を再取得</a>
       <h2 class="h4 mt-4">Minecraftアカウント（自己申告）</h2>
       <p class="small text-body-secondary">Minecraftでの本人確認は行っていません。JE・BEとも複数登録できます。</p>
       <ul v-if="profile.minecraft_ids.length" class="list-group mb-3">
@@ -33,13 +30,13 @@
         </li>
       </ul>
       <form class="row g-2 align-items-end mb-4" @submit.prevent="addMinecraft">
-        <div class="col-auto"><label for="minecraft-edition" class="form-label">版</label>
-          <select id="minecraft-edition" v-model="edition" class="form-select"><option value="je">JE</option><option value="be">BE</option></select>
+        <div class="col-auto">
+          <select id="minecraft-edition" v-model="edition" class="form-select" aria-label="版" :disabled="busy"><option value="je">JE</option><option value="be">BE</option></select>
         </div>
-        <div class="col"><label for="minecraft-name" class="form-label">Minecraft名</label>
-          <input id="minecraft-name" v-model="minecraftName" class="form-control" maxlength="32" required placeholder="surumeneko164" />
+        <div class="col">
+          <input id="minecraft-name" v-model="minecraftName" class="form-control" maxlength="32" required placeholder="Minecraft名" aria-label="Minecraft名" :disabled="busy" />
         </div>
-        <div class="col-auto"><button type="submit" class="btn btn-outline-primary" :disabled="busy || !minecraftName.trim()">追加</button></div>
+        <div class="col-auto"><button type="submit" class="btn btn-primary" :disabled="busy || !minecraftName.trim()">追加</button></div>
       </form>
       <div class="d-flex flex-wrap gap-2">
         <NuxtLink v-if="isAdmin" to="/admin/notices" class="btn btn-outline-primary">お知らせ管理</NuxtLink>
@@ -53,27 +50,24 @@
 </template>
 
 <script setup lang="ts">
-import type { AccountRecord } from '../composables/useAccountApi'
+import type { AccountRecord, DiscordIdentity } from '../composables/useAccountApi'
 import { accountError } from '../composables/useAccountApi'
 
 const { public: { apiBase } } = useRuntimeConfig()
 const { authenticated, isAdmin, loaded, refresh, logout } = useAccountSession()
 const { get, mutate } = useAccountApi()
 const profile = ref<AccountRecord | null>(null)
-const name = ref(''), minecraftName = ref(''), edition = ref<'je' | 'be'>('je')
+const minecraftName = ref(''), edition = ref<'je' | 'be'>('je')
 const busy = ref(false), loading = ref(true), error = ref(''), message = ref('')
-async function load() {
-  profile.value = await get<AccountRecord>('/accounts/me')
-  name.value = profile.value.name
-}
+const hasDiscordName = (identity: DiscordIdentity) => [identity.display_name, identity.username].some(value => !!value && value !== identity.discord_id)
+async function load() { profile.value = await get<AccountRecord>('/accounts/me') }
 async function run(action: () => Promise<AccountRecord>, success: string) {
   if (busy.value) return
   busy.value = true; error.value = ''; message.value = ''
-  try { profile.value = await action(); name.value = profile.value.name; message.value = success }
+  try { profile.value = await action(); message.value = success }
   catch (issue) { error.value = accountError(issue) }
   finally { busy.value = false }
 }
-function saveName() { void run(() => mutate<AccountRecord>('/accounts/me/name', 'PATCH', { name: name.value }), 'アカウント名を保存しました。') }
 function adoptName(discordId: string) { void run(() => mutate<AccountRecord>('/accounts/me/adopt-discord-name', 'POST', { discord_id: discordId }), 'アカウント名を更新しました。') }
 async function addMinecraft() {
   await run(() => mutate<AccountRecord>('/accounts/me/minecraft', 'POST', { edition: edition.value, username: minecraftName.value }), 'Minecraft名を追加しました。')

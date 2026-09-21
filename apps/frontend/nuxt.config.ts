@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     '~/assets/styles/theme.scss',
     '~/assets/styles/mobile-drawer.scss',
     '~/assets/styles/quill-dark-ui.scss',
+    '~/assets/styles/control-states.scss',
   ],
   runtimeConfig: {
     public: {

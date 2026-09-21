@@ -3,11 +3,11 @@
     <p v-if="status === 'pending' || status === 'idle'" role="status">お知らせを読み込んでいます…</p>
     <div v-else-if="error" class="alert alert-danger" role="alert">
       お知らせを取得できませんでした。URLを確認してください。
-      <UiButton variant="outline-secondary" size="sm" @click="refresh()">再読み込み</UiButton>
+      <button type="button" class="btn btn-sm btn-primary" aria-label="お知らせを再読み込み" title="再読み込み" @click="refresh()"><UiBootstrapIcon name="arrow-clockwise" /></button>
     </div>
     <p v-else-if="!notice || notice.is_draft || !notice.published_at" role="status">お知らせが見つかりません。</p>
     <template v-else>
-      <h1 class="h2 mb-3 text-break">{{ notice.title }}</h1>
+      <UiPageTitle><span class="text-break">{{ notice.title }}</span></UiPageTitle>
       <div class="mb-4"><NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" /></div>
       <ClientOnly>
         <div ref="editor" aria-label="お知らせ本文" />

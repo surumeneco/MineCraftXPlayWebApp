@@ -7,7 +7,7 @@
       </div>
       <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled || !selectedTag" @click="addExisting">追加</UiButton></div>
       <div class="col-12 col-md">
-        <UiTextInput v-model="newTag" label="新規タグ" :disabled="disabled" :error="error" @update:model-value="error = ''" />
+        <UiTextInput v-model="newTag" label="新規タグ" placeholder="空白不可・20文字以内" :disabled="disabled" :error="error" @update:model-value="error = ''" />
       </div>
       <div class="col-auto"><UiButton variant="outline-secondary" :disabled="disabled" @click="addNew">追加</UiButton></div>
     </div>
@@ -51,8 +51,8 @@ function addExisting() {
 function addNew() {
   if (props.disabled) return
   const value = newTag.value
-  if (!value || /\s/u.test(value)) {
-    error.value = 'タグ名は必須です。空白は使用できません。'
+  if (!value || /\s/u.test(value) || Array.from(value).length > 20) {
+    error.value = 'タグ名は1～20文字です。空白は使用できません。'
     return
   }
   const canonical = props.tags.find(tag => normalized(tag.name) === normalized(value))?.name ?? value

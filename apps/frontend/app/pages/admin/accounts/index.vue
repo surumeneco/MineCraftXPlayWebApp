@@ -1,13 +1,14 @@
 <template>
   <section>
-    <h1 class="h2 mb-3">アカウント管理</h1>
+    <UiPageTitle title="アカウント管理" />
     <p v-if="loading" role="status">アカウントを読み込んでいます…</p>
     <div v-else-if="!isAdmin" class="alert alert-warning" role="alert">アカウント管理には管理者権限が必要です。<NuxtLink to="/login">ログイン</NuxtLink></div>
     <template v-else>
       <p v-if="error" class="alert alert-danger" role="alert">{{ error }}</p>
-      <div class="d-flex justify-content-end gap-2 mb-3">
-        <button type="button" class="btn btn-outline-primary" :disabled="busy" @click="loadAccounts">一覧更新</button>
-        <NuxtLink to="/admin/accounts/merge" class="btn btn-warning">アカウント統合</NuxtLink>
+      <div class="d-flex justify-content-end mb-3">
+        <button type="button" class="btn btn-primary d-inline-flex align-items-center justify-content-center" :disabled="busy" aria-label="アカウント一覧を更新" title="一覧更新" @click="loadAccounts">
+          <UiBootstrapIcon name="arrow-clockwise" />
+        </button>
       </div>
       <div class="table-responsive">
         <table class="table table-striped align-middle">
@@ -21,7 +22,7 @@
               </span></td>
               <td><span v-for="identity in entry.minecraft_ids" :key="identity.id" class="d-block small">{{ identity.edition.toUpperCase() }}：{{ identity.username }}</span></td>
               <td>{{ entry.is_admin ? '管理者' : '一般' }}<small v-if="entry.is_protected" class="d-block text-body-secondary">初期管理者</small></td>
-              <td><NuxtLink :to="`/admin/accounts/${entry.id}/edit`" class="btn btn-sm btn-outline-primary">編集</NuxtLink></td>
+              <td><NuxtLink :to="`/admin/accounts/${entry.id}/edit`" class="btn btn-sm btn-primary">編集</NuxtLink></td>
             </tr>
           </tbody>
         </table>
@@ -32,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import type { AccountRecord } from '../../composables/useAccountApi'
-import { accountError } from '../../composables/useAccountApi'
+import type { AccountRecord } from '../../../composables/useAccountApi'
+import { accountError } from '../../../composables/useAccountApi'
 const auth = useAccountSession()
 const isAdmin = auth.isAdmin
 const { get } = useAccountApi()
