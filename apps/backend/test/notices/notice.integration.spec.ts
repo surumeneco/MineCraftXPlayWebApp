@@ -93,6 +93,48 @@ suite('notice integration (PostgreSQL)', () => {
     expect(duplicate.response.status).toBe(409)
   })
 
+  it('allows tagless drafts but rejects tagless publication and removal of the last published tag', async () => {
+    const name = `タグ必須${randomUUID()}`
+    const draft = await write('/api/admin/notices', 'POST', {
+      title: name, body_delta: { ops: [{ insert: '本文\n' }] }, tags: [],
+    })
+    expect(draft.response.status).toBe(201)
+    expect(draft.data.status).toBe('draft')
+    expect(draft.data.tags).toEqual([])
+    created.push(draft.data.id)
+    const id = draft.data.id
+
+    const rejected = await write(`/api/admin/notices/${id}/publish`, 'POST', { expected_version: 1 })
+    expect(rejected.response.status).toBe(400)
+    expect(String(rejected.data.message)).toContain('tag')
+    const unchanged = await request(`/api/admin/notices/${id}`, { headers: privateHeaders })
+    expect(unchanged.data.status).toBe('draft')
+    expect(unchanged.data.version).toBe(1)
+
+    const tagged = await write(`/api/admin/notices/${id}`, 'PATCH', { expected_version: 1, tags: ['案内'] })
+    expect(tagged.response.status).toBe(200)
+    expect(tagged.data.version).toBe(2)
+    const published = await write(`/api/admin/notices/${id}/publish`, 'POST', { expected_version: 2 })
+    expect(published.response.status).toBe(201)
+    expect(published.data.status).toBe('published')
+    expect(published.data.tags).toHaveLength(1)
+
+    const removeLastTag = await write(`/api/admin/notices/${id}`, 'PATCH', { expected_version: 3, tags: [] })
+    expect(removeLastTag.response.status).toBe(400)
+    const unchangedPublished = await request(`/api/admin/notices/${id}`, { headers: privateHeaders })
+    expect(unchangedPublished.data.status).toBe('published')
+    expect(unchangedPublished.data.version).toBe(3)
+    expect(unchangedPublished.data.tags).toHaveLength(1)
+
+    const unpublished = await write(`/api/admin/notices/${id}/unpublish`, 'POST', { expected_version: 3 })
+    expect(unpublished.response.status).toBe(201)
+    const tagless = await write(`/api/admin/notices/${id}`, 'PATCH', { expected_version: 4, tags: [] })
+    expect(tagless.response.status).toBe(200)
+    expect(tagless.data.tags).toEqual([])
+    const republish = await write(`/api/admin/notices/${id}/publish`, 'POST', { expected_version: 5 })
+    expect(republish.response.status).toBe(400)
+  })
+
   it('uploads a temporary image and promotes it through edit and publication', async () => {
     const id = created[0]
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ4kAAAAASUVORK5CYII=', 'base64')
