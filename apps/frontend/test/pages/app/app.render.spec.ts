@@ -12,4 +12,12 @@ describe('App rendering', () => {
     expect(wrapper.find('nav[aria-label="メインナビゲーション"] a[href="/"]').exists()).toBe(false)
     expect(wrapper.find('nav[aria-label="モバイルナビゲーション"] a[href="/"]').exists()).toBe(false)
   })
+
+  it('renders the Ofuse card with the requested destination and no note', async () => {
+    const wrapper = await mountSuspended(App, { route: '/' })
+    const card = wrapper.get('main a.xplay-card--link[href="https://ofuse.me/mofupark"]')
+    expect(card.get('.xplay-card__title').text()).toBe('ご支援はこちらから')
+    expect(card.get('img.xplay-card__image').attributes('src')).toBe('/images/card-ofuse.jpg')
+    expect(card.find('.xplay-card__note').exists()).toBe(false)
+  })
 })
