@@ -4,6 +4,8 @@
     class="xplay-card"
     :class="{ 'xplay-card--link': Boolean(destination) }"
     :to="destination || undefined"
+    :target="destination && newTab ? '_blank' : undefined"
+    :rel="destination && newTab ? 'noopener noreferrer' : undefined"
     :style="{ height: cardHeight }"
     :aria-label="destination && !title && !note ? 'リンク先を開く' : undefined"
   >
@@ -30,9 +32,11 @@ const props = withDefaults(defineProps<{
   to?: string
   /** Alternative destination; absolute URLs are also supported. */
   url?: string
+  /** Open the link in a new tab. Has no effect when no destination is specified. */
+  newTab?: boolean
   /** Fixed height in pixels (number) or as a CSS length (string). */
   height?: number | string
-}>(), { height: 320 })
+}>(), { height: 320, newTab: false })
 
 const destination = computed(() => props.to?.trim() || props.url?.trim() || '')
 const cardHeight = computed(() => typeof props.height === 'number' ? `${props.height}px` : props.height)

@@ -4,7 +4,7 @@ import Footer from '../../../app/components/layout/Footer.vue'
 import Layout from '../../../app/layouts/layout.vue'
 
 describe('Footer', () => {
-  it('generates external links on the left and internal links on the right', async () => {
+  it('generates external links on the left and internal links on the right at every breakpoint', async () => {
     const wrapper = await mountSuspended(Footer, {
       props: {
         externalLinks: [
@@ -25,8 +25,10 @@ describe('Footer', () => {
 
     const external = wrapper.get('nav[aria-label="外部リンク"]')
     const internal = wrapper.get('nav[aria-label="内部リンク"]')
-    expect(external.classes()).toContain('col-md-6')
-    expect(internal.classes()).toContain('col-md-6')
+    expect(external.classes()).toContain('col-6')
+    expect(internal.classes()).toContain('col-6')
+    expect(external.classes()).not.toContain('col-12')
+    expect(internal.classes()).not.toContain('col-12')
     expect(external.findAll('a').map(link => link.attributes('href'))).toEqual([
       'https://www.youtube.com/',
       'https://example.com/',
