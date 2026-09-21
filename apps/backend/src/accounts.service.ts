@@ -10,6 +10,16 @@ const validName = (value: unknown): string => {
   return value.trim()
 }
 
+type AccountRow = {
+  id: string
+  name: string
+  created_at: Date
+  is_admin: boolean
+  discord_ids: string[]
+  discord_profiles: { discord_id: string; username: string; display_name: string }[]
+  minecraft_ids: { id: string; edition: 'je' | 'be'; username: string }[]
+}
+
 @Injectable()
 export class AccountsService {
   constructor(private readonly database: Database) {}
@@ -28,8 +38,8 @@ export class AccountsService {
           FROM account_minecraft_identities m WHERE m.account_id=a.id), '[]'::json) AS minecraft_ids
       FROM accounts a ORDER BY a.created_at, a.id`
     const protectedIds = initialDiscordIds()
-    return rows.map(row => ({ ...row, is_protected: Boolean(row.is_admin) &&
-      (row.discord_ids as string[]).some(id => protectedIds.has(id)) }))
+    return (rows as unknown as AccountRow[]).map(row => ({ ...row, is_protected: Boolean(row.is_admin) &&
+      row.discord_ids.some(id => protectedIds.has(id)) }))
   }
 
   async get(accountRaw: unknown) {
