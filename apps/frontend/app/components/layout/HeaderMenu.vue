@@ -74,14 +74,15 @@
               <NuxtLink v-else-if="item.to" :to="item.to" class="nav-link xplay-mobile-drawer__link" @click="closeNavigation">{{ item.label }}</NuxtLink>
             </li>
             <li class="nav-item border-top pt-2">
-              <button type="button" class="nav-link d-flex align-items-center gap-2" aria-label="アカウントメニュー"
-                :aria-expanded="mobileAccountOpen" @click="mobileAccountOpen = !mobileAccountOpen">
-                <UiBootstrapIcon name="person-circle" /> アカウント
-              </button>
-              <ul v-if="mobileAccountOpen" class="list-unstyled ps-3">
-                <li><NuxtLink :to="authenticated ? '/account' : '/login'" class="nav-link xplay-mobile-drawer__link"
-                  @click="closeNavigation">{{ authenticated ? '詳細' : 'ログイン' }}</NuxtLink></li>
-              </ul>
+              <div class="accordion accordion-flush w-100">
+                <UiAccordion :key="`account-${mobileAccordionCycle}`" title="アカウント" :default-open="false">
+                  <template #header><UiBootstrapIcon name="person-circle" /> <span class="ms-2">アカウント</span></template>
+                  <ul class="list-unstyled mb-0">
+                    <li><NuxtLink :to="authenticated ? '/account' : '/login'" class="nav-link xplay-mobile-drawer__link"
+                      @click="closeNavigation">{{ authenticated ? '詳細' : 'ログイン' }}</NuxtLink></li>
+                  </ul>
+                </UiAccordion>
+              </div>
             </li>
           </ul>
         </nav>
@@ -109,7 +110,7 @@ const route = useRoute()
 const openMobileMenu = ref<MobileMenu | null>(null)
 const drawerClosing = ref(false)
 const openerStyle = ref<Record<string, string>>({})
-const accountOpen = ref(false), mobileAccountOpen = ref(false)
+const accountOpen = ref(false)
 const mobileDialog = ref<HTMLDialogElement | null>(null)
 const closeButton = ref<HTMLButtonElement | null>(null)
 const mobileAccordionCycle = ref(0), desktopDropdownCycle = ref(0)
@@ -144,7 +145,6 @@ async function toggleMobileMenu(menu: MobileMenu, event: MouseEvent) {
   drawerClosing.value = false
   positionCloseButton()
   desktopDropdownCycle.value++
-  mobileAccountOpen.value = false
   if (menu === 'navigation') mobileAccordionCycle.value++
   await nextTick()
   if (openMobileMenu.value !== menu) return
@@ -187,7 +187,6 @@ function finishClose() {
 function closeDrawer(restoreFocus = true) {
   if (!openMobileMenu.value || drawerClosing.value) return
   shouldRestoreFocus = restoreFocus
-  // Motion-free close for reduced-motion users and DOM environments without matchMedia.
   if (typeof window.matchMedia !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     finishClose()
     return
@@ -198,7 +197,6 @@ function closeDrawer(restoreFocus = true) {
 function closeNavigation() {
   if (openMobileMenu.value) closeDrawer(false)
   accountOpen.value = false
-  mobileAccountOpen.value = false
   desktopDropdownCycle.value++
 }
 function onViewportChange() {
