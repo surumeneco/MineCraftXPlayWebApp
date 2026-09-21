@@ -2,6 +2,7 @@
   <NuxtLayout
     name="layout"
     :navigation-items="navigationItems"
+    :footer-external-links="footerExternalLinks"
     :footer-internal-links="footerInternalLinks"
   >
     <NuxtPage />
@@ -10,7 +11,7 @@
 
 <script setup lang="ts">
 import type { HeaderNavigationItem } from './types/header-navigation'
-import type { FooterInternalLink } from './types/footer-links'
+import type { FooterExternalLink, FooterInternalLink } from './types/footer-links'
 
 const { isAdmin, refresh } = useAccountSession()
 onMounted(() => { void refresh() })
@@ -38,6 +39,10 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
     children: [{ label: 'アカウント管理', to: '/admin/accounts' }],
   }] : []),
 ])
+
+const footerExternalLinks: FooterExternalLink[] = [
+  { label: 'OFUSE', href: 'https://ofuse.me/mofupark' },
+]
 
 const footerInternalLinks: FooterInternalLink[] = [
   { label: '運営メンバー紹介', to: '/info/operators' },
