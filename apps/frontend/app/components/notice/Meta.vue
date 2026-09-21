@@ -12,9 +12,9 @@
         <span class="notice-meta__short">{{ noticeDateOnly(updatedAt) }}</span>
       </time>
     </div>
-    <div v-if="tags.length" class="d-flex align-items-center flex-wrap gap-2 small text-body-secondary" aria-label="タグ">
+    <div v-if="tags.length" class="d-flex align-items-center flex-wrap gap-1 small text-body-secondary" aria-label="タグ">
       <UiBootstrapIcon name="tag" />
-      <span v-for="tag in tags" :key="tag.id">{{ tag.name }}</span>
+      <span class="d-inline-flex flex-wrap gap-2"><span v-for="tag in tags" :key="tag.id">{{ tag.name }}</span></span>
     </div>
   </div>
 </template>
