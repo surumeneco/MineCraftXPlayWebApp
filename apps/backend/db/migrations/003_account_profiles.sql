@@ -1,10 +1,8 @@
 -- Account display names are non-unique. Existing accounts receive a stable fallback.
 -- statement
-ALTER TABLE accounts ADD COLUMN name TEXT;
+ALTER TABLE accounts ADD COLUMN name TEXT NOT NULL DEFAULT '未設定';
 -- statement
 UPDATE accounts a SET name = COALESCE((SELECT i.discord_id FROM account_discord_identities i WHERE i.account_id=a.id ORDER BY i.linked_at, i.discord_id LIMIT 1), a.id::TEXT);
--- statement
-ALTER TABLE accounts ALTER COLUMN name SET NOT NULL;
 -- statement
 ALTER TABLE accounts ADD CONSTRAINT accounts_name_nonempty CHECK (length(btrim(name)) > 0);
 -- statement
