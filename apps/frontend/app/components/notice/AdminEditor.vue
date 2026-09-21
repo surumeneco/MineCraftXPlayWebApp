@@ -13,12 +13,13 @@
         <input id="notice-admin-title" v-model="heading" class="form-control mb-3" required
           :readonly="selected?.status === 'published'" @input="dirty = true" />
         <NoticeTagPicker :model-value="selectedTags" :tags="allTags" @update:model-value="updateTags" />
+        <p v-if="!selectedTags.length" class="form-text text-warning" role="status">公開するにはタグを1件以上設定してください。下書き保存はタグなしでも可能です。</p>
         <label class="form-label mt-3">本文</label>
         <ClientOnly><div ref="editor" class="mb-3" aria-label="お知らせ本文" /></ClientOnly>
         <p class="form-text">本文中の任意位置に画像を挿入できます。画像の変更は保存時に確定します。</p>
         <div class="d-flex flex-wrap gap-2">
           <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
-          <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published'" @click="request('publish')">公開する</button>
+          <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published' || !selectedTags.length" @click="request('publish')">公開する</button>
           <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="request('unpublish')">公開取り消し</button>
           <button v-else-if="selected" type="button" class="btn btn-danger" :disabled="busy" @click="request('remove')">物理削除</button>
           <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('discard')">変更を破棄</button>
@@ -62,6 +63,10 @@ const newSession = () => { uploadSession = crypto.randomUUID(); pending.clear() 
 function request(action: Action) {
   if (busy.value) return
   errorMessage.value = ''
+  if (action === 'publish' && !selectedTags.value.length) {
+    errorMessage.value = '公開するにはタグを1件以上設定してください。'
+    return
+  }
   const messages: Record<Action, Omit<Decision, 'action'>> = {
     save: { title: '保存の確認', message: '現在の編集内容を保存しますか？', label: '保存する', danger: false },
     publish: { title: '公開の確認', message: dirty.value || !selected.value
@@ -163,6 +168,10 @@ async function save(redirectOnCreate = true): Promise<AdminNotice | null> {
 }
 async function publish() {
   if (selected.value?.status === 'published') return
+  if (!selectedTags.value.length) {
+    errorMessage.value = '公開するにはタグを1件以上設定してください。'
+    return
+  }
   let item = selected.value
   if (dirty.value || !item) item = await save(false)
   if (!item) return

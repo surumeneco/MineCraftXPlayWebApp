@@ -7,9 +7,21 @@
   from { transform: translateX(105%); }
   to { transform: translateX(0); }
 }
+@keyframes xplay-drawer-exit-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-105%); }
+}
+@keyframes xplay-drawer-exit-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(105%); }
+}
 @keyframes xplay-drawer-scrim-enter {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+@keyframes xplay-drawer-scrim-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 .xplay-mobile-drawer {
   &:not([open]) { display: none; }
@@ -50,12 +62,19 @@
     padding: clamp(1rem, 4vw, 1.5rem);
     &--left {
       inset-inline-start: 0;
+      inset-inline-end: auto;
       animation: xplay-drawer-enter-left .26s cubic-bezier(.2,.75,.3,1) both;
     }
     &--right {
+      inset-inline-start: auto;
       inset-inline-end: 0;
       animation: xplay-drawer-enter-right .26s cubic-bezier(.2,.75,.3,1) both;
     }
+  }
+  &--closing {
+    .xplay-mobile-drawer__scrim { animation: xplay-drawer-scrim-exit .26s ease-in both; }
+    .xplay-mobile-drawer__panel--left { animation: xplay-drawer-exit-left .26s ease-in both; }
+    .xplay-mobile-drawer__panel--right { animation: xplay-drawer-exit-right .26s ease-in both; }
   }
   &__heading {
     display: flex;
@@ -65,6 +84,8 @@
     padding-block-end: var(--xplay-drawer-heading-bottom);
     margin-block-end: var(--xplay-drawer-heading-bottom);
     border-bottom: 2px solid var(--xplay-main);
+    &--left { padding-inline-start: 3.5rem; }
+    &--right { padding-inline-end: 3.5rem; }
   }
   &__title {
     margin: 0;
@@ -72,10 +93,13 @@
     font-weight: 700;
     line-height: 1.5;
   }
-  &__close {
-    flex-shrink: 0;
-    min-height: 44px;
+  &__toggle {
+    position: fixed;
+    z-index: 3;
+    margin: 0;
     background: var(--xplay-panel-bold);
+    border: 1px solid var(--xplay-main);
+    color: var(--xplay-text);
   }
   .accordion-body { padding: .4rem .75rem .75rem; }
   .accordion-button { min-height: 48px; }
@@ -97,6 +121,22 @@
       line-height: 1.3;
       font-weight: 700;
       white-space: nowrap;
+    }
+    &--open .navbar-toggler-icon {
+      position: relative;
+      background-image: none;
+      &::before, &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 10%;
+        width: 80%;
+        height: 2px;
+        border-radius: 2px;
+        background: currentColor;
+      }
+      &::before { transform: rotate(45deg); }
+      &::after { transform: rotate(-45deg); }
     }
     &:focus-visible { outline: 3px solid var(--xplay-header-text); outline-offset: 2px; }
   }

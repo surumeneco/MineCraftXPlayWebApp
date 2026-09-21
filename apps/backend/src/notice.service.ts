@@ -130,6 +130,7 @@ export class NoticeService {
         const next = this.input(raw, { ...old, tags: tagRows })
         if (old.status === 'published' && next.heading !== old.title) throw new ConflictException('Published title cannot change')
         if (old.status !== 'draft' && !hasContent(next.body)) throw new BadRequestException('Body cannot be empty')
+        if (old.status === 'published' && !next.selectedTags.length) throw new BadRequestException('At least one tag is required for a published notice')
         await tx`UPDATE notices SET title=${next.heading}, body_delta=${tx.json(next.body as any)},
           updated_at=clock_timestamp(), version=version+1 WHERE id=${id}`
         await this.saveTags(tx, id, next.selectedTags)
@@ -149,6 +150,8 @@ export class NoticeService {
       if (old.version !== expected) throw new ConflictException('Notice was modified; reload it')
       if (old.status === 'published') throw new ConflictException('Already published')
       if (!hasContent(delta(old.body_delta))) throw new BadRequestException('Body cannot be empty')
+      const assignedTags = await tx`SELECT 1 FROM notice_tags WHERE notice_id=${id} LIMIT 1`
+      if (!assignedTags.length) throw new BadRequestException('At least one tag is required to publish a notice')
       await tx`WITH stamp AS MATERIALIZED (SELECT clock_timestamp() AS at)
         UPDATE notices SET status='published', published_at=stamp.at, updated_at=stamp.at,
           version=version+1 FROM stamp WHERE id=${id}`

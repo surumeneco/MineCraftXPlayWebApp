@@ -1,5 +1,5 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import HeaderMenu from '../../../app/components/layout/HeaderMenu.vue'
 import Layout from '../../../app/layouts/layout.vue'
 
@@ -45,8 +45,9 @@ describe('Responsive header menus', () => {
     expect(drawer.get('#mobile-navigation a[href="/info"]').text()).toBe('概要')
     expect(drawer.find('#mobile-navigation a[href="/"]').exists()).toBe(false)
     await drawer.get('.xplay-mobile-drawer__close').trigger('click')
+    await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
     expect(navToggle.attributes('aria-expanded')).toBe('false')
-    expect(drawer.attributes('open')).toBeUndefined()
+    wrapper.unmount()
   })
 
   it('renders accordion child links inside the overlay and resets on reopening', async () => {
@@ -72,11 +73,13 @@ describe('Responsive header menus', () => {
     expect(panel.attributes('style') ?? '').not.toContain('display: none')
 
     await drawer.get('.xplay-mobile-drawer__close').trigger('click')
+    await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
     await navToggle.trigger('click')
     expect(drawer.get('button.accordion-button').attributes('aria-expanded')).toBe('true')
     await drawer.get('a[href="/news"]').trigger('click')
+    await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
     expect(navToggle.attributes('aria-expanded')).toBe('false')
-    expect(drawer.attributes('open')).toBeUndefined()
+    wrapper.unmount()
   })
 
   it('closes on the backdrop, preserves the desktop nav and restores scroll state', async () => {
@@ -89,7 +92,7 @@ describe('Responsive header menus', () => {
     expect(document.body.style.overflow).toBe('hidden')
     expect(wrapper.get('#header-navigation').classes()).toContain('d-lg-flex')
     await wrapper.get('.xplay-mobile-drawer__scrim').trigger('click')
-    expect(wrapper.get('#mobile-menu-drawer').attributes('open')).toBeUndefined()
+    await vi.waitFor(() => expect(wrapper.get('#mobile-menu-drawer').attributes('open')).toBeUndefined())
     expect(toggle.attributes('aria-expanded')).toBe('false')
     expect(document.body.style.overflow).toBe(originalOverflow)
     wrapper.unmount()
@@ -113,5 +116,6 @@ describe('Responsive sidebar placement', () => {
     expect(wrapper.get('main').text()).toContain('本文')
     expect(wrapper.get('#mobile-menu-drawer').attributes('open')).toBeDefined()
     await wrapper.get('.xplay-mobile-drawer__close').trigger('click')
+    wrapper.unmount()
   })
 })
