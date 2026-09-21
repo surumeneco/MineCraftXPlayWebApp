@@ -6,13 +6,11 @@
       お知らせの管理には管理者権限が必要です。<NuxtLink to="/login">ログイン</NuxtLink>
     </div>
     <template v-else>
-      <div v-if="errorMessage" class="alert alert-danger" role="alert">{{ errorMessage }}</div>
-      <div v-if="infoMessage" class="alert alert-success" role="status">{{ infoMessage }}</div>
       <form @submit.prevent="request('save')">
         <label class="form-label" for="notice-admin-title">タイトル</label>
         <input id="notice-admin-title" v-model="heading" class="form-control mb-3" required
           :readonly="selected?.status === 'published'" @input="dirty = true" />
-        <NoticeTagPicker :model-value="selectedTags" :tags="allTags" @update:model-value="updateTags" />
+        <NoticeTagPicker :model-value="selectedTags" :tags="allTags" :disabled="busy" @update:model-value="updateTags" />
         <p v-if="!selectedTags.length" class="form-text text-warning" role="status">公開するにはタグを1件以上設定してください。下書き保存はタグなしでも可能です。</p>
         <label class="form-label mt-3">本文</label>
         <ClientOnly><div ref="editor" class="mb-3" aria-label="お知らせ本文" /></ClientOnly>
@@ -23,42 +21,54 @@
           <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="request('unpublish')">公開取り消し</button>
           <button v-else-if="selected" type="button" class="btn btn-danger" :disabled="busy" @click="request('remove')">物理削除</button>
           <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('discard')">変更を破棄</button>
-          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('back')">一覧に戻る</button>
+          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="backToList">一覧に戻る</button>
         </div>
       </form>
     </template>
-    <UiConfirmDialog :open="!!decision" :title="decision?.title ?? ''" :message="dialogMessage"
+    <UiConfirmDialog :open="!!decision" :title="decision?.title ?? ''" :message="decision?.message ?? ''"
       :confirm-label="decision?.label ?? '実行する'" :danger="decision?.danger ?? false" :busy="busy"
       @confirm="executeDecision" @cancel="cancelDecision" />
+    <UiDialog :open="leavePrompt" kind="confirmation" title="未保存の変更があります"
+      message="保存していない内容は破棄されます。移動しますか？" :buttons="[
+        { value: 'stay', label: '編集を続ける', color: 'outline-secondary' },
+        { value: 'leave', label: '破棄して移動', color: 'danger' },
+      ]" :busy="busy" @action="handleLeaveAction" @close="cancelLeave" />
   </section>
 </template>
 
 <script setup lang="ts">
 import type { NoticeDelta, NoticeTag } from '../../types/notice'
+import { userFacingError } from '../../utils/user-error'
 import { noticeToolbarOptions } from './toolbar-options'
 
 type AdminNotice = {
   id: string; title: string; status: 'draft' | 'published' | 'unpublished'; version: number;
   body_delta: NoticeDelta; tags: NoticeTag[]; created_at: string; updated_at: string; published_at: string | null
 }
-type Action = 'save' | 'publish' | 'unpublish' | 'remove' | 'discard' | 'back'
+type Action = 'save' | 'publish' | 'unpublish' | 'remove' | 'discard'
 type Decision = { action: Action; title: string; message: string; label: string; danger: boolean }
 const props = defineProps<{ noticeId?: string }>()
+const router = useRouter()
 const { public: { apiBase } } = useRuntimeConfig()
 const { $loadQuill } = useNuxtApp()
 const account = useAccountSession()
+const { showError, showSuccess } = useUiFeedback()
 const isAdmin = account.isAdmin
 const loading = ref(true), busy = ref(false), dirty = ref(false)
 const errorMessage = ref(''), infoMessage = ref('')
 const allTags = ref<NoticeTag[]>([]), selected = ref<AdminNotice | null>(null)
 const heading = ref(''), selectedTags = ref<string[]>([]), editor = ref<HTMLDivElement | null>(null)
 const decision = ref<Decision | null>(null)
-const dialogMessage = computed(() => [decision.value?.message ?? '', errorMessage.value].filter(Boolean).join('\n\n'))
+const leavePrompt = ref(false), pendingRoute = ref<string | null>(null)
+let allowLeaving = false
+let unregisterRouteGuard: (() => void) | undefined
 let quill: InstanceType<Awaited<ReturnType<typeof $loadQuill>>> | null = null
 let uploadSession = ''
 const pending = new Set<string>()
 let heartbeat: ReturnType<typeof setInterval> | undefined
 const newSession = () => { uploadSession = crypto.randomUUID(); pending.clear() }
+watch(errorMessage, value => { if (value) showError(value) })
+watch(infoMessage, value => { if (value) showSuccess(value) })
 
 function request(action: Action) {
   if (busy.value) return
@@ -77,9 +87,6 @@ function request(action: Action) {
       : 'この記事の公開を取り消しますか？', label: '公開を取り消す', danger: true },
     remove: { title: '物理削除の確認', message: 'この記事と所属画像を完全に削除します。取り消せません。続行しますか？', label: '完全に削除する', danger: true },
     discard: { title: '変更破棄の確認', message: '未保存の編集内容と仮アップロード画像を破棄しますか？', label: '破棄する', danger: true },
-    back: { title: '一覧へ戻る確認', message: dirty.value
-      ? '未保存の変更と仮アップロード画像を破棄してお知らせ一覧へ戻りますか？'
-      : 'お知らせ一覧へ戻りますか？', label: '一覧へ戻る', danger: dirty.value },
   }
   decision.value = { action, ...messages[action] }
 }
@@ -93,9 +100,38 @@ async function executeDecision() {
     else if (action === 'unpublish') await unpublish()
     else if (action === 'remove') await remove()
     else if (action === 'discard') await cancel()
-    else if (action === 'back') { await discard(); await navigateTo('/admin/notices') }
-    if (!errorMessage.value) decision.value = null
-  } catch (error) { errorMessage.value = describeError(error) }
+  } catch (error) { errorMessage.value = userFacingError(error) }
+  finally { decision.value = null }
+}
+function backToList() {
+  if (busy.value) return
+  if (dirty.value) { pendingRoute.value = '/admin/notices'; leavePrompt.value = true }
+  else void navigateTo('/admin/notices')
+}
+function cancelLeave() { if (!busy.value) { pendingRoute.value = null; leavePrompt.value = false } }
+function handleLeaveAction(value: string) {
+  if (value === 'leave') void confirmLeave()
+  else cancelLeave()
+}
+async function confirmLeave() {
+  if (busy.value) return
+  const destination = pendingRoute.value
+  if (!destination) { cancelLeave(); return }
+  busy.value = true
+  try {
+    await discard()
+    dirty.value = false
+    allowLeaving = true
+    leavePrompt.value = false
+    pendingRoute.value = null
+    await navigateTo(destination)
+  } catch (error) {
+    allowLeaving = false
+    errorMessage.value = userFacingError(error)
+  } finally { busy.value = false }
+}
+function preventUnload(event: BeforeUnloadEvent) {
+  if (dirty.value) { event.preventDefault(); event.returnValue = '' }
 }
 function api<T>(path: string, options: Record<string, unknown> = {}) {
   return $fetch<T>(`${apiBase}${path}`, { credentials: 'include', ...options })
@@ -103,13 +139,9 @@ function api<T>(path: string, options: Record<string, unknown> = {}) {
 function mutation<T>(path: string, method: string, body?: unknown) {
   return api<T>(path, { method, headers: { 'X-XPlay-CSRF': account.session.value.csrf_token ?? '' }, ...(body === undefined ? {} : { body }) })
 }
-function describeError(error: unknown) {
-  const issue = error as { data?: { message?: string | string[] }; message?: string }
-  return Array.isArray(issue?.data?.message) ? issue.data.message.join('、') : issue?.data?.message || issue?.message || '操作に失敗しました。'
-}
 async function loadTags() {
   try { allTags.value = await api<NoticeTag[]>('/admin/tags') }
-  catch (error) { errorMessage.value = describeError(error) }
+  catch (error) { errorMessage.value = userFacingError(error) }
 }
 async function ensureQuill() {
   await nextTick()
@@ -160,10 +192,10 @@ async function save(redirectOnCreate = true): Promise<AdminNotice | null> {
     newSession()
     await loadTags()
     await resetForm(result)
-    infoMessage.value = '保存しました。'
+    infoMessage.value = '保存されました。'
     if (wasNew && redirectOnCreate) await navigateTo(`/admin/notices/${result.id}/edit`)
     return result
-  } catch (error) { errorMessage.value = describeError(error); return null }
+  } catch (error) { errorMessage.value = userFacingError(error); return null }
   finally { busy.value = false }
 }
 async function publish() {
@@ -179,9 +211,9 @@ async function publish() {
   try {
     const result = await mutation<AdminNotice>(`/admin/notices/${item.id}/publish`, 'POST', { expected_version: item.version })
     await resetForm(result)
-    infoMessage.value = '公開しました。'
+    infoMessage.value = '公開されました。'
     if (!props.noticeId) await navigateTo(`/admin/notices/${result.id}/edit`)
-  } catch (error) { errorMessage.value = describeError(error) }
+  } catch (error) { errorMessage.value = userFacingError(error) }
   finally { busy.value = false }
 }
 async function unpublish() {
@@ -189,8 +221,8 @@ async function unpublish() {
   busy.value = true; errorMessage.value = ''
   try {
     const result = await mutation<AdminNotice>(`/admin/notices/${selected.value.id}/unpublish`, 'POST', { expected_version: selected.value.version })
-    await discard(); await resetForm(result); infoMessage.value = '非公開にしました。'
-  } catch (error) { errorMessage.value = describeError(error) }
+    await discard(); await resetForm(result); infoMessage.value = '公開が取り消されました。'
+  } catch (error) { errorMessage.value = userFacingError(error) }
   finally { busy.value = false }
 }
 async function remove() {
@@ -199,8 +231,10 @@ async function remove() {
   try {
     await mutation(`/admin/notices/${selected.value.id}`, 'DELETE', { expected_version: selected.value.version })
     await discard()
+    dirty.value = false
+    showSuccess('削除されました。')
     await navigateTo('/admin/notices')
-  } catch (error) { errorMessage.value = describeError(error) }
+  } catch (error) { errorMessage.value = userFacingError(error) }
   finally { busy.value = false }
 }
 async function cancel() {
@@ -210,7 +244,7 @@ async function cancel() {
     await discard()
     await resetForm(props.noticeId ? await api<AdminNotice>(`/admin/notices/${props.noticeId}`) : null)
     infoMessage.value = '変更を破棄しました。'
-  } catch (error) { errorMessage.value = describeError(error) }
+  } catch (error) { errorMessage.value = userFacingError(error) }
   finally { busy.value = false }
 }
 async function uploadImage() {
@@ -235,11 +269,18 @@ async function uploadImage() {
       const cursor = quill?.getSelection(true)
       quill?.insertEmbed(cursor?.index ?? 0, 'image', result.url, 'user')
       quill?.setSelection((cursor?.index ?? 0) + 1)
-    } catch (error) { errorMessage.value = describeError(error) }
+    } catch (error) { errorMessage.value = userFacingError(error) }
   }
   input.click()
 }
 onMounted(async () => {
+  window.addEventListener('beforeunload', preventUnload)
+  unregisterRouteGuard = router.beforeEach(to => {
+    if (!dirty.value || allowLeaving) return true
+    pendingRoute.value = to.fullPath
+    leavePrompt.value = true
+    return false
+  })
   try {
     await account.refresh()
     if (isAdmin.value) {
@@ -247,7 +288,7 @@ onMounted(async () => {
       await loadTags()
       if (props.noticeId) selected.value = await api<AdminNotice>(`/admin/notices/${props.noticeId}`)
     }
-  } catch (error) { errorMessage.value = describeError(error) }
+  } catch (error) { errorMessage.value = userFacingError(error) }
   finally {
     loading.value = false
     if (isAdmin.value) {
@@ -259,6 +300,8 @@ onMounted(async () => {
   }
 })
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', preventUnload)
+  unregisterRouteGuard?.()
   if (heartbeat) clearInterval(heartbeat)
   if (uploadSession) void discard()
 })
