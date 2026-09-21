@@ -12,7 +12,7 @@
 import type { HeaderNavigationItem } from './types/header-navigation'
 import type { FooterInternalLink } from './types/footer-links'
 
-const { authenticated, isAdmin, refresh } = useAccountSession()
+const { isAdmin, refresh } = useAccountSession()
 onMounted(() => { void refresh() })
 
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
@@ -33,8 +33,10 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
       { label: 'お知らせ一覧', to: '/admin/notices' },
       { label: 'お知らせ投稿', to: '/admin/notices/new' },
     ],
+  }, {
+    label: 'マスタメンテ',
+    children: [{ label: 'アカウント管理', to: '/admin/accounts' }],
   }] : []),
-  { label: authenticated.value ? 'アカウント' : 'ログイン', to: authenticated.value ? '/account' : '/login' },
 ])
 
 const footerInternalLinks: FooterInternalLink[] = [
