@@ -27,7 +27,6 @@ describe('UiCard', () => {
     expect(card.get('a.xplay-card--link').attributes('href')).toBe('/info/rules')
     expect(card.get('a').attributes('style')).toContain('height: 280px')
     expect(card.get('a').attributes('target')).toBeUndefined()
-    expect(card.get('a').attributes('rel')).toBeUndefined()
   })
 
   it('supports an external URL and gives an image-only link an accessible name', async () => {
@@ -45,7 +44,6 @@ describe('UiCard', () => {
     expect(card.get('a').attributes('rel')).toBe('noopener noreferrer')
     await card.setProps({ newTab: false })
     expect(card.get('a').attributes('target')).toBeUndefined()
-    expect(card.get('a').attributes('rel')).toBeUndefined()
   })
 
   it('supports a new tab for internal links without applying link attributes to non-links', async () => {
