@@ -12,9 +12,11 @@
                 :href="link.href"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="link-body-emphasis"
+                class="link-body-emphasis d-inline-flex align-items-center justify-content-center gap-1 flex-wrap"
               >
-                {{ link.label }}
+                <UiBootstrapIcon v-if="link.icon" :name="link.icon" />
+                <span>{{ link.label }}</span>
+                <UiBootstrapIcon name="box-arrow-up-right" />
               </a>
             </li>
           </ul>
@@ -24,8 +26,9 @@
           <h2 class="h6">内部リンク</h2>
           <ul class="list-unstyled mb-0">
             <li v-for="link in internalLinks" :key="link.to">
-              <NuxtLink :to="link.to" class="link-body-emphasis">
-                {{ link.label }}
+              <NuxtLink :to="link.to" class="link-body-emphasis d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
+                <UiBootstrapIcon v-if="link.icon" :name="link.icon" />
+                <span>{{ link.label }}</span>
               </NuxtLink>
             </li>
           </ul>
@@ -43,20 +46,20 @@
 import type {
   FooterExternalLink,
   FooterInternalLink,
-} from "../../types/footer-links";
+} from '../../types/footer-links'
 
 withDefaults(
   defineProps<{
-    externalLinks?: FooterExternalLink[];
-    internalLinks?: FooterInternalLink[];
-    copyrightHolder?: string;
+    externalLinks?: FooterExternalLink[]
+    internalLinks?: FooterInternalLink[]
+    copyrightHolder?: string
   }>(),
   {
     externalLinks: () => [],
     internalLinks: () => [],
-    copyrightHolder: "surumeneco",
+    copyrightHolder: 'surumeneco',
   },
-);
+)
 
-const currentYear = new Date().getFullYear();
+const currentYear = new Date().getFullYear()
 </script>

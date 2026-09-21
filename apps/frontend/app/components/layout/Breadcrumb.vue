@@ -31,9 +31,10 @@ const items = computed<Crumb[]>(() => {
   if (path === '/admin/notices') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧' }]
   if (path === '/admin/notices/new') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: '新規投稿' }]
   if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧', to: '/admin/notices' }, { label: '記事編集' }]
-  if (path === '/admin/accounts') return [home, { label: 'マスタメンテ', to: '/admin/accounts' }, { label: 'アカウント管理' }]
-  if (path === '/admin/accounts/merge') return [home, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント統合' }]
-  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) return [home, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
+  if (path === '/admin/master') return [home, { label: 'マスタメンテ' }]
+  if (path === '/admin/accounts') return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理' }]
+  if (path === '/admin/accounts/merge') return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント統合' }]
+  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
   if (/^\/info\/notice\/[^/]+$/.test(path)) {
     const title = String(route.params.title ?? path.split('/').at(-1) ?? '')
     return [home, { label: '情報', to: '/info' }, { label: 'お知らせ', to: '/info/notice' }, { label: title }]
