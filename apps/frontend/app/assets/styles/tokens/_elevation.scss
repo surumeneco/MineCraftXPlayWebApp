@@ -20,7 +20,7 @@ $elevations: (
   )
 );
 
-@mixin expose($mode) {
+@mixin expose($mode: 'dark') {
   @each $name, $value in map.get($elevations, $mode) {
     --xplay-#{$name}: #{$value};
   }
