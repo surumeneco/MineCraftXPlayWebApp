@@ -8,10 +8,10 @@
 
     <h4>接続情報</h4>
     <h5>Java版</h5>
-    <p>アドレス：xplayje.mc.surumene.co</p>
+    <p>アドレス：je.mofupark.surumene.co</p>
 
     <h5>Bedrock版</h5>
-    <p>アドレス：xplaybe.mc.surumene.co</p>
+    <p>アドレス：be.mofupark.surumene.co</p>
     <p>ポート番号：12504</p>
 
     <h4>ワールド構成</h4>
