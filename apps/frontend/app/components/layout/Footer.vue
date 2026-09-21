@@ -4,7 +4,7 @@
       <a class="btn btn-link mb-3" href="#page-top">ページの先頭に戻る</a>
 
       <div class="row justify-content-center g-4 mb-3">
-        <nav class="col-12 col-md-6" aria-label="外部リンク">
+        <nav class="col-6" aria-label="外部リンク">
           <h2 class="h6">外部リンク</h2>
           <ul class="list-unstyled mb-0">
             <li v-for="link in externalLinks" :key="link.href">
@@ -20,7 +20,7 @@
           </ul>
         </nav>
 
-        <nav class="col-12 col-md-6" aria-label="内部リンク">
+        <nav class="col-6" aria-label="内部リンク">
           <h2 class="h6">内部リンク</h2>
           <ul class="list-unstyled mb-0">
             <li v-for="link in internalLinks" :key="link.to">
