@@ -32,6 +32,7 @@
           image="/images/card-ofuse.jpg"
           title="ご支援はこちらから"
           url="https://ofuse.me/mofupark"
+          new-tab
         />
       </div>
     </div>
