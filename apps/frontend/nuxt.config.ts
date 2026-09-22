@@ -1,5 +1,10 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  app: {
+    head: {
+      htmlAttrs: { 'data-bs-theme': 'dark' },
+    },
+  },
   css: [
     'bootstrap/dist/css/bootstrap.min.css',
     'quill/dist/quill.snow.css',
@@ -8,6 +13,7 @@ export default defineNuxtConfig({
     '~/assets/styles/mobile-drawer.scss',
     '~/assets/styles/quill-dark-ui.scss',
     '~/assets/styles/control-states.scss',
+    '~/assets/styles/theme-adapters.scss',
   ],
   runtimeConfig: {
     public: {

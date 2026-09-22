@@ -43,14 +43,36 @@ jobs:
           node-version: '24'
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Compile theme Sass independently of application tests
+        shell: bash
+        run: |
+          for stylesheet in theme mobile-drawer quill-dark-ui control-states theme-adapters; do
+            ./node_modules/.bin/sass --no-source-map "apps/frontend/app/assets/styles/${stylesheet}.scss" "/tmp/xplay-${stylesheet}.css"
+          done
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+          const css = readFileSync('/tmp/xplay-theme.css', 'utf8')
+          const dark = css.match(/:root\s*\{([^}]+)\}/)?.[1] ?? ''
+          const light = css.match(/:root\[data-bs-theme=(?:"light"|'light'|light)\]\s*\{([^}]+)\}/)?.[1] ?? ''
+          const names = (value) => new Set([...value.matchAll(/(--xplay-(?:concept|background|text|border|feedback|focus-indicator)-[\w-]+)\s*:/g)].map((item) => item[1]))
+          const darkNames = names(dark), lightNames = names(light)
+          if (!darkNames.size || !lightNames.size) throw new Error('Missing generated theme CSS')
+          if (darkNames.size !== lightNames.size || [...darkNames].some((name) => !lightNames.has(name))) {
+            throw new Error('Dark/light semantic color token names differ')
+          }
+          for (const key of ['--xplay-concept-main', '--xplay-background-page-base', '--xplay-text-base', '--xplay-border-base', '--xplay-feedback-success-background']) {
+            if (!darkNames.has(key)) throw new Error(`Missing semantic token ${key}`)
+          }
+          console.log(`Theme Sass OK: ${darkNames.size} shared semantic color variable names`)
+          NODE
+      - name: Build workspaces
+        run: npm run build
       - name: Database migrations
         run: npm run db:migrate --workspace @xplay/backend
       - name: Backend unit and database integration tests
         run: npm run test:backend
       - name: Frontend tests
         run: npm run test:frontend
-      - name: Build workspaces
-        run: npm run build
       - name: Build backend production container
         run: docker build --target production -t xplay-notices-backend ./apps/backend
       - name: Public and unauthorized API smoke test

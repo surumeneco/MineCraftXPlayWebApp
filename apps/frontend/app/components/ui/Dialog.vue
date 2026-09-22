@@ -56,16 +56,16 @@ onBeforeUnmount(() => { if (dialog.value?.open) dialog.value.close() })
 </script>
 
 <style scoped>
-.xplay-dialog { width: min(92vw, 32rem); max-width: 32rem; padding: 0; color: var(--bs-body-color);
-  background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: .8rem;
-  box-shadow: 0 .8rem 2.5rem rgba(0,0,0,.45); }
-.xplay-dialog::backdrop { background: rgba(0,0,0,.67); }
+.xplay-dialog { width: min(92vw, 32rem); max-width: 32rem; padding: 0; color: var(--xplay-text-base);
+  background: var(--xplay-background-surface-base); border: 1px solid var(--xplay-border-base); border-radius: .8rem;
+  box-shadow: var(--xplay-dialog-shadow); }
+.xplay-dialog::backdrop { background: var(--xplay-background-overlay-backdrop); }
 .xplay-dialog__surface { padding: 1.3rem; }
 .xplay-dialog__message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .xplay-dialog__icon { display: inline-flex; flex: 0 0 2rem; align-items: center; justify-content: center; width: 2rem; height: 2rem;
   font-size: 1.25rem; font-weight: 800; border: 2px solid currentColor; border-radius: 50%; line-height: 1; }
-.xplay-dialog__icon--confirmation { color: var(--bs-success); }
-.xplay-dialog__icon--information { color: var(--bs-info); }
-.xplay-dialog__icon--error { color: var(--bs-danger); }
+.xplay-dialog__icon--confirmation { color: var(--xplay-feedback-success-icon); }
+.xplay-dialog__icon--information { color: var(--xplay-feedback-info-icon); }
+.xplay-dialog__icon--error { color: var(--xplay-feedback-error-icon); }
 .xplay-dialog__icon--triangle { border-radius: .15rem; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 </style>

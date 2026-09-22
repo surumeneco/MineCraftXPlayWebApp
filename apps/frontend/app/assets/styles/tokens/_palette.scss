@@ -1,0 +1,128 @@
+@use 'sass:list';
+@use 'sass:map';
+
+// Eternalia_frontend develop/assets/variables/_pallet.scss のカラー値をそのまま移植。
+// キーは元の origin / dark / moss / light および 10〜190 を維持する。
+@function _scale($values) {
+  $result: ();
+  @for $index from 1 through list.length($values) {
+    $result: map.set($result, '#{$index * 10}', list.nth($values, $index));
+  }
+  @return $result;
+}
+
+$palette: (
+  'sky': (
+    'origin': #00bfff,
+    'dark': _scale((
+      #00090c, #001319, #001c26, #002633, #002f3f, #00394c, #004259, #004c66, #005672, #005f7f,
+      #00698c, #007299, #007ca5, #0085b2, #008fbf, #0099cc, #00a2d8, #00ace5, #00b5f2
+    )),
+    'moss': _scale((
+      #0c0c0c, #161819, #202426, #283033, #2f3b3f, #35464c, #3a5159, #3d5b66, #3f6572, #3f6f7f,
+      #3f788c, #3d8299, #3a8aa5, #3593b2, #2f9bbf, #28a3cc, #20aad8, #16b1e5, #0cb8f2
+    )),
+    'light': _scale((
+      #0cc2ff, #19c5ff, #26c8ff, #32ccff, #3fcfff, #4cd2ff, #59d5ff, #66d8ff, #72dbff, #7fdfff,
+      #8ce2ff, #99e5ff, #a5e8ff, #b2ebff, #bfefff, #ccf2ff, #d8f5ff, #e5f8ff, #f2fbff
+    ))
+  ),
+  'grass': (
+    'origin': #00ff55,
+    'dark': _scale((
+      #000c04, #001908, #00260c, #003311, #003f15, #004c19, #00591d, #006622, #007226, #007f2a,
+      #008c2e, #009933, #00a537, #00b23b, #00bf3f, #00cc44, #00d848, #00e54c, #00f250
+    )),
+    'moss': _scale((
+      #0c0c0c, #161917, #202622, #28332c, #2f3f35, #354c3d, #3a5944, #3d664a, #3f7250, #3f7f55,
+      #3f8c58, #3d995b, #3aa55d, #35b25f, #2fbf5f, #28cc5f, #20d85d, #16e55b, #0cf258
+    )),
+    'light': _scale((
+      #0cff5d, #19ff66, #26ff6e, #32ff77, #3fff7f, #4cff88, #59ff90, #66ff99, #72ffa1, #7fffaa,
+      #8cffb2, #99ffbb, #a5ffc3, #b2ffcc, #bfffd4, #ccffdd, #d8ffe5, #e5ffee, #f2fff6
+    ))
+  ),
+  'flame': (
+    'origin': #ff0054,
+    'dark': _scale((
+      #0c0004, #190008, #26000c, #330010, #3f0015, #4c0019, #59001d, #660021, #720026, #7f002a,
+      #8c002e, #990032, #a50037, #b2003b, #bf003f, #cc0043, #d80048, #e5004c, #f20050
+    )),
+    'moss': _scale((
+      #0c0c0c, #191617, #262022, #33282c, #3f2f35, #4c353d, #593a44, #663d4a, #723f50, #7f3f54,
+      #8c3f58, #993d5b, #a53a5d, #b2355f, #bf2f5f, #cc285f, #d8205d, #e5165b, #f20c58
+    )),
+    'light': _scale((
+      #ff0c5d, #ff1965, #ff266e, #ff3276, #ff3f7f, #ff4c87, #ff5990, #ff6698, #ff72a1, #ff7fa9,
+      #ff8cb2, #ff99ba, #ffa5c3, #ffb2cb, #ffbfd4, #ffccdc, #ffd8e5, #ffe5ee, #fff2f6
+    ))
+  ),
+  'wind': (
+    'origin': #d4ff00,
+    'dark': _scale((
+      #0a0c00, #151900, #1f2600, #2a3300, #353f00, #3f4c00, #4a5900, #556600, #5f7200, #6a7f00,
+      #748c00, #7f9900, #8aa500, #94b200, #9fbf00, #aacc00, #b4d800, #bfe500, #c9f200
+    )),
+    'moss': _scale((
+      #0c0c0c, #191916, #252620, #313328, #3d3f2f, #494c35, #54593a, #5f663d, #6a723f, #747f3f,
+      #7f8c3f, #89993d, #93a53a, #9db235, #a7bf2f, #b0cc28, #bad820, #c3e516, #cbf20c
+    )),
+    'light': _scale((
+      #d6ff0c, #d8ff19, #d6ff0c, #dcff32, #dfff3f, #e1ff4c, #e3ff59, #e5ff66, #e7ff72, #e9ff7f,
+      #ebff8c, #eeff99, #f0ffa5, #f2ffb2, #f4ffbf, #f6ffcc, #f8ffd8, #faffe5, #fcfff2
+    ))
+  ),
+  'flow': (
+    'origin': #00d4ff,
+    'dark': _scale((
+      #000a0c, #001519, #001f26, #002a33, #00353f, #003f4c, #004a59, #005566, #005f72, #006a7f,
+      #00748c, #007f99, #008aa5, #0094b2, #009fbf, #00aacc, #00b4d8, #00bfe5, #00c9f2
+    )),
+    'moss': _scale((
+      #0c0c0c, #161919, #202526, #283133, #2f3d3f, #35484c, #3a5459, #3d5f66, #3f6a72, #3f747f,
+      #3f7f8c, #3d8999, #3a93a5, #359db2, #2fa7bf, #28b0cc, #20bad8, #16c3e5, #0ccbf2
+    )),
+    'light': _scale((
+      #0cd6ff, #19d8ff, #26daff, #32ddff, #3fdfff, #4ce1ff, #59e3ff, #66e5ff, #72e7ff, #7fe9ff,
+      #8cebff, #99eeff, #a5f0ff, #b2f2ff, #bff4ff, #ccf6ff, #d8f8ff, #e5faff, #f2fcff
+    ))
+  ),
+  'rock': (
+    'origin': #ff6a00,
+    'dark': _scale((
+      #0c0500, #190a00, #260f00, #331400, #3f1900, #4c1e00, #592300, #662800, #722d00, #7f3300,
+      #8c3800, #993d00, #a54200, #b24700, #bf4c00, #cc5100, #d85600, #e55b00, #f26000
+    )),
+    'moss': _scale((
+      #0c0c0c, #191716, #262220, #332c28, #3f362f, #4c3e35, #59463a, #664d3d, #72533f, #7f593f,
+      #8c5d3f, #99613d, #a5653a, #b26735, #bf692f, #cc6a28, #d86a20, #e56916, #f2680c
+    )),
+    'light': _scale((
+      #ff6d0c, #ff7519, #ff7c26, #ff8432, #ff8c3f, #ff934c, #ff9b59, #ffa366, #ffaa72, #ffb27f,
+      #ffba8c, #ffc199, #ffc9a5, #ffd1b2, #ffd8bf, #ffe0cc, #ffe8d8, #ffefe5, #fff7f2
+    ))
+  ),
+  'void': (
+    'dark': #000000,
+    '10': #0c0c0c,
+    '20': #191919,
+    '30': #262626,
+    '40': #333333,
+    '50': #3f3f3f,
+    '60': #4c4c4c,
+    '70': #595959,
+    '80': #666666,
+    '90': #727272,
+    '100': #7f7f7f,
+    '110': #8c8c8c,
+    '120': #999999,
+    '130': #a5a5a5,
+    '140': #b2b2b2,
+    '150': #bfbfbf,
+    '160': #cccccc,
+    '170': #d8d8d8,
+    '180': #e5e5e5,
+    '190': #f2f2f2,
+    'light': #ffffff
+  )
+);
