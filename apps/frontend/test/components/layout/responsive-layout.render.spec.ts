@@ -44,7 +44,7 @@ describe('Responsive header menus', () => {
     wrapper.unmount()
   })
 
-  it('renders navigation accordions collapsed and preserves their expansion across reopening', async () => {
+  it('renders navigation accordions expanded initially and preserves user collapse across reopening', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       props: { items: [{ label: '情報', children: [{ label: 'お知らせ', to: '/news' }] }] },
     })
@@ -53,17 +53,20 @@ describe('Responsive header menus', () => {
     const drawer = wrapper.get('#mobile-menu-drawer')
     const accordionToggle = drawer.get('button.accordion-button')
     const panel = drawer.get('[role="region"]')
-    expect(accordionToggle.attributes('aria-expanded')).toBe('false')
+    expect(accordionToggle.attributes('aria-expanded')).toBe('true')
     expect(panel.classes()).not.toContain('collapse')
-    expect(panel.attributes('style')).toContain('display: none')
+    expect(panel.attributes('style') ?? '').not.toContain('display: none')
     expect(panel.get('a[href="/news"]').text()).toBe('お知らせ')
     expect(wrapper.get('#header-navigation').find('button.dropdown-toggle').exists()).toBe(true)
     await accordionToggle.trigger('click')
-    expect(panel.attributes('style') ?? '').not.toContain('display: none')
+    expect(accordionToggle.attributes('aria-expanded')).toBe('false')
+    expect(panel.attributes('style')).toContain('display: none')
     await navToggle.trigger('click')
     await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
     await navToggle.trigger('click')
-    expect(drawer.get('button.accordion-button').attributes('aria-expanded')).toBe('true')
+    expect(drawer.get('button.accordion-button').attributes('aria-expanded')).toBe('false')
+    await drawer.get('button.accordion-button').trigger('click')
+    expect(panel.attributes('style') ?? '').not.toContain('display: none')
     await drawer.get('a[href="/news"]').trigger('click')
     await vi.waitFor(() => expect(drawer.attributes('open')).toBeUndefined())
     expect(navToggle.attributes('aria-expanded')).toBe('false')
@@ -89,7 +92,8 @@ describe('Responsive sidebar placement', () => {
   it('keeps body layout unchanged while exposing shared sidebar in mobile drawer', async () => {
     const wrapper = await mountSuspended(Layout, { slots: { default: '<p>本文</p>' } })
     expect(wrapper.get('.col-lg-3').classes()).toEqual(expect.arrayContaining(['d-none', 'd-lg-block']))
-    expect(wrapper.get('main').classes()).toEqual(expect.arrayContaining(['col-12', 'col-lg-9']))
+    expect(wrapper.get('main').classes()).toContain('col-12')
+    expect(wrapper.get('main').classes()).toContain('col-lg-9')
     expect(wrapper.get('.col-lg-3 aside').attributes('aria-label')).toBe('サイドメニュー')
     const sideToggle = wrapper.get('button[aria-label="サイドメニュー"]')
     await sideToggle.trigger('click')
