@@ -5,7 +5,7 @@
     <div class="row g-3 mb-4">
       <div class="col-12">
         <UiCard
-          image="/images/discord.png"
+          :image="discordImage"
           title="参加はこちらから！"
           url="https://discord.gg/h8NNfn4qPg"
           new-tab
@@ -42,7 +42,7 @@
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-6 col-xl-4">
         <UiCard
-          image="/images/card-ofuse.jpg"
+          :image="ofuseImage"
           title="ご支援はこちらから"
           url="https://ofuse.me/mofupark"
           new-tab
@@ -50,7 +50,7 @@
       </div>
       <div class="col-12 col-md-6 col-xl-4">
         <UiCard
-          image="/images/bluemap.png"
+          :image="bluemapImage"
           title="Bluemapを見る"
           to="/bluemap/"
           native
@@ -76,6 +76,10 @@
 <script setup lang="ts">
 import { sortNotices } from "../utils/notice";
 
+const siteImages = useSiteImages()
+const discordImage = computed(() => siteImages.image('card.discord', '/images/discord.png', '/images/card-default.svg'))
+const ofuseImage = computed(() => siteImages.image('card.ofuse', '/images/card-ofuse.jpg', '/images/card-default.svg'))
+const bluemapImage = computed(() => siteImages.image('card.bluemap', '/images/bluemap.png', '/images/card-default.svg'))
 const { data: notices, status, error } = usePublicNotices();
 const latest = computed(() =>
   sortNotices(
