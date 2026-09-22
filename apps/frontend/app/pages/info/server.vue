@@ -56,6 +56,8 @@
     <h4>ワールド・外部サービス</h4>
     <ul>
       <li>Multiverse Core：複数ワールドの管理</li>
+      <li>Multiverse NetherPortals：ネザー・エンドのポータル接続先を管理</li>
+      <li>Multiverse Portals：ワールド間を移動するポータルを管理</li>
       <li>BlueMap：Webマップの生成</li>
       <li>DiscordSRV：MinecraftとDiscordの連携</li>
     </ul>
@@ -71,6 +73,7 @@
     <ul>
       <li>WorldEdit：建築作業の補助</li>
       <li>InvSee++：プレイヤーのインベントリ管理</li>
+      <li>LuckPerms：権限グループ・アクセス権の管理</li>
     </ul>
   </div>
 </template>
