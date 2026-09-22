@@ -42,6 +42,31 @@ describe('Footer', () => {
     expect(wrapper.get('small').text()).toBe(`© ${new Date().getFullYear()} テスト運営`)
   })
 
+  it('accepts arbitrary icon names and adds an external-link indicator', async () => {
+    const wrapper = await mountSuspended(Footer, {
+      props: {
+        externalLinks: [
+          { label: 'アイコンあり', href: 'https://example.com/', icon: 'youtube' },
+          { label: 'アイコンなし', href: 'https://example.org/' },
+        ],
+        internalLinks: [
+          { label: 'アイコンあり', to: '/with-icon', icon: 'discord' },
+          { label: 'アイコンなし', to: '/without-icon' },
+        ],
+      },
+    })
+    const externalLinks = wrapper.get('nav[aria-label="外部リンク"]').findAll('a')
+    const internalLinks = wrapper.get('nav[aria-label="内部リンク"]').findAll('a')
+    expect(externalLinks[0]!.findAll('.bi')).toHaveLength(2)
+    expect(externalLinks[0]!.get('.bi-youtube').exists()).toBe(true)
+    expect(externalLinks[0]!.get('.bi-box-arrow-up-right').exists()).toBe(true)
+    expect(externalLinks[0]!.element.lastElementChild?.classList.contains('bi-box-arrow-up-right')).toBe(true)
+    expect(externalLinks[1]!.findAll('.bi')).toHaveLength(1)
+    expect(externalLinks[1]!.get('.bi-box-arrow-up-right').exists()).toBe(true)
+    expect(internalLinks[0]!.get('.bi-discord').exists()).toBe(true)
+    expect(internalLinks[1]!.findAll('.bi')).toHaveLength(0)
+  })
+
   it('renders safely when no link arrays are provided', async () => {
     const wrapper = await mountSuspended(Footer)
 

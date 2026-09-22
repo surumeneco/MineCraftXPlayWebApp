@@ -46,7 +46,7 @@ describe('App rendering', () => {
   it('shows an OFUSE external footer link alongside unchanged internal links', async () => {
     const wrapper = await mountSuspended(App, { route: '/' })
     const external = wrapper.get('footer nav[aria-label="外部リンク"] a[href="https://ofuse.me/mofupark"]')
-    expect(external.text()).toBe('OFUSE')
+    expect(external.text()).toBe('運営へのOFUSE')
     expect(external.attributes('target')).toBe('_blank')
     expect(external.attributes('rel')).toBe('noopener noreferrer')
     expect(wrapper.get('footer nav[aria-label="内部リンク"] a[href="/info/operators"]').text()).toBe('運営メンバー紹介')

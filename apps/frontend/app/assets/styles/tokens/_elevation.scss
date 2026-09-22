@@ -1,13 +1,27 @@
-// Shared shadow levels: components refer to these instead of repeating values.
+@use 'sass:color';
+@use 'sass:map';
+@use './palette' as palette;
+
+$shadow-color: map.get(palette.$palette, 'void', 'dark');
 $elevations: (
-  'panel-shadow': 0 0 15px 2px rgba(0, 0, 0, .34),
-  'card-shadow': 0 0 12px rgba(0, 0, 0, .17),
-  'dropdown-shadow': 0 8px 22px rgba(0, 0, 0, .35),
-  'drawer-shadow': 0 0 30px rgba(0, 0, 0, .55),
+  'dark': (
+    'panel-shadow': 0 0 15px 2px color.change($shadow-color, $alpha: .34),
+    'card-shadow': 0 0 12px color.change($shadow-color, $alpha: .17),
+    'dropdown-shadow': 0 8px 22px color.change($shadow-color, $alpha: .35),
+    'drawer-shadow': 0 0 30px color.change($shadow-color, $alpha: .55),
+    'dialog-shadow': 0 .8rem 2.5rem color.change($shadow-color, $alpha: .45)
+  ),
+  'light': (
+    'panel-shadow': 0 0 15px 2px color.change($shadow-color, $alpha: .16),
+    'card-shadow': 0 0 12px color.change($shadow-color, $alpha: .11),
+    'dropdown-shadow': 0 8px 22px color.change($shadow-color, $alpha: .18),
+    'drawer-shadow': 0 0 30px color.change($shadow-color, $alpha: .24),
+    'dialog-shadow': 0 .8rem 2.5rem color.change($shadow-color, $alpha: .24)
+  )
 );
 
-@mixin expose() {
-  @each $name, $value in $elevations {
+@mixin expose($mode: 'dark') {
+  @each $name, $value in map.get($elevations, $mode) {
     --xplay-#{$name}: #{$value};
   }
 }

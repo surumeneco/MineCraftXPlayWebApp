@@ -8,6 +8,7 @@
       <li v-for="(item, index) in items" :key="`${item.to ?? 'current'}-${index}`"
         class="breadcrumb-item" :class="{ active: index === items.length - 1 }"
         :aria-current="index === items.length - 1 ? 'page' : undefined">
+        <UiBootstrapIcon v-if="index > 0" name="chevron-right" />
         <NuxtLink v-if="index < items.length - 1 && item.to" :to="item.to">{{ item.label }}</NuxtLink>
         <span v-else class="text-break">{{ item.label }}</span>
       </li>
@@ -31,9 +32,10 @@ const items = computed<Crumb[]>(() => {
   if (path === '/admin/notices') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧' }]
   if (path === '/admin/notices/new') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: '新規投稿' }]
   if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧', to: '/admin/notices' }, { label: '記事編集' }]
-  if (path === '/admin/accounts') return [home, { label: 'マスタメンテ', to: '/admin/accounts' }, { label: 'アカウント管理' }]
-  if (path === '/admin/accounts/merge') return [home, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント統合' }]
-  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) return [home, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
+  if (path === '/admin/master') return [home, { label: 'マスタメンテ' }]
+  if (path === '/admin/accounts') return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理' }]
+  if (path === '/admin/accounts/merge') return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント統合' }]
+  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
   if (/^\/info\/notice\/[^/]+$/.test(path)) {
     const title = String(route.params.title ?? path.split('/').at(-1) ?? '')
     return [home, { label: '情報', to: '/info' }, { label: 'お知らせ', to: '/info/notice' }, { label: title }]
@@ -59,8 +61,10 @@ function goBack() {
   padding: .35rem; border: 0; background: transparent; color: var(--bs-body-color); border-radius: .3rem; cursor: pointer; }
 .xplay-breadcrumb__back:hover { color: var(--xplay-main-soft); background: var(--xplay-panel-soft); }
 .xplay-breadcrumb__divider { flex: 0 0 1px; align-self: stretch; min-height: 1.4rem; background: var(--bs-border-color); }
-.breadcrumb { --bs-breadcrumb-divider: '>'; align-items: center; min-width: 0; }
-.breadcrumb-item { overflow-wrap: anywhere; }
+.breadcrumb { align-items: center; min-width: 0; }
+.breadcrumb-item { display: inline-flex; align-items: center; gap: .5rem; overflow-wrap: anywhere; }
+.breadcrumb-item + .breadcrumb-item::before { content: none; }
+.breadcrumb-item :deep(.bi::before) { font-size: .75rem; }
 .breadcrumb-item a { color: var(--bs-link-color); }
 .breadcrumb-item.active { color: var(--bs-body-color); font-weight: 600; }
 @media (max-width: 575.98px) { .xplay-breadcrumb { padding: .65rem; gap: .5rem; } }

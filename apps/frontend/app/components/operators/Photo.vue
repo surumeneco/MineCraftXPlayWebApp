@@ -1,8 +1,8 @@
 <template>
   <img
-    v-if="!failed"
+    v-if="source && !failed"
     class="xplay-operator-photo"
-    :src="`/images/operators/${filename}`"
+    :src="source"
     :alt="`${name}の紹介画像`"
     loading="lazy"
     decoding="async"
@@ -11,13 +11,18 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   filename: string
   name: string
+  imageKey?: string
 }>()
 
-// The image is optional: members without an uploaded file retain their text-only layout.
+const { image } = useSiteImages()
+const fallback = computed(() => `/images/operators/${props.filename}`)
+// A temporary manifest failure retains the bundled photo; an explicit 'none' hides it.
+const source = computed(() => props.imageKey ? image(props.imageKey, fallback.value, '') : fallback.value)
 const failed = ref(false)
+watch(source, () => { failed.value = false })
 </script>
 
 <style scoped lang="scss">

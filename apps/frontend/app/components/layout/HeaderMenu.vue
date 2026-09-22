@@ -170,7 +170,7 @@
                 v-if="item.children?.length"
                 class="accordion accordion-flush w-100"
               >
-                <UiAccordion :title="item.label" :default-open="trie">
+                <UiAccordion :title="item.label" :default-open="true">
                   <ul class="list-unstyled mb-0">
                     <li v-for="child in item.children" :key="child.to">
                       <NuxtLink

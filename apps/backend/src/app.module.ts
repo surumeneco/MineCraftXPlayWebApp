@@ -9,10 +9,14 @@ import { NoticeService } from './notice.service.js'
 import { NoticeNotificationService } from './notice-notification.service.js'
 import { ImagesService } from './images.service.js'
 import { AdminImagesController, AdminNoticesController, AdminTagsController, AuthController, PublicImagesController, PublicNoticesController, PublicTagsController } from './notice.controller.js'
+import { SiteImagesService } from './site-images.service.js'
+import { AdminSiteImagePresetsController, AdminSiteImagesController, PublicSiteImagesController } from './site-images.controller.js'
 
 @Module({
   controllers: [AppController, PublicNoticesController, PublicTagsController, PublicImagesController,
-    AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController],
-  providers: [Database, AuthService, AccountsService, AccountMergeService, NoticeService, NoticeNotificationService, ImagesService],
+    AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
+    PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController],
+  providers: [Database, AuthService, AccountsService, AccountMergeService, NoticeService, NoticeNotificationService,
+    ImagesService, SiteImagesService],
 })
 export class AppModule {}

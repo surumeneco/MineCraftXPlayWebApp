@@ -22,7 +22,12 @@
               </span></td>
               <td><span v-for="identity in entry.minecraft_ids" :key="identity.id" class="d-block small">{{ identity.edition.toUpperCase() }}：{{ identity.username }}</span></td>
               <td>{{ entry.is_admin ? '管理者' : '一般' }}<small v-if="entry.is_protected" class="d-block text-body-secondary">初期管理者</small></td>
-              <td><NuxtLink :to="`/admin/accounts/${entry.id}/edit`" class="btn btn-sm btn-primary">編集</NuxtLink></td>
+              <td>
+                <NuxtLink :to="`/admin/accounts/${entry.id}/edit`" class="btn btn-sm btn-primary d-inline-flex align-items-center justify-content-center"
+                  :aria-label="`${entry.name} を編集`" title="編集">
+                  <UiBootstrapIcon name="pencil-square" />
+                </NuxtLink>
+              </td>
             </tr>
           </tbody>
         </table>
