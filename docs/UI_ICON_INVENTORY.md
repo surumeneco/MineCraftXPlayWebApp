@@ -1,18 +1,36 @@
 # WebApp のアイコン実装状況
 
-確認基点: `develop` (`da569f1374ebd26a3b3d69c4c3fbfe28eaaea4b3`、2026-09-22)。「Bootstrap Icons 以外」は Bootstrap 本体の CSS 描画、テキスト記号、Quill 独自アイコンも含む。画像コンテンツ（運営者写真や BlueMap/Discord の紹介画像等）はアイコンではないため除外する。
+基点: `develop` (`f7dbad056b4fb824b555e1c77de0b971ff40a2ad`、2026-09-22)。画像コンテンツはアイコンとして数えない。
 
-| 場所 | 表示 | 実装 | Bootstrap Icons の使用 |
-| --- | --- | --- | --- |
-| `apps/frontend/app/components/layout/HeaderMenu.vue` | 左右のハンバーガー | Bootstrap 本体の `navbar-toggler-icon` | なし |
-| `apps/frontend/app/components/layout/NavigationDropdown.vue` | メニュー展開用三角 | Bootstrap 本体の `dropdown-toggle` 擬似要素 | なし |
-| `apps/frontend/app/components/ui/Accordion.vue` | 開閉用山形 | Bootstrap 本体の `accordion-button` 背景アイコン | なし |
-| `apps/frontend/app/components/layout/Breadcrumb.vue` | 階層区切り `>` | `--bs-breadcrumb-divider` による文字 | なし |
-| `apps/frontend/app/components/ui/CardLink.vue` | カード末尾の `→` | 文字 | なし |
-| `apps/frontend/app/components/ui/Dialog.vue` | 確認 `?`・情報 `i`・エラー `!` | 文字と独自 CSS 枠 | なし |
-| `apps/frontend/app/app.vue` | 成功通知の閉じる印 | Bootstrap 本体の `btn-close` | なし |
-| `apps/frontend/app/components/notice/AdminEditor.vue` | Quill 編集ツールバー | Quill Snow テーマが提供する SVG アイコン | なし |
+## Bootstrap Icons 共通利用
 
-`UiBootstrapIcon` は Bootstrap Icons の SVG パスをコンポーネント内部に保持する方式で、今回 `pencil-square` と `box-arrow-up-right` を追加した。`FooterExternalLink` と `FooterInternalLink` の任意プロパティ `icon` に `BootstrapIconName` のいずれかを設定すれば先頭へ表示される。外部リンクのみ末尾に `box-arrow-up-right` が常時付く。登録可能名は `apps/frontend/app/types/bootstrap-icon.ts` を参照。
+`UiBootstrapIcon` の `name` およびフッタリンクの `icon` は、[Bootstrap Icons 1.13.1](https://icons.getbootstrap.jp/) の名前を `bi-` なしの文字列で指定できる。`BootstrapIconName` は列挙型ではなく `string`。Webフォントのクラス `bi bi-<name>` を使用するため、リポジトリで SVG の追加登録は不要。`apps/frontend/nuxt.config.ts` で固定バージョンの [jsDelivr 配信 CSS](https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css) を読み込む。アイコン描画にはこの CDN へのアクセスが必要で、npm 依存とロックファイルは変更しない。
 
-アカウント一覧の編集ボタンは `pencil-square` のみ表示し、対象名を含む `aria-label` と `title` を保持する。マスタメンテトップは `/admin/master`、現時点の掲載先は `/admin/accounts` のみ。
+名前が空、または英小文字・数字・ハイフン以外を含む場合は要素を描画しない。CSS に存在しない名前では `::before` のグリフが生成されず、従来の `tag` への誤フォールバックも起きない。アイコン要素は `display: contents` として、グリフがない場合に余分な flex アイテムを作らない。CSS・フォントが取得できなければアイコンは表示されない。
+
+## 変更対象
+
+| 場所 | 表示 | アイコン名 |
+| --- | --- | --- |
+| `apps/frontend/app/components/layout/Breadcrumb.vue` | 階層区切り（2項目目以降） | `chevron-right` |
+| `apps/frontend/app/components/ui/CardLink.vue` | カード末尾 | `arrow-right-circle` |
+| `apps/frontend/app/components/ui/Dialog.vue` | 確認 | `question-circle` |
+| 同上 | 情報 | `info-circle` |
+| 同上 | エラー（circle） | `exclamation-circle` |
+| 同上 | エラー（triangle） | `exclamation-triangle` |
+
+フッタの内部・外部リンクは先頭アイコン任意、外部リンク末尾には `box-arrow-up-right` を常時表示。アカウント編集ボタンは `pencil-square`。フッタに設定済みの `youtube`、`discord`、`envelope` も新しいコンポーネントでそのまま描画できる。
+
+## Bootstrap Icons に置き換えていない箇所
+
+| 場所 | 表示 | 実装 |
+| --- | --- | --- |
+| `apps/frontend/app/components/layout/HeaderMenu.vue` | 左右ハンバーガー | Bootstrap の `navbar-toggler-icon` |
+| `apps/frontend/app/components/layout/NavigationDropdown.vue` | ドロップダウン三角 | Bootstrap の `dropdown-toggle` |
+| `apps/frontend/app/components/ui/Accordion.vue` | 開閉矢印 | Bootstrap の `accordion-button` |
+| `apps/frontend/app/app.vue` | 通知の閉じる印 | Bootstrap の `btn-close` |
+| `apps/frontend/app/components/notice/AdminEditor.vue` | 編集ツールバー | Quill Snow の SVG |
+
+## 検証
+
+`test/components/ui/bootstrap-icon.render.spec.ts` に任意名・不正な名前・フォールバックなし・Dialog 4種の描画検査を追加。フッタ・カードリンクの既存描画テストも変更した。Nuxt の実行／ブラウザの CDN 読み込みは未検証。
