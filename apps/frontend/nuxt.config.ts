@@ -2,6 +2,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   app: {
     head: {
+      htmlAttrs: { "data-bs-theme": "dark" },
       // Bootstrap Icons icon font: supports icon names without a hand-maintained SVG list.
       link: [
         {
@@ -9,11 +10,6 @@ export default defineNuxtConfig({
           href: "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css",
         },
       ],
-    },
-  },
-  app: {
-    head: {
-      htmlAttrs: { "data-bs-theme": "dark" },
     },
   },
   css: [

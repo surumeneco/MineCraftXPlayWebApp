@@ -170,7 +170,7 @@
                 v-if="item.children?.length"
                 class="accordion accordion-flush w-100"
               >
-                <UiAccordion :title="item.label" :default-open="false">
+                <UiAccordion :title="item.label" :default-open="true">
                   <ul class="list-unstyled mb-0">
                     <li v-for="child in item.children" :key="child.to">
                       <NuxtLink
@@ -196,7 +196,7 @@
                 <UiAccordion
                   :key="`account-${mobileAccordionCycle}`"
                   title="アカウント"
-                  :default-open="false"
+                  :default-open="true"
                 >
                   <template #header
                     ><UiBootstrapIcon name="person-circle" />

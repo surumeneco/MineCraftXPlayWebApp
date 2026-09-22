@@ -42,7 +42,7 @@ describe('mobile drawer toggle and motion', () => {
       expect(drawer.attributes('open')).toBeDefined()
       expect(drawer.classes()).toContain('xplay-mobile-drawer--visible')
       expect(drawer.get('.xplay-mobile-drawer__panel').classes()).toContain('xplay-mobile-drawer__panel--right')
-      expect(drawer.get('button.accordion-button').attributes('aria-expanded')).toBe('false')
+      expect(drawer.get('button.accordion-button').attributes('aria-expanded')).toBe('true')
       await navToggle.trigger('click')
       expect(drawer.classes()).toContain('xplay-mobile-drawer--closing')
       expect(drawer.classes()).not.toContain('xplay-mobile-drawer--visible')
