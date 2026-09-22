@@ -45,6 +45,7 @@ onMounted(() => {
 });
 
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
+  { label: "Bluemap", to: "/bluemap/", native: true },
   {
     label: "情報",
     children: [
