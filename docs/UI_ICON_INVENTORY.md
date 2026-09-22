@@ -35,4 +35,4 @@
 
 `test/components/ui/bootstrap-icon.render.spec.ts` に任意名・不正な名前・フォールバックなし・Dialog 4種の描画検査を追加。フッタ・カードリンクの既存描画テストも変更した。Bootstrap Icons統合後のお知らせバナーテストは、旧`svg.bi`ではなく現行`span.bi`と`bi-calendar`・`bi-clock`・`bi-tag`を確認する。
 
-2026-09-22の統合時に`nuxt.config.ts`の`app`設定が二重定義されてCSS読み込みが上書きされる不整合をPR #16で修正。Sass、両ワークスペースのビルド、全テスト、DBマイグレーション、バックエンドコンテナビルド、公開・未認証APIスモークは[GitHub Actions #35681812335](https://github.com/surumeneco/MineCraftXPlayWebApp/actions/runs/35681812335)で通過。実ブラウザからのCDN読み込みは未検証。
+2026-09-22の統合時に`nuxt.config.ts`の`app`設定が二重定義されてCSS読み込みが上書きされる不整合をPR #16で修正。Sass、両ワークスペースのビルド、全テスト、DBマイグレーション、バックエンドコンテナビルド、公開・未認証APIスモークは[GitHub Actions #35681812335](https://github.com/surumeneco/MineCraftXPlayWebApp/actions/runs/35681812335)で通過（ドキュメント追記前の実装コミット）。実ブラウザからのCDN読み込みは未検証。
