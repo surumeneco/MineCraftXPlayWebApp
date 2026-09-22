@@ -56,6 +56,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
       { label: "運営方針とルール", to: "/info/rules" },
     ],
   },
+  { label: "Bluemap", to: "/bluemap/", native: true },
   ...(isAdmin.value
     ? [
         {
