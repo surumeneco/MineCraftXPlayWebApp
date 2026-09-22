@@ -57,8 +57,25 @@ export function useSiteImageApi() {
       return result
     } catch (error) { showError(error); throw error }
   }
+  async function upload<T>(resourceId: string, file: File, name: string, note: string): Promise<T> {
+    try {
+      const result = await $fetch<T>(`${apiBase}/admin/site-images/resources/${resourceId}/versions/file`, {
+        method: 'POST', credentials: 'include',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-XPlay-CSRF': auth.session.value.csrf_token ?? '',
+          'X-XPlay-Image-Name': encodeURIComponent(name),
+          'X-XPlay-Image-Note': encodeURIComponent(note),
+          'X-XPlay-Image-Mime': file.type,
+        },
+        body: file,
+      })
+      await refreshNuxtData('site-image-manifest')
+      return result
+    } catch (error) { showError(error); throw error }
+  }
   function preview(version: SiteImageVersion): string {
     return version.static_path ?? `${apiBase}/admin/site-images/versions/${version.id}/file`
   }
-  return { get, mutate, preview }
+  return { get, mutate, upload, preview }
 }
