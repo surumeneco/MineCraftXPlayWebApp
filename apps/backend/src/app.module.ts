@@ -11,11 +11,12 @@ import { ImagesService } from './images.service.js'
 import { AdminImagesController, AdminNoticesController, AdminTagsController, AuthController, PublicImagesController, PublicNoticesController, PublicTagsController } from './notice.controller.js'
 import { SiteImagesService } from './site-images.service.js'
 import { AdminSiteImagePresetsController, AdminSiteImagesController, PublicSiteImagesController } from './site-images.controller.js'
+import { RequestsController } from './request.controller.js'
 
 @Module({
   controllers: [AppController, PublicNoticesController, PublicTagsController, PublicImagesController,
     AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
-    PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController],
+    PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, NoticeService, NoticeNotificationService,
     ImagesService, SiteImagesService],
 })
