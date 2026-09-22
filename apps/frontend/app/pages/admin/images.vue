@@ -54,8 +54,9 @@
           <UiSectionHeading title="新しい画像バージョンを追加" />
           <form class="row g-3 mb-4" @submit.prevent="uploadVersion">
             <div class="col-12">
-              <label for="image-file" class="form-label">画像ファイル（JPEG・PNG・WebP・SVG、5 MiB以内）</label>
+              <label for="image-file" class="form-label">画像ファイル（JPEG・PNG・WebP・SVG、アプリ側の容量・解像度制限なし）</label>
               <input id="image-file" ref="fileInput" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp,.svg,image/jpeg,image/png,image/webp,image/svg+xml" required @change="chooseFile" />
+              <p class="form-text">大容量のファイルは通信経路・サーバーの容量やメモリによってアップロードできない場合があります。</p>
             </div>
             <div class="col-12 col-md-5">
               <label for="image-name" class="form-label">画像名</label>
@@ -100,7 +101,7 @@ import type { SiteImageResource, SiteImageVersion } from '../../composables/useS
 
 const auth = useAccountSession()
 const api = useSiteImageApi()
-const { showSuccess, showError } = useUiFeedback()
+const { showSuccess } = useUiFeedback()
 const loading = ref(true), busy = ref(false)
 const resources = ref<SiteImageResource[]>([])
 const selectedId = ref('')
@@ -136,18 +137,6 @@ function chooseFile(event: Event): void {
   const file = (event.target as HTMLInputElement).files?.[0] ?? null
   uploadFile.value = file
   if (file) newVersion.name = file.name.replace(/\.[^.]+$/, '').slice(0, 100)
-  if (file && file.size > 5 * 1024 * 1024) {
-    uploadFile.value = null
-    showError('画像のサイズは5 MiB以内にしてください。')
-  }
-}
-function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result.split(',')[1] ?? '') : reject(new Error('画像を読み込めません。'))
-    reader.onerror = () => reject(new Error('画像を読み込めません。'))
-    reader.readAsDataURL(file)
-  })
 }
 async function createResource(): Promise<void> {
   await run(async () => {
@@ -166,11 +155,7 @@ async function saveResource(): Promise<void> {
 async function uploadVersion(): Promise<void> {
   if (!selected.value || !uploadFile.value) return
   await run(async () => {
-    const file = uploadFile.value!
-    const encoded = await readFile(file)
-    await api.mutate(`/admin/site-images/resources/${selectedId.value}/versions`, 'POST', {
-      name: newVersion.name, note: newVersion.note, mime_type: file.type, data_base64: encoded,
-    })
+    await api.upload(selectedId.value, uploadFile.value!, newVersion.name, newVersion.note)
     uploadFile.value = null; newVersion.name = ''; newVersion.note = ''
     if (fileInput.value) fileInput.value.value = ''
     await loadResources()
