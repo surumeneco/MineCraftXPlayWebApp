@@ -1,12 +1,12 @@
 # MineCraftXPlayWebApp
 
-XPlayServer の Web アプリケーション用モノレポです。Nuxt フロントエンド、NestJS API、PostgreSQL を別サービスとして管理します。現在は基本的な画面・API・テストの基盤段階で、認証や BlueMap 連携、本番向けの公開ルーティングなどは未完成です。
+XPlayServer の Web アプリケーション用モノレポです。Nuxt フロントエンド、NestJS API、PostgreSQL を別サービスとして管理します。公開時はアプリ用VPS上の Cloudflare Tunnel → Nginx を経由し、BlueMap はプライベートネットワーク経由でMinecraft用VPSに接続します。
 
 ## VSCode で開いた直後
 
 本リポジトリを VSCode で開き、**[ターミナル] → [新しいターミナル]** を選択します。ローカルは Windows 11 の PowerShell、VPS は Ubuntu のシェルを想定します。特記がなければリポジトリのルートから実行してください。
 
-作業対象は `develop` です。`main` とは更新状態が異なるため、作業前にリモートのブランチ状況を確認してから更新します。
+開発時の作業対象は `develop`、本番デプロイ対象は `main` です。作業前にリモートのブランチ状況を確認してから更新します。
 
 ```powershell
 git fetch origin --prune
@@ -226,7 +226,7 @@ npm run test:e2e:install
 npm run test:e2e
 ```
 
-E2Eは対象サービスの起動とPlaywrightブラウザの導入が必要です。テスト構造・variant・PICT・スナップショットの詳細は [`TESTING.md`](./TESTING.md) を参照してください。現在はお知らせの公開API／DB実装などが未完成であり、開発サーバー起動はそれらの完成を意味しません。
+E2Eは対象サービスの起動とPlaywrightブラウザの導入が必要です。テスト構造・variant・PICT・スナップショットの詳細は [`TESTING.md`](./TESTING.md) を参照してください。
 
 ## VPS に SSH 接続する（VSCode ターミナルから）
 
@@ -236,53 +236,76 @@ WebApp と独自 DiscordBot は Minecraft 本体とは**別のアプリ用 VPS**
 ssh -i "$HOME/.ssh/鍵ファイル名" SSHユーザー名@アプリVPSのIP
 ```
 
-以降は Ubuntu 側のターミナルです。すでにアプリを配置してある場合は既存のディレクトリへ移動してください。未配置で新規配置する場合の一例は以下です。**既存の本番ディレクトリを二重に作成しない**でください。
+既存の本番配置先は `/opt/xplay/MineCraftXPlayWebApp` です。Git操作は `xplay` ユーザーで行い、デプロイ対象ブランチは `main` です。初回構築用コマンドと日常の再デプロイを混同しないでください。PostgreSQL・backend・frontend は Docker Compose で管理し、通知連携時は `compose.notice.yaml` を重ねます。`NOTICE_NOTIFY_SECRET` はBotと同じ値を `.env` に設定し、Token・DBパスワードをGitに登録しません。
+
+## 本番再デプロイ（既存のアプリ用VPS）
+
+WebAppのコード・依存パッケージ更新を反映する手順です。SSHのrootシェルから実行する場合、Gitだけ `runuser -u xplay --` を付けます。すでに `xplay` ユーザーならこの接頭辞を外し、Dockerは実行権限のあるユーザーで操作します。**Botに変更がある場合は[Bot側READMEの本番再デプロイ](https://github.com/surumeneco/MineCraftXPlayDiscordBot/blob/main/README.md)を先に実施**し、通知受信側が起動していることを確認します。
+
+### 1. ブランチの確認とmainの取り込み
 
 ```bash
-mkdir -p ~/apps
-cd ~/apps
-git clone https://github.com/surumeneco/MineCraftXPlayWebApp.git
-cd MineCraftXPlayWebApp
-git fetch origin --prune
-git switch develop
-git pull --ff-only origin develop
+cd /opt/xplay/MineCraftXPlayWebApp
+runuser -u xplay -- git status --short
+runuser -u xplay -- git fetch origin --prune
+runuser -u xplay -- git switch main
+runuser -u xplay -- git pull --ff-only origin main
+runuser -u xplay -- git rev-parse --short HEAD
 ```
 
-初回は `.env` を作成し、本番の DB パスワードや `FRONTEND_ORIGIN`、`NUXT_PUBLIC_API_BASE` を配置先の構成に応じて設定します。既存の `.env` は更新の際に上書きしないでください。
+変更ファイルが残る場合は内容を確認し、`reset --hard` で破棄しない。`.env.example` に新項目が追加された場合だけ、既存の `.env` に追記する。既存の秘密値を上書きしない。スキーマ変更を伴う更新では、デプロイ前に移行内容・互換性も確認する。
+
+### 2. PostgreSQLバックアップ
 
 ```bash
-[ -f .env ] || cp .env.example .env
-docker compose up -d --build
-docker compose ps
-docker compose logs -f frontend backend db
+mkdir -p /root/xplay-backups
+chmod 700 /root/xplay-backups
+BACKUP="/root/xplay-backups/webapp-$(date +%Y%m%d-%H%M%S).sql"
+docker compose -f compose.yaml -f compose.notice.yaml exec -T db \
+  sh -c 'exec pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$BACKUP"
+test -s "$BACKUP" && ls -lh "$BACKUP"
 ```
 
-本番用の通常操作：
+`pg_dump` に失敗した場合やバックアップが空の場合は再デプロイしない。バックアップはVPS障害対策として別の安全な保存先にも保管する。PostgreSQLのデータ本体はDockerのnamed volume `postgres_data` に保存される。
+
+### 3. Composeの設定検証
 
 ```bash
-# 停止
-docker compose stop
-# 起動
-docker compose start
-# コンテナの再起動（コードや環境変数の変更は反映しない）
-docker compose restart
-# リポジトリ更新後のビルドと再作成
-git pull --ff-only origin develop
-docker compose up -d --build
-# ログ
-docker compose logs --tail=100 frontend backend db
+docker compose -f compose.yaml -f compose.notice.yaml config --quiet
 ```
 
-現行 Compose ではホスト側ポート `3000` / `3001` / `5432` をすべて `127.0.0.1` に限定しています。**VPS の IP アドレスにポートを付けても外部公開されません。** 公開には別途 Cloudflare Tunnel と本番向けの API ルーティングを構成する必要があります。現状の README は公開済み Web サイトの存在を保証しません。
+エラーがなければ次に進む。共有Dockerネットワーク `xplay_notices` は初回に一度だけ作成するもので、毎回作り直さない。通知連携のため `compose.notice.yaml` を省略しない。
 
-公開前の接続確認では、ローカル VSCode ターミナルから次の SSH ポート転送を開いたまま、手元のブラウザーで `http://localhost:3000` と `http://localhost:3001/api/health` を確認できます。
+### 4. バックエンドを先に更新・検証
 
-```powershell
-ssh -i "$HOME/.ssh/鍵ファイル名" -L 3000:127.0.0.1:3000 -L 3001:127.0.0.1:3001 SSHユーザー名@アプリVPSのIP
+```bash
+docker compose -f compose.yaml -f compose.notice.yaml up -d --no-deps --build backend
+docker compose -f compose.yaml -f compose.notice.yaml logs --tail=100 backend
+curl -fsS http://127.0.0.1:3001/api/health
 ```
 
-## 永続データと未実装事項
+`--no-deps` で既存のDBコンテナを作り直さず、バックエンドだけをビルド・再作成する。バックエンドの起動処理にはDBマイグレーションが含まれる。`/api/health` が正常でない場合はフロントエンド更新へ進まず、ログとDBの状態を確認する。
 
-PostgreSQL の実データは Docker named volume `postgres_data` に保存され Git 管理対象外です。VPS 更新時は DB データ・`.env` を別途バックアップしてください。ORM / DB スキーマ・マイグレーション、認証・認可、セッション管理、本番公開ルーティング、BlueMap 連携は後続実装の対象です。
+### 5. フロントエンドを更新・検証
+
+```bash
+docker compose -f compose.yaml -f compose.notice.yaml up -d --no-deps --build frontend
+docker compose -f compose.yaml -f compose.notice.yaml ps
+docker compose -f compose.yaml -f compose.notice.yaml logs --tail=80 frontend
+curl -I http://127.0.0.1:3000/
+```
+
+公開URL `https://mofuparkweb.surumene.co/` にアクセスし、変更対象機能・ログインを確認する。BlueMap は `https://mofuparkweb.surumene.co/bluemap/`。Nginx と Cloudflare Tunnel はアプリのコード更新だけなら通常再起動不要だが、設定変更時は個別に確認・反映する。BlueMapの接続先はMinecraft用VPSの実際のプライベートIPを使用する。
+
+### 禁止事項と切り分け
+
+- **`docker compose down -v` / `down --volumes`、`docker volume prune` を実行しない。** DBの永続データを削除する危険がある。
+- `docker compose restart` だけでは新しいソース・イメージ・環境変数を反映できない。更新時は `up -d --build` で必要なサービスを再作成する。
+- `.env` を `.env.example` で上書きしない。秘密値をログ・README・コミットへ貼らない。
+- 直接 `http://127.0.0.1:3000/` は成功して公開ページだけ失敗するならNginx・Cloudflare Tunnelを切り分ける。BlueMapはまずWebApp用VPSから `curl http://10.200.10.2:8100/` でプライベート通信を確認する（IPが変更された場合は読み替える）。
+
+## 永続データと関連資料
+
+PostgreSQL の実データは Docker named volume `postgres_data` に保存され Git 管理対象外です。VPS 更新時は DB データ・`.env` を別途バックアップしてください。バックエンド起動時のマイグレーションにも注意してください。
 
 関連資料: [Web アプリ設計](https://drive.google.com/file/d/1HFYg_JLSUB-F2fNNKXEhitfDAc0xPHJy/view)、[サーバー構成](https://drive.google.com/file/d/1SndNSbyQX5HUEEE-ueQAofPO0bZ6jvto/view)。
