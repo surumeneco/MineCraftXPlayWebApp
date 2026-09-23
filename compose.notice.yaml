@@ -1,12 +1,14 @@
 # Opt-in overlay: docker compose -f compose.yaml -f compose.notice.yaml up -d --build
 # Create the network once on the shared Web/Bot VPS: docker network create xplay_notices
-# Do not expose the Bot's internal notification HTTP port publicly.
+# Do not expose the Bot's internal notification HTTP ports publicly.
 services:
   backend:
     environment:
       NOTICE_BOT_URL: ${NOTICE_BOT_URL:-http://xplay-notice-bot:3101}
       NOTICE_NOTIFY_SECRET: ${NOTICE_NOTIFY_SECRET:?Configure the shared notice notification secret}
       NOTICE_PUBLIC_BASE_URL: ${NOTICE_PUBLIC_BASE_URL:?Configure the public frontend origin}
+      REQUEST_BOT_URL: ${REQUEST_BOT_URL:-http://xplay-notice-bot:3102}
+      REQUEST_NOTIFY_SECRET: ${REQUEST_NOTIFY_SECRET:?Configure the shared request notification secret}
     networks:
       default: {}
       xplay_notices: {}

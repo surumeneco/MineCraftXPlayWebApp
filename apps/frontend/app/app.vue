@@ -45,6 +45,7 @@ onMounted(() => {
 });
 
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
+  { label: "Bluemap", to: "/bluemap/", native: true },
   {
     label: "情報",
     children: [
@@ -56,6 +57,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
       { label: "運営方針とルール", to: "/info/rules" },
     ],
   },
+  { label: "要望を送る", to: "/request" },
   ...(isAdmin.value
     ? [
         {

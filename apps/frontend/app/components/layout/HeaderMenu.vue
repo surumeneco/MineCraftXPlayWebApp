@@ -68,6 +68,13 @@
                 :links="item.children"
                 @link-selected="closeNavigation"
               />
+              <a
+                v-else-if="item.to && item.native"
+                :href="item.to"
+                class="nav-link"
+                @click="closeNavigation"
+                >{{ item.label }}</a
+              >
               <NuxtLink
                 v-else-if="item.to"
                 :to="item.to"
@@ -183,6 +190,13 @@
                   </ul>
                 </UiAccordion>
               </div>
+              <a
+                v-else-if="item.to && item.native"
+                :href="item.to"
+                class="nav-link xplay-mobile-drawer__link"
+                @click="closeNavigation"
+                >{{ item.label }}</a
+              >
               <NuxtLink
                 v-else-if="item.to"
                 :to="item.to"

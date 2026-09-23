@@ -13,6 +13,19 @@ describe('App rendering', () => {
     expect(wrapper.find('nav[aria-label="モバイルナビゲーション"] a[href="/"]').exists()).toBe(false)
   })
 
+  it('shows Bluemap as a direct header link on desktop and mobile', async () => {
+    const wrapper = await mountSuspended(App, { route: '/' })
+    const desktop = wrapper.get('nav[aria-label="メインナビゲーション"] a[href="/bluemap/"]')
+    expect(desktop.text()).toBe('Bluemap')
+    expect(desktop.attributes('target')).toBeUndefined()
+
+    await wrapper.get('button[aria-label="ナビゲーションメニュー"]').trigger('click')
+    const mobile = wrapper.get('nav[aria-label="モバイルナビゲーション"] a[href="/bluemap/"]')
+    expect(mobile.text()).toBe('Bluemap')
+    expect(mobile.attributes('target')).toBeUndefined()
+    wrapper.unmount()
+  })
+
   it('renders the OFUSE card in a new tab with the requested destination and no note', async () => {
     const wrapper = await mountSuspended(App, { route: '/' })
     const card = wrapper.get('main a.xplay-card--link[href="https://ofuse.me/mofupark"]')
