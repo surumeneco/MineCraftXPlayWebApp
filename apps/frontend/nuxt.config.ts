@@ -3,8 +3,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { "data-bs-theme": "dark" },
-      // Bootstrap Icons icon font: supports icon names without a hand-maintained SVG list.
+      titleTemplate: "もふもふ広場 - %s",
+      // Put the favicon file at apps/frontend/public/favicon.ico.
       link: [
+        {
+          rel: "icon",
+          type: "image/x-icon",
+          href: "/favicon.ico",
+        },
         {
           rel: "stylesheet",
           href: "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css",
