@@ -18,6 +18,15 @@ test('navigates from the centered hover menu and returns home through the logo',
   await expect(page).toHaveURL(/\/$/)
 })
 
+test('uses branded document titles and declares the favicon', async ({ page, goto }) => {
+  await goto('/', { waitUntil: 'hydration' })
+  await expect(page).toHaveTitle('もふもふ広場 - ホーム')
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.ico')
+
+  await page.goto('/info/about')
+  await expect(page).toHaveTitle('もふもふ広場 - コミュニティ概要')
+})
+
 test('mobile hamburgers open modal overlays with legible white links without pushing content down', async ({ page, goto }) => {
   await page.setViewportSize({ width: 375, height: 720 })
   await goto('/', { waitUntil: 'hydration' })

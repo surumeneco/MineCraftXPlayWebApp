@@ -7,7 +7,7 @@
     </div>
     <p v-else-if="!notice || notice.is_draft || !notice.published_at" role="status">お知らせが見つかりません。</p>
     <template v-else>
-      <UiPageTitle><span class="text-break">{{ notice.title }}</span></UiPageTitle>
+      <UiPageTitle :title="notice.title"><span class="text-break">{{ notice.title }}</span></UiPageTitle>
       <div class="mb-4"><NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" /></div>
       <ClientOnly>
         <div ref="editor" aria-label="お知らせ本文" />
