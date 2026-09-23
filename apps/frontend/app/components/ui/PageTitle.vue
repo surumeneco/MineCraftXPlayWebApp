@@ -5,11 +5,15 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   title?: string
   as?: 'h1' | 'h2'
   id?: string
 }>(), {
   as: 'h1',
+})
+
+useHead({
+  title: () => props.title,
 })
 </script>
