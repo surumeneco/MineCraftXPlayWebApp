@@ -53,6 +53,7 @@
         </div>
         <div class="col-auto"><button type="submit" class="btn btn-primary" :disabled="busy || !minecraftName.trim()">追加</button></div>
       </form>
+      <AccountMapColorEditor :account-id="account.id" />
       <section class="border rounded p-3 mb-4" aria-labelledby="merge-title">
         <h2 id="merge-title" class="h4">アカウント統合・分離</h2>
         <p class="small text-body-secondary">このアカウントを統合先とし、既存の別アカウントを統合元に選びます。元のアカウントと所有者情報はDBに残るため、後から分離できます。</p>
