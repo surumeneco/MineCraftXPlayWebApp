@@ -40,8 +40,8 @@ export class TerritoryController {
   }
 
   @Post(':id/withdraw')
-  async withdraw(@Req() req: any, @Param('id') id: string) {
-    return this.territories.withdraw(await this.auth.requireUser(req, true), id)
+  async withdraw(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return this.territories.withdraw(await this.auth.requireUser(req, true), id, body?.operation_id)
   }
 }
 
@@ -64,7 +64,7 @@ export class AdminTerritoryController {
   @Post(':id/review')
   async review(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     await this.auth.requireAdmin(req, true)
-    return this.territories.review(id, body?.action, body?.reason)
+    return this.territories.review(id, body?.action, body?.reason, body?.operation_id)
   }
 }
 

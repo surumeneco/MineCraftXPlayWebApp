@@ -7,6 +7,7 @@ import { TerritoryNotificationService, type TerritoryNotificationEvent } from '.
 export type TerritoryStatus = 'pending' | 'approved' | 'returned' | 'withdrawn' | 'rejected'
 export type OwnerType = 'account' | 'shared_area' | 'administration' | 'protected_area'
 type ApplicationType = 'new' | 'edit'
+type OperationKind = 'create' | 'reapply' | 'edit' | 'withdraw' | 'approve' | 'return' | 'reject'
 type ApplicationData = {
   id: string
   application_type: ApplicationType
@@ -168,28 +169,49 @@ export class TerritoryService {
     return { type, accountId: type === 'account' ? applicant : null }
   }
 
+  private async completedOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind) {
+    const rows = await tx`SELECT territory_id,operation_kind FROM territory_operations WHERE operation_id=${operationId}`
+    if (!rows.length) return null
+    if (String(rows[0].territory_id) !== territoryId || rows[0].operation_kind !== kind) {
+      throw new ConflictException('Territory operation ID was already used')
+    }
+    return this.getFromRows(await this.rows(tx), territoryId)
+  }
+
+  private async completeOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind) {
+    await tx`INSERT INTO territory_operations(operation_id,territory_id,operation_kind)
+      VALUES (${operationId},${territoryId},${kind})`
+  }
+
   async create(accountId: string, isAdmin: boolean, body: any) {
+    const operationId = uuid(body?.operation_id)
     const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
+      const completed = await this.completedOperation(tx, operationId, operationId, 'create')
+      if (completed) return completed
       await this.assertMinecraft(accountId, tx)
-      const territories = await tx`INSERT INTO territories(applicant_account_id,owner_type,owner_account_id,status)
-        VALUES (${accountId},${owner.type},${owner.accountId},'pending') RETURNING id`
+      const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status)
+        VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending') RETURNING id`
       const id = String(territories[0].id)
       const applications = await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending') RETURNING id`
       const appId = String(applications[0].id)
-      await this.notify(tx, id, appId, 'application', 'new', coordinates, name)
+      await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
+      await this.completeOperation(tx, operationId, id, 'create')
       return this.getFromRows(await this.rows(tx), id)
     })
   }
 
   async reapply(accountId: string, isAdmin: boolean, idRaw: unknown, body: any) {
-    const id = uuid(idRaw), name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
+    const id = uuid(idRaw), operationId = uuid(body?.operation_id)
+    const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
+      const completed = await this.completedOperation(tx, operationId, id, 'reapply')
+      if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can reapply')
@@ -206,15 +228,18 @@ export class TerritoryService {
       const applications = await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending') RETURNING id`
       const appId = String(applications[0].id)
-      await this.notify(tx, id, appId, 'application', 'new', coordinates, name)
+      await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
+      await this.completeOperation(tx, operationId, id, 'reapply')
       return this.getFromRows(await this.rows(tx), id)
     })
   }
 
   async edit(accountId: string, isAdmin: boolean, idRaw: unknown, body: any) {
-    const id = uuid(idRaw), name = territoryName(body?.name)
+    const id = uuid(idRaw), operationId = uuid(body?.operation_id), name = territoryName(body?.name)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
+      const completed = await this.completedOperation(tx, operationId, id, 'edit')
+      if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       const row = locked[0]
@@ -234,15 +259,18 @@ export class TerritoryService {
         VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},'pending') RETURNING id`
       await tx`UPDATE territories SET status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
       const appId = String(apps[0].id)
-      await this.notify(tx, id, appId, 'application', 'edit', coordinates, name)
+      await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name)
+      await this.completeOperation(tx, operationId, id, 'edit')
       return this.getFromRows(await this.rows(tx), id)
     })
   }
 
-  async withdraw(accountId: string, idRaw: unknown) {
-    const id = uuid(idRaw)
+  async withdraw(accountId: string, idRaw: unknown, operationRaw: unknown) {
+    const id = uuid(idRaw), operationId = uuid(operationRaw)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
+      const completed = await this.completedOperation(tx, operationId, id, 'withdraw')
+      if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can withdraw')
@@ -255,19 +283,22 @@ export class TerritoryService {
       await tx`UPDATE territory_applications SET status='withdrawn',decided_at=clock_timestamp() WHERE id=${app.id}`
       const nextStatus = previousApproved.length ? 'approved' : 'withdrawn'
       await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
-      await this.notify(tx, id, String(app.id), 'withdrawn', app.application_type as ApplicationType,
+      await this.notify(tx, operationId, id, 'withdrawn', app.application_type as ApplicationType,
         app.coordinates as Point[], String(app.name))
+      await this.completeOperation(tx, operationId, id, 'withdraw')
       return this.getFromRows(await this.rows(tx), id)
     })
   }
 
-  async review(idRaw: unknown, actionRaw: unknown, reasonRaw?: unknown) {
-    const id = uuid(idRaw)
+  async review(idRaw: unknown, actionRaw: unknown, reasonRaw: unknown, operationRaw: unknown) {
+    const id = uuid(idRaw), operationId = uuid(operationRaw)
     if (!['approve','return','reject'].includes(String(actionRaw))) throw new BadRequestException('Invalid review action')
     const action = String(actionRaw) as 'approve' | 'return' | 'reject'
     const reviewReason = action === 'approve' ? null : reason(reasonRaw)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
+      const completed = await this.completedOperation(tx, operationId, id, action)
+      if (completed) return completed
       const locked = await tx`SELECT status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (locked[0].status !== 'pending') throw new ConflictException('Territory is not pending')
@@ -279,15 +310,16 @@ export class TerritoryService {
       if (action === 'approve') {
         await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${appId}`
         await tx`UPDATE territories SET status='approved',approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
-        await this.notify(tx, id, appId, 'approved', applicationType, app.coordinates as Point[], String(app.name))
+        await this.notify(tx, operationId, id, 'approved', applicationType, app.coordinates as Point[], String(app.name))
       } else {
         const status = action === 'return' ? 'returned' : 'rejected'
         await tx`UPDATE territory_applications SET status=${status},decided_at=clock_timestamp(),reason=${reviewReason} WHERE id=${appId}`
         const previousApproved = await tx`SELECT 1 FROM territory_applications WHERE territory_id=${id} AND status='approved' LIMIT 1`
         const nextStatus = previousApproved.length ? 'approved' : status
         await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
-        await this.notify(tx, id, appId, status, applicationType, app.coordinates as Point[], String(app.name), reviewReason ?? undefined)
+        await this.notify(tx, operationId, id, status, applicationType, app.coordinates as Point[], String(app.name), reviewReason ?? undefined)
       }
+      await this.completeOperation(tx, operationId, id, action)
       return { ...this.getFromRows(await this.rows(tx), id), overlaps_at_review: overlapsAtReview }
     })
   }
@@ -336,14 +368,14 @@ export class TerritoryService {
     return this.dto(row)
   }
 
-  private async notify(sql: any, territoryId: string, appId: string,
+  private async notify(sql: any, operationId: string, territoryId: string,
     kind: TerritoryNotificationEvent['kind'], applicationType: ApplicationType,
     coordinates: Point[], name: string, reviewReason?: string) {
     const territory = (await this.rows(sql)).find(row => row.id === territoryId)
     if (!territory) throw new NotFoundException('Territory not found')
     const discord = await sql`SELECT discord_id FROM account_discord_identities WHERE account_id=${territory.applicant_account_id} ORDER BY discord_id`
     const event: TerritoryNotificationEvent = {
-      event_id: `${territoryId}:${appId}:${kind}`,
+      event_id: `${operationId}:${kind}`,
       kind, application_type: applicationType, territory_name: name,
       account_name: territory.applicant_name,
       discord_ids: discord.map((entry: any) => String(entry.discord_id)),

@@ -49,3 +49,12 @@ CREATE INDEX territory_applications_territory_idx
 -- statement
 CREATE UNIQUE INDEX territory_one_pending_application_idx
   ON territory_applications(territory_id) WHERE status='pending';
+-- statement
+CREATE TABLE territory_operations (
+  operation_id UUID PRIMARY KEY,
+  territory_id UUID NOT NULL REFERENCES territories(id) ON DELETE CASCADE,
+  operation_kind TEXT NOT NULL CHECK (operation_kind IN ('create','reapply','edit','withdraw','approve','return','reject')),
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+);
+-- statement
+CREATE INDEX territory_operations_territory_idx ON territory_operations(territory_id, completed_at DESC);

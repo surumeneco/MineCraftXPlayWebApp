@@ -12,9 +12,10 @@ import type {TerritoryRecord,TerritoryStatus} from '../../../../utils/territory'
 import {formatArea,formatCentroid,territoryStatusLabel} from '../../../../utils/territory'
 import {userFacingError} from '../../../../utils/user-error'
 type Review=TerritoryRecord&{overlaps:{approved:Array<{id:string;name:string}>;pending:Array<{id:string;name:string}>};applicant_other_territories:TerritoryRecord[]}
-const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi(),item=ref<Review|null>(null),loading=ref(true),busy=ref(false),error=ref(''),reason=ref('')
+const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi(),item=ref<Review|null>(null),loading=ref(true),busy=ref(false),error=ref(''),reason=ref(''),operationId=ref('')
+const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
 const statuses:TerritoryStatus[]=['pending','approved','returned','withdrawn','rejected']
 const grouped=computed(()=>Object.fromEntries(statuses.map(s=>[s,item.value?.applicant_other_territories.filter(v=>v.status===s)??[]])) as Record<TerritoryStatus,TerritoryRecord[]>)
-async function review(action:'approve'|'return'|'reject'){busy.value=true;error.value='';try{await mutate(`/admin/territories/${route.params.id}/review`,'POST',{action,reason:reason.value});await navigateTo('/admin/territories')}catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
+async function review(action:'approve'|'return'|'reject'){busy.value=true;error.value='';try{await mutate(`/admin/territories/${route.params.id}/review`,'POST',{operation_id:operation(),action,reason:reason.value});await navigateTo('/admin/territories')}catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
 onMounted(async()=>{try{await auth.refresh();if(auth.isAdmin.value)item.value=await get<Review>(`/admin/territories/${route.params.id}`)}catch(e){error.value=userFacingError(e)}finally{loading.value=false}})
 </script>

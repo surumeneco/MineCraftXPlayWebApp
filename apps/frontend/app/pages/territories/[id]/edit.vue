@@ -48,7 +48,8 @@ import { userFacingError } from '../../../utils/user-error'
 
 const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi()
 const territory=ref<TerritoryRecord|null>(null),name=ref(''),intermediate=ref<TerritoryPoint[]>([])
-const selected=ref<Set<number>>(new Set()),loading=ref(true),busy=ref(false),error=ref('')
+const selected=ref<Set<number>>(new Set()),loading=ref(true),busy=ref(false),error=ref(''),operationId=ref('')
+const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
 const approved=computed(()=>territory.value?.approved_coordinates ?? territory.value?.coordinates ?? [])
 const modulo=(value:number,length:number)=>(value+length)%length
 
@@ -106,6 +107,7 @@ async function submit(){
   busy.value=true;error.value=''
   try{
     const result=await mutate<TerritoryRecord>(`/territories/${territory.value.id}/edit`,'POST',{
+      operation_id:operation(),
       name:name.value.trim(),
       ...(range.value?{replacement:{start:range.value.start,end:range.value.end,intermediate:intermediate.value}}:{})
     })

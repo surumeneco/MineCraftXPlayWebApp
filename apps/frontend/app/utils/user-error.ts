@@ -31,6 +31,7 @@ const translations: Record<string, string> = {
   'Territory name is required': '領地名を入力してください。',
   'Territory name must contain 1 to 100 characters': '領地名は1～100文字で入力してください。',
   'Invalid territory owner': '領地の所有者指定が正しくありません。',
+  'Territory operation ID was already used': 'この操作識別子は別の領地操作で使用済みです。',
   'At least three territory coordinates are required': '領地には3点以上の座標が必要です。',
   'Invalid territory coordinate': '領地座標の形式が正しくありません。',
   'Territory coordinates must be integers': '領地のX/Z座標は整数で入力してください。',
