@@ -273,6 +273,7 @@ export class TerritoryService {
         WHERE territory_id=${id} AND status='pending' ORDER BY submitted_at DESC,id DESC LIMIT 1 FOR UPDATE`
       if (!apps.length) throw new ConflictException('Pending application not found')
       const app = apps[0], appId = String(app.id), applicationType = app.application_type as ApplicationType
+      const overlapsAtReview = this.overlaps(await this.rows(tx), id, app.coordinates as Point[])
       if (action === 'approve') {
         await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${appId}`
         await tx`UPDATE territories SET status='approved',approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
@@ -285,7 +286,7 @@ export class TerritoryService {
         await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
         await this.notify(tx, id, appId, status, applicationType, app.coordinates as Point[], String(app.name), reviewReason ?? undefined)
       }
-      return this.getFromRows(await this.rows(tx), id)
+      return { ...this.getFromRows(await this.rows(tx), id), overlaps_at_review: overlapsAtReview }
     })
   }
 

@@ -9,6 +9,9 @@ services:
       NOTICE_PUBLIC_BASE_URL: ${NOTICE_PUBLIC_BASE_URL:?Configure the public frontend origin}
       REQUEST_BOT_URL: ${REQUEST_BOT_URL:-http://xplay-notice-bot:3102}
       REQUEST_NOTIFY_SECRET: ${REQUEST_NOTIFY_SECRET:?Configure the shared request notification secret}
+      TERRITORY_BOT_URL: ${TERRITORY_BOT_URL:-http://xplay-notice-bot:3103}
+      TERRITORY_NOTIFY_SECRET: ${TERRITORY_NOTIFY_SECRET:?Configure the shared territory notification secret}
+      TERRITORY_PUBLIC_BASE_URL: ${TERRITORY_PUBLIC_BASE_URL:?Configure the public frontend origin}
     networks:
       default: {}
       xplay_notices: {}
