@@ -195,9 +195,8 @@ export class TerritoryService {
       const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status)
         VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending') RETURNING id`
       const id = String(territories[0].id)
-      const applications = await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
-        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending') RETURNING id`
-      const appId = String(applications[0].id)
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
+        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending')`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'create')
       return this.getFromRows(await this.rows(tx), id)
@@ -225,9 +224,8 @@ export class TerritoryService {
       }
       await tx`UPDATE territories SET owner_type=${owner.type},owner_account_id=${owner.accountId},
         status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
-      const applications = await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
-        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending') RETURNING id`
-      const appId = String(applications[0].id)
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
+        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending')`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'reapply')
       return this.getFromRows(await this.rows(tx), id)
@@ -255,10 +253,9 @@ export class TerritoryService {
       if (approved[0].name === name && samePoints(approvedCoordinates, coordinates)) {
         throw new BadRequestException('Change the territory before submitting an edit')
       }
-      const apps = await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
-        VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},'pending') RETURNING id`
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
+        VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},'pending')`
       await tx`UPDATE territories SET status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
-      const appId = String(apps[0].id)
       await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'edit')
       return this.getFromRows(await this.rows(tx), id)
