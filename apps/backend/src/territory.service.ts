@@ -169,18 +169,19 @@ export class TerritoryService {
     return { type, accountId: type === 'account' ? applicant : null }
   }
 
-  private async completedOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind) {
-    const rows = await tx`SELECT territory_id,operation_kind FROM territory_operations WHERE operation_id=${operationId}`
+  private async completedOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind, actorAccountId: string) {
+    const rows = await tx`SELECT territory_id,actor_account_id,operation_kind FROM territory_operations WHERE operation_id=${operationId}`
     if (!rows.length) return null
-    if (String(rows[0].territory_id) !== territoryId || rows[0].operation_kind !== kind) {
+    if (String(rows[0].territory_id) !== territoryId || String(rows[0].actor_account_id ?? '') !== actorAccountId
+      || rows[0].operation_kind !== kind) {
       throw new ConflictException('Territory operation ID was already used')
     }
     return this.getFromRows(await this.rows(tx), territoryId)
   }
 
-  private async completeOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind) {
-    await tx`INSERT INTO territory_operations(operation_id,territory_id,operation_kind)
-      VALUES (${operationId},${territoryId},${kind})`
+  private async completeOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind, actorAccountId: string) {
+    await tx`INSERT INTO territory_operations(operation_id,territory_id,actor_account_id,operation_kind)
+      VALUES (${operationId},${territoryId},${actorAccountId},${kind})`
   }
 
   async create(accountId: string, isAdmin: boolean, body: any) {
@@ -189,7 +190,7 @@ export class TerritoryService {
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const completed = await this.completedOperation(tx, operationId, operationId, 'create')
+      const completed = await this.completedOperation(tx, operationId, operationId, 'create', accountId)
       if (completed) return completed
       await this.assertMinecraft(accountId, tx)
       const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status)
@@ -198,7 +199,7 @@ export class TerritoryService {
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending')`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
-      await this.completeOperation(tx, operationId, id, 'create')
+      await this.completeOperation(tx, operationId, id, 'create', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
   }
@@ -209,7 +210,7 @@ export class TerritoryService {
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const completed = await this.completedOperation(tx, operationId, id, 'reapply')
+      const completed = await this.completedOperation(tx, operationId, id, 'reapply', accountId)
       if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
@@ -227,7 +228,7 @@ export class TerritoryService {
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending')`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
-      await this.completeOperation(tx, operationId, id, 'reapply')
+      await this.completeOperation(tx, operationId, id, 'reapply', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
   }
@@ -236,7 +237,7 @@ export class TerritoryService {
     const id = uuid(idRaw), operationId = uuid(body?.operation_id), name = territoryName(body?.name)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const completed = await this.completedOperation(tx, operationId, id, 'edit')
+      const completed = await this.completedOperation(tx, operationId, id, 'edit', accountId)
       if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
@@ -257,7 +258,7 @@ export class TerritoryService {
         VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},'pending')`
       await tx`UPDATE territories SET status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name)
-      await this.completeOperation(tx, operationId, id, 'edit')
+      await this.completeOperation(tx, operationId, id, 'edit', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
   }
@@ -266,7 +267,7 @@ export class TerritoryService {
     const id = uuid(idRaw), operationId = uuid(operationRaw)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const completed = await this.completedOperation(tx, operationId, id, 'withdraw')
+      const completed = await this.completedOperation(tx, operationId, id, 'withdraw', accountId)
       if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
@@ -282,19 +283,19 @@ export class TerritoryService {
       await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.notify(tx, operationId, id, 'withdrawn', app.application_type as ApplicationType,
         app.coordinates as Point[], String(app.name))
-      await this.completeOperation(tx, operationId, id, 'withdraw')
+      await this.completeOperation(tx, operationId, id, 'withdraw', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
   }
 
-  async review(idRaw: unknown, actionRaw: unknown, reasonRaw: unknown, operationRaw: unknown) {
+  async review(idRaw: unknown, actionRaw: unknown, reasonRaw: unknown, operationRaw: unknown, reviewerAccountId: string) {
     const id = uuid(idRaw), operationId = uuid(operationRaw)
     if (!['approve','return','reject'].includes(String(actionRaw))) throw new BadRequestException('Invalid review action')
     const action = String(actionRaw) as 'approve' | 'return' | 'reject'
     const reviewReason = action === 'approve' ? null : reason(reasonRaw)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const completed = await this.completedOperation(tx, operationId, id, action)
+      const completed = await this.completedOperation(tx, operationId, id, action, reviewerAccountId)
       if (completed) return completed
       const locked = await tx`SELECT status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
@@ -316,7 +317,7 @@ export class TerritoryService {
         await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
         await this.notify(tx, operationId, id, status, applicationType, app.coordinates as Point[], String(app.name), reviewReason ?? undefined)
       }
-      await this.completeOperation(tx, operationId, id, action)
+      await this.completeOperation(tx, operationId, id, action, reviewerAccountId)
       return { ...this.getFromRows(await this.rows(tx), id), overlaps_at_review: overlapsAtReview }
     })
   }
