@@ -53,6 +53,7 @@ CREATE UNIQUE INDEX territory_one_pending_application_idx
 CREATE TABLE territory_operations (
   operation_id UUID PRIMARY KEY,
   territory_id UUID NOT NULL REFERENCES territories(id) ON DELETE CASCADE,
+  actor_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
   operation_kind TEXT NOT NULL CHECK (operation_kind IN ('create','reapply','edit','withdraw','approve','return','reject')),
   completed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
