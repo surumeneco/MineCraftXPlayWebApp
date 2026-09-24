@@ -38,7 +38,9 @@
         </div>
         <div class="col-auto"><button type="submit" class="btn btn-primary" :disabled="busy || !minecraftName.trim()">追加</button></div>
       </form>
+      <AccountMapColorEditor />
       <div class="d-flex flex-wrap gap-2">
+        <NuxtLink to="/territories/apply" class="btn btn-outline-primary">領地申請</NuxtLink>
         <NuxtLink v-if="isAdmin" to="/admin/notices" class="btn btn-outline-primary">お知らせ管理</NuxtLink>
         <NuxtLink v-if="isAdmin" to="/admin/accounts" class="btn btn-outline-secondary">アカウント管理</NuxtLink>
         <button type="button" class="btn btn-outline-danger" :disabled="busy" @click="signOut">ログアウト</button>

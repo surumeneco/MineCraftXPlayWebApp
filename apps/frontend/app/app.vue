@@ -47,6 +47,14 @@ onMounted(() => {
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
   { label: "Bluemap", to: "/bluemap/", native: true },
   {
+    label: "領地",
+    children: [
+      { label: "領地一覧", to: "/territories" },
+      { label: "領地申請", to: "/territories/apply" },
+      ...(isAdmin.value ? [{ label: "未承認領地", to: "/admin/territories" }] : []),
+    ],
+  },
+  {
     label: "情報",
     children: [
       { label: "情報トップ", to: "/info" },
