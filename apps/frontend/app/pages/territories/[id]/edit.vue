@@ -105,7 +105,10 @@ async function submit(){
   if(!territory.value||validationError.value||unchanged.value)return
   busy.value=true;error.value=''
   try{
-    const result=await mutate<TerritoryRecord>(`/territories/${territory.value.id}/edit`,'POST',{name:name.value.trim(),coordinates:proposed.value})
+    const result=await mutate<TerritoryRecord>(`/territories/${territory.value.id}/edit`,'POST',{
+      name:name.value.trim(),
+      ...(range.value?{replacement:{start:range.value.start,end:range.value.end,intermediate:intermediate.value}}:{})
+    })
     await navigateTo(`/territories/${result.id}`)
   }catch(e){error.value=userFacingError(e)}finally{busy.value=false}
 }

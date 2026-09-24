@@ -181,6 +181,9 @@ export class AccountsService {
       }
       const images = await tx`SELECT 1 FROM images WHERE uploaded_by=${id} LIMIT 1`
       if (images.length) throw new ConflictException('Account owns images; merge into another account before deletion')
+      const territories = await tx`SELECT 1 FROM territories
+        WHERE applicant_account_id=${id} OR owner_account_id=${id} LIMIT 1`
+      if (territories.length) throw new ConflictException('Account is referenced by territories; merge into another account before deletion')
       await tx`DELETE FROM accounts WHERE id=${id}`
     })
     return this.list()

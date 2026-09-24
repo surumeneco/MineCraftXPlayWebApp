@@ -9,7 +9,7 @@ const special = {
   administration: { name: '運営', color: { r: 0, g: 79, b: 255 } },
 } as const
 
-type AppData = { id: string; name: string; coordinates: Point[] } | null
+type AppData = { id: string; application_type: 'new' | 'edit'; name: string; coordinates: Point[] } | null
 type MarkerRow = {
   id: string
   owner_type: 'account' | keyof typeof special
@@ -30,10 +30,10 @@ export class TerritoryBlueMapService {
   async render(): Promise<string> {
     const rows = await this.database.sql`
       SELECT t.id,t.owner_type,t.owner_account_id,oa.name AS owner_account_name,
-        (SELECT json_build_object('id',a.id,'name',a.name,'coordinates',a.coordinates)
+        (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,'coordinates',a.coordinates)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
           ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1) AS approved_application,
-        (SELECT json_build_object('id',a.id,'name',a.name,'coordinates',a.coordinates)
+        (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,'coordinates',a.coordinates)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='pending'
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS pending_application
       FROM territories t LEFT JOIN accounts oa ON oa.id=t.owner_account_id
@@ -52,7 +52,11 @@ export class TerritoryBlueMapService {
         groups.get(group)!.push(this.marker(`${row.id}-approved`, owner.name, row.approved_application, owner.color, false))
       }
       if (row.pending_application) {
-        groups.get(group)!.push(this.marker(`${row.id}-pending`, owner.name, row.pending_application, { r: 0, g: 0, b: 0 }, true))
+        if (row.pending_application.application_type === 'edit' && row.approved_application) {
+          groups.get(group)!.push(...this.changedBoundaryMarkers(row.id, owner.name, row.approved_application, row.pending_application))
+        } else {
+          groups.get(group)!.push(this.marker(`${row.id}-pending`, owner.name, row.pending_application, { r: 0, g: 0, b: 0 }, true))
+        }
       }
     }
 
@@ -65,6 +69,24 @@ export class TerritoryBlueMapService {
     return definitions.map(([key, label, sorting]) =>
       `${q(key)}: {\n  label: ${q(label)}\n  togglable: true\n  default-hidden: false\n  sorting: ${sorting}\n  markers: {\n${groups.get(key)!.join('\n')}\n  }\n}`
     ).join('\n\n') + '\n'
+  }
+
+  private edgeKey(a: Point, b: Point): string {
+    const left = `${a.x},${a.z}`, right = `${b.x},${b.z}`
+    return left < right ? `${left}|${right}` : `${right}|${left}`
+  }
+
+  private changedBoundaryMarkers(id: string, ownerName: string, approved: NonNullable<AppData>, pending: NonNullable<AppData>): string[] {
+    const approvedEdges = new Set(approved.coordinates.map((point, index) =>
+      this.edgeKey(point, approved.coordinates[(index + 1) % approved.coordinates.length])))
+    const label = `${ownerName} - ${pending.name} (未承認)`
+    const result: string[] = []
+    for (let index = 0; index < pending.coordinates.length; index++) {
+      const a = pending.coordinates[index], b = pending.coordinates[(index + 1) % pending.coordinates.length]
+      if (approvedEdges.has(this.edgeKey(a, b))) continue
+      result.push(`    ${q(`${id}-pending-edge-${index}`)}: {\n      type: "line"\n      label: ${q(label)}\n      detail: ${q(label)}\n      listed: false\n      position: { x: ${Math.round((a.x + b.x) / 2)}, y: 250, z: ${Math.round((a.z + b.z) / 2)} }\n      line-width: 5\n      line-color: ${color({ r: 0, g: 0, b: 0 }, 1)}\n      line: [\n        { x: ${a.x}, y: 250, z: ${a.z} },\n        { x: ${b.x}, y: 250, z: ${b.z} }\n      ]\n    }`)
+    }
+    return result
   }
 
   private marker(id: string, ownerName: string, app: NonNullable<AppData>, markerColor: MapColor, pending: boolean): string {

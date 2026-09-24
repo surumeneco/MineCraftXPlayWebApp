@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { Database } from './database.js'
 import { uuid } from './notice-validation.js'
-import { area, centroid, pointInPolygon, polygonDistance, polygonsOverlapArea, validateCoordinates, type Point } from './territory-geometry.js'
+import { area, centroid, pointInPolygon, polygonDistance, polygonsOverlapArea, replaceBoundarySegment, validateCoordinates, type Point } from './territory-geometry.js'
 import { TerritoryNotificationService, type TerritoryNotificationEvent } from './territory-notification.service.js'
 
 export type TerritoryStatus = 'pending' | 'approved' | 'returned' | 'withdrawn' | 'rejected'
@@ -212,7 +212,7 @@ export class TerritoryService {
   }
 
   async edit(accountId: string, isAdmin: boolean, idRaw: unknown, body: any) {
-    const id = uuid(idRaw), name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
+    const id = uuid(idRaw), name = territoryName(body?.name)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
@@ -225,7 +225,9 @@ export class TerritoryService {
       const approved = await tx`SELECT name,coordinates FROM territory_applications WHERE territory_id=${id} AND status='approved'
         ORDER BY decided_at DESC NULLS LAST,submitted_at DESC,id DESC LIMIT 1`
       if (!approved.length) throw new ConflictException('Approved territory data is missing')
-      if (approved[0].name === name && samePoints(approved[0].coordinates as Point[], coordinates)) {
+      const approvedCoordinates = approved[0].coordinates as Point[]
+      const coordinates = replaceBoundarySegment(approvedCoordinates, body?.replacement)
+      if (approved[0].name === name && samePoints(approvedCoordinates, coordinates)) {
         throw new BadRequestException('Change the territory before submitting an edit')
       }
       const apps = await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)

@@ -82,6 +82,16 @@ export function validateCoordinates(value: unknown): Point[] {
   if (unique.size !== points.length) throw new BadRequestException('Territory coordinates must not contain duplicate vertices')
   if (area(points) <= EPS) throw new BadRequestException('Territory polygon area must be greater than zero')
   for (let i = 0; i < points.length; i++) {
+    const previous = points[(i - 1 + points.length) % points.length]
+    const current = points[i]
+    const next = points[(i + 1) % points.length]
+    const backtrack = (previous.x - current.x) * (next.x - current.x)
+      + (previous.z - current.z) * (next.z - current.z)
+    if (Math.abs(cross(previous, current, next)) <= EPS && backtrack > EPS) {
+      throw new BadRequestException('Territory polygon must not backtrack along an edge')
+    }
+  }
+  for (let i = 0; i < points.length; i++) {
     const a = points[i], b = points[(i + 1) % points.length]
     for (let j = i + 1; j < points.length; j++) {
       const adjacent = j === i || j === (i + 1) % points.length || i === (j + 1) % points.length
@@ -128,6 +138,7 @@ function pointSegmentDistance(p: Point, a: Point, b: Point): number {
 }
 
 export function polygonDistance(a: Point[], b: Point[]): number {
+  if (polygonsOverlapArea(a, b)) return 0
   for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) {
     if (segmentsIntersect(a[i], a[(i + 1) % a.length], b[j], b[(j + 1) % b.length])) return 0
   }
@@ -138,4 +149,41 @@ export function polygonDistance(a: Point[], b: Point[]): number {
       pointSegmentDistance(ba, aa, ab), pointSegmentDistance(bb, aa, ab))
   }
   return best
+}
+
+export function replaceBoundarySegment(source: Point[], value: unknown): Point[] {
+  if (value === undefined || value === null) return source.map(point => ({ ...point }))
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new BadRequestException('Invalid territory boundary replacement')
+  }
+  const raw = value as Record<string, unknown>
+  const start = raw.start, end = raw.end
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)) {
+    throw new BadRequestException('Territory boundary replacement indexes must be integers')
+  }
+  const startIndex = start as number, endIndex = end as number
+  if (startIndex < 0 || endIndex < 0 || startIndex >= source.length || endIndex >= source.length || startIndex === endIndex) {
+    throw new BadRequestException('Invalid territory boundary replacement range')
+  }
+  const selectedCount = ((endIndex - startIndex + source.length) % source.length) + 1
+  if (selectedCount >= source.length) {
+    throw new BadRequestException('Territory boundary replacement must keep existing vertices')
+  }
+  if (!Array.isArray(raw.intermediate)) {
+    throw new BadRequestException('Territory boundary replacement coordinates must be an array')
+  }
+  const intermediate = raw.intermediate.map((point) => {
+    if (!point || typeof point !== 'object' || Array.isArray(point)) {
+      throw new BadRequestException('Invalid territory coordinate')
+    }
+    const { x, z } = point as Record<string, unknown>
+    if (!Number.isSafeInteger(x) || !Number.isSafeInteger(z)) {
+      throw new BadRequestException('Territory coordinates must be integers')
+    }
+    return { x: x as number, z: z as number }
+  })
+  const candidate = startIndex < endIndex
+    ? [...source.slice(0, startIndex + 1), ...intermediate, ...source.slice(endIndex)]
+    : [...source.slice(endIndex, startIndex + 1), ...intermediate]
+  return validateCoordinates(candidate)
 }
