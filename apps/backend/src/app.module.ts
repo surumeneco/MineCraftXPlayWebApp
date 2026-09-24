@@ -12,12 +12,19 @@ import { AdminImagesController, AdminNoticesController, AdminTagsController, Aut
 import { SiteImagesService } from './site-images.service.js'
 import { AdminSiteImagePresetsController, AdminSiteImagesController, PublicSiteImagesController } from './site-images.controller.js'
 import { RequestsController } from './request.controller.js'
+import { AccountColorService } from './account-color.service.js'
+import { AdminAccountColorController, SelfAccountColorController } from './account-color.controller.js'
+import { TerritoryService } from './territory.service.js'
+import { TerritoryNotificationService } from './territory-notification.service.js'
+import { TerritoryBlueMapService } from './territory-bluemap.service.js'
+import { AdminTerritoryController, InternalTerritoryController, TerritoryController } from './territory.controller.js'
 
 @Module({
   controllers: [AppController, PublicNoticesController, PublicTagsController, PublicImagesController,
     AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
-    PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController],
+    PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController,
+    SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, NoticeService, NoticeNotificationService,
-    ImagesService, SiteImagesService],
+    ImagesService, SiteImagesService, AccountColorService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService],
 })
 export class AppModule {}
