@@ -1,0 +1,16 @@
+# Develop against the monorepo's checked-in lockfile, just as CI does.
+# This Dockerfile is used only by compose.dev.yaml. The production Dockerfile
+# keeps its independent build stages and unchanged runtime image.
+FROM node:24-alpine AS development
+WORKDIR /workspace
+
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
+RUN npm ci --ignore-scripts --no-audit --no-fund
+
+WORKDIR /workspace/apps/frontend
+EXPOSE 3000
+# A named node_modules volume may predate this image. Reconcile it with the
+# root lockfile at startup instead of trusting whatever was copied to it.
+CMD ["sh", "-c", "cd /workspace && npm ci --ignore-scripts --no-audit --no-fund && cd apps/frontend && exec npm run dev"]

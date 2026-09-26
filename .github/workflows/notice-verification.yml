@@ -73,6 +73,23 @@ jobs:
         run: npm run test:backend
       - name: Frontend tests
         run: npm run test:frontend
+      - name: Nuxt development SSR smoke for territory application
+        shell: bash
+        run: |
+          npm run dev:frontend >/tmp/xplay-nuxt-dev.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; tail -100 /tmp/xplay-nuxt-dev.log' EXIT
+          ready=0
+          for i in $(seq 1 90); do
+            status=$(curl -sS -o /tmp/xplay-territory-apply.html -w '%{http_code}' http://127.0.0.1:3000/territories/apply || true)
+            if [ "$status" = 200 ]; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          if grep -Eq 'Unexpected token|An error has occurred|__nuxt_error' /tmp/xplay-territory-apply.html; then
+            echo 'Territory application page rendered an error response' >&2
+            exit 1
+          fi
       - name: Build backend production container
         run: docker build --target production -t xplay-notices-backend ./apps/backend
       - name: Public and unauthorized API smoke test
