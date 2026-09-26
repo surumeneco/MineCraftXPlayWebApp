@@ -308,6 +308,9 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(special.data.owner).toMatchObject({ type: 'shared_area', account_id: null, name: '共同建築エリア' })
     expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, otherSession)).data.can_edit).toBe(false)
     expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, adminSession)).data.can_edit).toBe(true)
+    const submittedHistory = await request(`/api/admin/accounts/${otherId}`, 'DELETE', undefined, adminSession)
+    expect(submittedHistory.status).toBe(409)
+    expect(JSON.stringify(submittedHistory.data)).toContain('提出者履歴')
     const beforeTransfer = await request(`/api/admin/accounts/${memberId}/retire`, 'POST', {}, adminSession)
     expect(beforeTransfer.status).toBe(409)
     // The preceding lifecycle test also created a territory owned by this member.
