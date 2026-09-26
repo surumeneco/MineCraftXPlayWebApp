@@ -5,8 +5,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import type { TerritoryPoint } from '../../utils/territory'
+import type { TerritoryDraftPoint, TerritoryPoint } from '../../utils/territory'
 import { blueMapTerritoryUrl, territoryCoordinateError } from '../../utils/territory'
-const props=withDefaults(defineProps<{coordinates:TerritoryPoint[];title?:string}>(),{title:'領地周辺のBlueMap'})
-const src=computed(()=>territoryCoordinateError(props.coordinates)?'':blueMapTerritoryUrl(props.coordinates))
+const props=withDefaults(defineProps<{coordinates:TerritoryDraftPoint[];title?:string}>(),{title:'領地周辺のBlueMap'})
+const { public: { bluemapBase } } = useRuntimeConfig()
+const src=computed(()=>territoryCoordinateError(props.coordinates)?'':blueMapTerritoryUrl(props.coordinates as TerritoryPoint[], bluemapBase))
 </script>
