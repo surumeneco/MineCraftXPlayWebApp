@@ -17,7 +17,7 @@
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
       <UiSectionHeading title="最近のお知らせ" class="mb-0 flex-grow-1" />
     </div>
-    <p v-if="!layout && (status === 'pending' || status === 'idle')" role="status">
+    <p v-if="status === 'pending' || status === 'idle'" role="status">
       お知らせを読み込んでいます…
     </p>
     <p v-else-if="error" class="text-body-secondary">
