@@ -14,6 +14,9 @@ describe('HeaderMenu', () => {
     expect(wrapper.get('a.xplay-site-logo').attributes('href')).toBe('/')
     expect(wrapper.get('a.xplay-site-logo').text()).toBe('もふもふ広場')
     const navigation = wrapper.get('nav[aria-label="メインナビゲーション"]')
+    // The menu must be anchored to the header, not placed within the logo/account grid.
+    expect(navigation.element.parentElement).toBe(wrapper.get('header > .container-fluid').element)
+    expect(wrapper.get('.xplay-header-row').element.contains(navigation.element)).toBe(false)
     expect(navigation.classes()).toContain('xplay-desktop-navigation')
     expect(navigation.classes()).toContain('xplay-desktop-navigation')
     expect(navigation.get('ul').classes()).toContain('justify-content-center')
@@ -35,7 +38,7 @@ describe('HeaderMenu', () => {
           label: '申請管理',
           children: [
             { label: '申請管理トップ', to: '/admin/applications' },
-            { label: '領地申請', to: '/admin/territories' },
+            { label: '領地承認', to: '/admin/territories' },
           ],
         }],
       },
@@ -49,7 +52,7 @@ describe('HeaderMenu', () => {
     const mobile = wrapper.get('#mobile-navigation')
     expect(mobile.get('button.accordion-button').text()).toContain('申請管理')
     expect(mobile.get('a[href="/admin/applications"]').text()).toBe('申請管理トップ')
-    expect(mobile.get('a[href="/admin/territories"]').text()).toBe('領地申請')
+    expect(mobile.get('a[href="/admin/territories"]').text()).toBe('領地承認')
     wrapper.unmount()
   })
 

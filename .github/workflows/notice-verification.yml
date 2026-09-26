@@ -73,6 +73,11 @@ jobs:
         run: npm run test:backend
       - name: Frontend tests
         run: npm run test:frontend
+      - name: Header navigation Chromium regression
+        shell: bash
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e --workspace @xplay/frontend -- --project=chromium --grep='centered hover menu|centers the administrator menu'
       - name: Nuxt development SSR smoke for territory application
         shell: bash
         run: |

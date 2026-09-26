@@ -79,7 +79,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
           label: "申請管理",
           children: [
             { label: "申請管理トップ", to: "/admin/applications" },
-            { label: "領地申請", to: "/admin/territories" },
+            { label: "領地承認", to: "/admin/territories" },
           ],
         },
         {

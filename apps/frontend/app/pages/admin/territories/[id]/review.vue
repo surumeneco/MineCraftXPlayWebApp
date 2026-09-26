@@ -1,4 +1,4 @@
-<template><section><UiPageTitle :title="item?`領地審査 - ${item.name}`:'領地審査'" /><p v-if="loading">読み込んでいます…</p><p v-else-if="error" class="alert alert-danger">{{ error }}</p><template v-else-if="item">
+<template><section><UiPageTitle :title="item?`領地承認詳細 - ${item.name}`:'領地承認詳細'" /><p v-if="loading">読み込んでいます…</p><p v-else-if="error" class="alert alert-danger">{{ error }}</p><template v-else-if="item">
   <TerritoryInfoGrid :territory="item" show-applicant />
   <section class="mb-3"><h2 class="h4">開発構想</h2><p class="territory-multiline">{{ item.development_concept || '未記入' }}</p></section>
   <section class="mb-3"><h2 class="h4">備考</h2><p class="territory-multiline">{{ item.note ?? '' }}</p></section>
