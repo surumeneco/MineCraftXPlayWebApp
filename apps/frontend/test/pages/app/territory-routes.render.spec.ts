@@ -44,9 +44,9 @@ describe('territory navigation and routes', () => {
     const review = await mountSuspended(Breadcrumb, {
       route: '/admin/territories/174ee6e6-a6c5-4cc0-a241-640c31710283/review',
     })
-    expect(review.get('a[href="/admin/territories"]').text()).toBe('領地申請一覧')
+    expect(review.get('a[href="/admin/territories"]').text()).toBe('領地承認')
     expect(review.get('a[href="/admin/applications"]').text()).toBe('申請管理')
-    expect(review.text()).toContain('領地審査')
+    expect(review.text()).toContain('領地承認詳細')
     expect(review.find('a[href="/admin"]').exists()).toBe(false)
     review.unmount()
   })
