@@ -138,8 +138,13 @@ export class TerritoryService {
       values = values.filter(value => value.status === query.status)
     }
     if (query.x !== undefined || query.z !== undefined) {
-      const x = Number(query.x), z = Number(query.z)
-      if (!Number.isSafeInteger(x) || !Number.isSafeInteger(z)) throw new BadRequestException('Coordinate search requires integer x and z')
+      const coordinate = (raw: unknown): number | null => {
+        if (typeof raw !== 'string' || !/^-?\d+$/.test(raw.trim())) return null
+        const n = Number(raw.trim())
+        return Number.isSafeInteger(n) ? n : null
+      }
+      const x = coordinate(query.x), z = coordinate(query.z)
+      if (x === null || z === null) throw new BadRequestException('Coordinate search requires integer x and z')
       values = values.filter(value => pointInPolygon({ x, z }, value.coordinates, true))
     }
     const sort = ['applied_at','approved_at','changed_at','name','owner'].includes(String(query.sort)) ? String(query.sort) : 'approved_at'
