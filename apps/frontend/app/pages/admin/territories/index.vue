@@ -16,7 +16,8 @@
     <p v-else-if="error" class="alert alert-danger">{{ error }}</p>
     <div v-else class="row g-3">
       <div v-for="item in items" :key="item.id" class="col-md-6 col-xl-4">
-        <NuxtLink :to="`/admin/territories/${item.id}/review`" class="card h-100 text-decoration-none text-body">
+        <NuxtLink :to="`/admin/territories/${item.id}/review`" class="card h-100 text-decoration-none text-body overflow-hidden">
+          <TerritoryImage :image-id="item.image_id" :name="item.name" />
           <div class="card-body"><h2 class="h5">{{ item.name }}</h2><p class="mb-1">所有者: {{ item.owner.name }}</p><p class="mb-1">場所: {{ formatCentroid(item.centroid) }}</p><TerritoryStatusBadge :status="item.status" /></div>
         </NuxtLink>
       </div>
@@ -36,11 +37,11 @@ const filters=reactive({name:'',owner:'',x:'',z:'',sort:'approved_at'})
 function pasteSearchCoordinates(event: ClipboardEvent) {
   const text = event.clipboardData?.getData('text/plain')?.trim()
   if (!text || !/\s/.test(text)) return
-  event.preventDefault()
   const parts = text.split(/\s+/)
   if (parts.length !== 2 && parts.length !== 3) return
   const values = parts.map(value => /^-?\d+$/.test(value) ? Number(value) : NaN)
   if (!values.every(Number.isSafeInteger)) return
+  event.preventDefault()
   filters.x = String(values[0]); filters.z = String(values[values.length - 1])
 }
 async function load(){
