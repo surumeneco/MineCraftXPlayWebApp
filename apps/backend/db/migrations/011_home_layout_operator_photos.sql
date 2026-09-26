@@ -56,10 +56,9 @@ BEGIN
       UPDATE home_layout SET data=jsonb_set(data,legacy_paths[h]::text[],asset) WHERE singleton;
     END IF;
   END LOOP;
-  FOR item IN SELECT entry.key, entry.image, entry.group_name FROM (VALUES
+  FOR item IN SELECT entry.image AS key, entry.group_name FROM (VALUES
     ('info','card.info'),('lists','card.lists'),('applications','card.applications')
-  ) AS entry(group_name,image) CROSS JOIN LATERAL
-    (SELECT entry.image AS key) AS keys LOOP
+  ) AS entry(group_name,image) LOOP
     SELECT CASE WHEN v.image_id IS NOT NULL THEN jsonb_build_object('image_id',v.image_id)
                 WHEN v.static_path IS NOT NULL THEN jsonb_build_object('static_path',v.static_path)
                 ELSE NULL END INTO asset
