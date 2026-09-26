@@ -374,7 +374,9 @@ function measureNavigation() {
   const logoWidth = logo.getBoundingClientRect().width
   const accountWidth = account.getBoundingClientRect().width
   // The navigation is absolutely positioned so its intrinsic width remains measurable while hidden.
-  const requiredWidth = nav.scrollWidth
+  // Top-level items determine the switch; expanded dropdowns must not affect it.
+  const topLevelWidth = nav.querySelector('ul.navbar-nav')?.getBoundingClientRect().width ?? 0
+  const requiredWidth = topLevelWidth > 0 ? topLevelWidth : nav.scrollWidth
   const fits = rowWidth > 0 && requiredWidth > 0
     && (rowWidth - requiredWidth) / 2 >= Math.max(logoWidth, accountWidth) + 16
   desktop.value = fits
