@@ -36,6 +36,22 @@ suite('territory lifecycle (PostgreSQL)', () => {
     return { status: response.status, data }
   }
 
+  const samplePng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+XWGhxwAAAABJRU5ErkJggg==', 'base64')
+  const uploadImage = async (token = memberSession, mime = 'image/png', bytes = samplePng) => {
+    const response = await fetch(`${root}/api/territory-images/file`, {
+      method: 'POST',
+      headers: {
+        Cookie: `xplay_session=${token}; xplay_csrf=${csrf}`,
+        Origin: origin,
+        'X-XPlay-CSRF': csrf,
+        'X-XPlay-Image-Mime': mime,
+        'Content-Type': 'application/octet-stream',
+      },
+      body: new Uint8Array(bytes),
+    })
+    return { status: response.status, data: await response.json() as any }
+  }
+
   beforeAll(async () => {
     bot = createServer(async (req, res) => {
       const chunks: Buffer[] = []
