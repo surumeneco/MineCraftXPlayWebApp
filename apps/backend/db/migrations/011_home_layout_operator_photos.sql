@@ -95,7 +95,7 @@ INSERT INTO operator_members(member_key,minecraft_name,static_path) VALUES
  ('shirokana','shirokana_22','/images/operators/shirokana.png');
 -- statement
 UPDATE operator_members o SET account_id=(
-  SELECT MIN(m.account_id) FROM account_minecraft_identities m
+  SELECT (array_agg(m.account_id))[1] FROM account_minecraft_identities m
   JOIN accounts a ON a.id=m.account_id AND a.retired_at IS NULL
   WHERE m.edition='je' AND lower(m.username)=lower(o.minecraft_name)
   HAVING COUNT(DISTINCT m.account_id)=1
