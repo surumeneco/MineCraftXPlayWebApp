@@ -5,6 +5,7 @@
   <form v-else-if="territory" @submit.prevent="submit">
     <p v-if="error" class="alert alert-danger">{{ error }}</p>
     <div class="mb-3"><label for="edit-territory-name" class="form-label">領地名 *</label><input id="edit-territory-name" v-model="name" maxlength="100" required class="form-control" /></div>
+    <TerritoryImageField v-model="imageId" @uploading="imageUploading=$event" />
     <fieldset class="mb-4">
       <legend class="h5">置き換える既存境界</legend>
       <p class="small text-body-secondary">最初の点を選択後は、選択済み範囲に隣接する点のみ追加できます。全頂点は選択できません。</p>
@@ -48,7 +49,7 @@ import { formatArea, territoryArea, territoryCoordinateError } from '../../../ut
 import { userFacingError } from '../../../utils/user-error'
 
 const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi()
-const territory=ref<TerritoryRecord|null>(null),name=ref(''),intermediate=ref<TerritoryDraftPoint[]>([])
+const territory=ref<TerritoryRecord|null>(null),name=ref(''),imageId=ref<string|null>(null),imageUploading=ref(false),intermediate=ref<TerritoryDraftPoint[]>([])
 const breadcrumbNames=useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const selected=ref<Set<number>>(new Set()),loading=ref(true),busy=ref(false),error=ref(''),operationId=ref('')
 const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
