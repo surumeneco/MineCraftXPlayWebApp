@@ -18,9 +18,9 @@
         <div v-if="validationError" id="request-error" class="invalid-feedback" role="alert">{{ validationError }}</div>
         <div id="request-count" class="form-text">{{ content.length }} / 2000文字</div>
       </div>
-      <button type="submit" class="btn btn-primary" :disabled="busy">
+      <div class="text-end"><button type="submit" class="btn btn-primary" :disabled="busy">
         {{ busy ? '送信中…' : '送る' }}
-      </button>
+      </button></div>
     </form>
   </section>
 </template>
