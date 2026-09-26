@@ -1,4 +1,5 @@
 export type TerritoryPoint = { x: number; z: number }
+export type TerritoryDraftPoint = { x: number | null; z: number | null }
 export type TerritoryStatus = 'pending' | 'approved' | 'returned' | 'withdrawn' | 'rejected'
 export type TerritoryOwnerType = 'account' | 'shared_area' | 'administration' | 'protected_area'
 export type TerritoryRecord = {
@@ -55,24 +56,26 @@ export function territoryCentroid(points: TerritoryPoint[]): TerritoryPoint | nu
   if(Math.abs(twice)<=EPS) return null
   return {x:x/(3*twice),z:z/(3*twice)}
 }
-export function territoryCoordinateError(points: TerritoryPoint[], minPoints=3): string {
+export function territoryCoordinateError(points: TerritoryDraftPoint[], minPoints=3): string {
   if(points.length<minPoints) return minPoints ? `${minPoints}点以上の座標を入力してください。` : ''
   if(points.some(p=>!Number.isSafeInteger(p.x)||!Number.isSafeInteger(p.z))) return 'X/Z座標は整数で入力してください。'
   if(new Set(points.map(p=>`${p.x},${p.z}`)).size!==points.length) return '同じ頂点を複数指定できません。'
-  if(points.length>=3 && territoryArea(points)<=EPS) return '面積が0になる形状は指定できません。'
-  if(points.length>=3) for(let i=0;i<points.length;i++) for(let j=i+1;j<points.length;j++){
-    if(j===i||j===(i+1)%points.length||i===(j+1)%points.length) continue
-    if(segmentsIntersect(points[i],points[(i+1)%points.length],points[j],points[(j+1)%points.length])) return '境界線が自己交差しています。'
+  const valid = points as TerritoryPoint[]
+  if(points.length>=3 && territoryArea(valid)<=EPS) return '面積が0になる形状は指定できません。'
+  if(points.length>=3) for(let i=0;i<valid.length;i++) for(let j=i+1;j<valid.length;j++){
+    if(j===i||j===(i+1)%valid.length||i===(j+1)%valid.length) continue
+    if(segmentsIntersect(valid[i],valid[(i+1)%valid.length],valid[j],valid[(j+1)%valid.length])) return '境界線が自己交差しています。'
   }
   return ''
 }
-export function blueMapTerritoryUrl(points: TerritoryPoint[]) {
+export function blueMapTerritoryUrl(points: TerritoryPoint[], base = '/bluemap/') {
   const center=territoryCentroid(points)
-  if(!center) return '/bluemap/'
+  if(!center) return base
   const xs=points.map(p=>p.x),zs=points.map(p=>p.z)
   const span=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))
   const distance=Math.max(200,Math.min(4000,Math.ceil(span*2.2)))
-  return `/bluemap/#world:${Math.round(center.x)}:250:${Math.round(center.z)}:${distance}:0.1:0.19:0:0:perspective`
+  const prefix = base.endsWith('/') ? base : `${base}/`
+  return `${prefix}#world:${Math.round(center.x)}:250:${Math.round(center.z)}:${distance}:0.1:0.19:0:0:perspective`
 }
 export const formatCentroid=(p:TerritoryPoint)=>`(${Math.round(p.x)}, ${Math.round(p.z)})`
 export const formatArea=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1)
