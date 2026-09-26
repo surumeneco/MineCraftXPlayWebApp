@@ -203,6 +203,7 @@ export class TerritoryService {
       const completed = await this.completedOperation(tx, operationId, operationId, 'create', accountId)
       if (completed) return completed
       await this.assertMinecraft(accountId, tx)
+      const imageId = body?.image_id === undefined ? null : await this.images.attach(tx, body.image_id, operationId, accountId)
       const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status)
         VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending') RETURNING id`
       const id = String(territories[0].id)
