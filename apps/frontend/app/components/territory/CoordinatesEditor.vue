@@ -1,6 +1,7 @@
 <template>
   <div>
-    <div v-for="(point, index) in local" :key="index" class="row g-2 align-items-center mb-2">
+    <div class="border rounded mb-2 px-2">
+    <div v-for="(point, index) in local" :key="index" class="row g-2 align-items-center py-2 border-bottom">
       <div class="col">
         <label class="visually-hidden" :for="`coord-x-${id}-${index}`">X座標</label>
         <input :id="`coord-x-${id}-${index}`" v-model="point.x" type="number" step="1"
@@ -15,6 +16,7 @@
         <button type="button" class="btn btn-outline-danger"
           :disabled="local.length <= minPoints" @click="remove(index)">削除</button>
       </div>
+    </div>
     </div>
     <button type="button" class="btn btn-outline-secondary btn-sm" @click="add">座標を追加</button>
     <p v-if="error" class="text-danger small mt-2 mb-0">{{ error }}</p>
