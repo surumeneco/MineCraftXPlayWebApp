@@ -6,6 +6,9 @@ export type TerritoryRecord = {
   id: string
   name: string
   image_id?: string | null
+  development_concept?: string
+  note?: string
+  can_edit_concept?: boolean
   approved_image_id?: string | null
   pending_image_id?: string | null
   applicant: { id: string; name: string }
@@ -90,4 +93,4 @@ export function blueMapTerritoryUrl(points: TerritoryPoint[], base = '/bluemap/'
   return `${prefix}#world:${Math.round(center.x)}:250:${Math.round(center.z)}:${distance}:0.1:0.19:0:0:perspective`
 }
 export const formatCentroid=(p:TerritoryPoint)=>`x: ${Math.round(p.x)}, z: ${Math.round(p.z)}`
-export const formatArea=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1)
+export const formatArea=(value:number)=>Number(value.toFixed(1)).toLocaleString('ja-JP',{maximumFractionDigits:1})
