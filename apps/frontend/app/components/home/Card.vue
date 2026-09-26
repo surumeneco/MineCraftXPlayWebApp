@@ -3,6 +3,7 @@
     :title="resolved.title"
     :note="resolved.note"
     :image="imageSource(resolved.image)"
+    hide-image-when-unset
     :to="!isNative(resolved.url) ? destination(resolved.url) : undefined"
     :url="isNative(resolved.url) ? destination(resolved.url) : undefined"
     :native="isNative(resolved.url)"
