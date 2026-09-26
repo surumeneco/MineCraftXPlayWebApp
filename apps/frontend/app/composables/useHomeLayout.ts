@@ -51,12 +51,8 @@ export const initialHomeLayout: HomeLayoutResponse = {
   },
 }
 
-export function useHomeLayout() {
+export function useManagedCardImage() {
   const { public: { apiBase, bluemapBase } } = useRuntimeConfig()
-  const response = useFetch<HomeLayoutResponse>(`${apiBase}/home-layout`, {
-    key: 'home-layout', server: false, lazy: true,
-    default: () => structuredClone(initialHomeLayout),
-  })
   function imageSource(asset: ManagedCardImage | undefined): string | undefined {
     if (asset?.image_id) return `${apiBase}/home-layout/images/${encodeURIComponent(asset.image_id)}`
     return asset?.static_path || undefined
@@ -67,5 +63,14 @@ export function useHomeLayout() {
   function isNative(url: string): boolean {
     return url === '/bluemap/' || /^https?:\/\//i.test(url)
   }
-  return { ...response, imageSource, destination, isNative }
+  return { imageSource, destination, isNative }
+}
+
+export function useHomeLayout() {
+  const { public: { apiBase } } = useRuntimeConfig()
+  const response = useFetch<HomeLayoutResponse>(`${apiBase}/home-layout`, {
+    key: 'home-layout', server: false, lazy: true,
+    default: () => structuredClone(initialHomeLayout),
+  })
+  return { ...response, ...useManagedCardImage() }
 }
