@@ -4,6 +4,7 @@ import { Database } from './database.js'
 import { AuthService } from './auth.service.js'
 import { AccountsService } from './accounts.service.js'
 import { AccountMergeService } from './account-merge.service.js'
+import { AccountRetirementService } from './account-retirement.service.js'
 import { AccountsController, SelfAccountsController } from './accounts.controller.js'
 import { NoticeService } from './notice.service.js'
 import { NoticeNotificationService } from './notice-notification.service.js'
@@ -26,7 +27,7 @@ import { AdminTerritoryController, InternalTerritoryController, TerritoryControl
     AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
     PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController,
     SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController, TerritoryImagesController],
-  providers: [Database, AuthService, AccountsService, AccountMergeService, NoticeService, NoticeNotificationService,
+  providers: [Database, AuthService, AccountsService, AccountMergeService, AccountRetirementService, NoticeService, NoticeNotificationService,
     ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService],
 })
 export class AppModule {}
