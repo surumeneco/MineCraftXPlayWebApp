@@ -15,19 +15,19 @@ INSERT INTO home_layout(singleton,data) VALUES (true, $layout$
       {"id":"legacy-bluemap","type":"custom","title":"Bluemapを見る","note":"","url":"/bluemap/","image":{"static_path":"/images/bluemap.png"},"new_tab":false}
     ]},
     {"id":"legacy-site-guide","title":"サイト案内","cards":[
-      {"id":"legacy-info","type":"custom","title":"情報","note":"","url":"/info","image":{"static_path":"/images/card-default.svg"},"new_tab":false},
-      {"id":"legacy-lists","type":"custom","title":"一覧","note":"","url":"/lists","image":{"static_path":"/images/card-default.svg"},"new_tab":false},
-      {"id":"legacy-applications","type":"custom","title":"申請","note":"","url":"/applications","image":{"static_path":"/images/card-default.svg"},"new_tab":false}
+      {"id":"legacy-info","type":"custom","title":"情報","note":"","url":"/info","image":null,"new_tab":false},
+      {"id":"legacy-lists","type":"custom","title":"一覧","note":"","url":"/lists","image":null,"new_tab":false},
+      {"id":"legacy-applications","type":"custom","title":"申請","note":"","url":"/applications","image":null,"new_tab":false}
     ]}
   ],
   "hubs": [
-    {"key":"info.notice","note":"","image":{"static_path":"/images/card-default.svg"}},
-    {"key":"info.about","note":"","image":{"static_path":"/images/card-default.svg"}},
-    {"key":"info.operators","note":"","image":{"static_path":"/images/card-default.svg"}},
-    {"key":"info.server","note":"","image":{"static_path":"/images/card-default.svg"}},
-    {"key":"info.rules","note":"","image":{"static_path":"/images/card-default.svg"}},
-    {"key":"lists.territories","note":"","image":{"static_path":"/images/card-default.svg"}},
-    {"key":"applications.territories","note":"","image":{"static_path":"/images/card-default.svg"}}
+    {"key":"info.notice","note":"","image":null},
+    {"key":"info.about","note":"","image":null},
+    {"key":"info.operators","note":"","image":null},
+    {"key":"info.server","note":"","image":null},
+    {"key":"info.rules","note":"","image":null},
+    {"key":"lists.territories","note":"","image":null},
+    {"key":"applications.territories","note":"","image":null}
   ]
 }
 $layout$::jsonb);
