@@ -42,7 +42,7 @@ export class AccountsService {
           FROM account_merges merge JOIN accounts s ON s.id=merge.source_account_id
           WHERE merge.target_account_id=a.id AND merge.restored_at IS NULL), '[]'::json) AS merged_sources
       FROM accounts a
-      WHERE NOT EXISTS (SELECT 1 FROM account_merges merge WHERE merge.source_account_id=a.id AND merge.restored_at IS NULL)
+      WHERE a.retired_at IS NULL AND NOT EXISTS (SELECT 1 FROM account_merges merge WHERE merge.source_account_id=a.id AND merge.restored_at IS NULL)
       ORDER BY a.created_at, a.id`
     const protectedIds = initialDiscordIds()
     return (rows as unknown as AccountRow[]).map(row => ({ ...row, is_protected: Boolean(row.is_admin) &&
@@ -65,7 +65,7 @@ export class AccountsService {
   // Internal-only operation. No arbitrary-name API is exposed to clients.
   private async rename(accountRaw: unknown, nameRaw: unknown) {
     const id = uuid(accountRaw), name = validName(nameRaw)
-    const updated = await this.database.sql`UPDATE accounts SET name=${name} WHERE id=${id} RETURNING id`
+    const updated = await this.database.sql`UPDATE accounts SET name=${name} WHERE id=${id} AND retired_at IS NULL RETURNING id`
     if (!updated.length) throw new NotFoundException('Account not found')
     return this.get(id)
   }
@@ -90,7 +90,7 @@ export class AccountsService {
     try {
       await this.database.sql.begin(async tx => {
         await tx`SELECT pg_advisory_xact_lock(79412502)`
-        const active = await tx`SELECT id FROM accounts WHERE id=${id} AND NOT EXISTS
+        const active = await tx`SELECT id FROM accounts WHERE id=${id} AND retired_at IS NULL AND NOT EXISTS
           (SELECT 1 FROM account_merges WHERE source_account_id=${id} AND restored_at IS NULL)`
         if (!active.length) throw new NotFoundException('Account not found')
         await tx`INSERT INTO account_minecraft_identities(account_id, edition, username)
@@ -139,7 +139,7 @@ export class AccountsService {
     if (typeof enabled !== 'boolean') throw new BadRequestException('is_admin must be boolean')
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
-      const accounts = await tx`SELECT id FROM accounts WHERE id=${id} FOR UPDATE`
+      const accounts = await tx`SELECT id FROM accounts WHERE id=${id} AND retired_at IS NULL FOR UPDATE`
       if (!accounts.length) throw new NotFoundException('Account not found')
       const merged = await tx`SELECT 1 FROM account_merges WHERE restored_at IS NULL
         AND (source_account_id=${id} OR target_account_id=${id}) LIMIT 1`
@@ -165,7 +165,7 @@ export class AccountsService {
     const id = uuid(accountRaw)
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
-      const existing = await tx`SELECT id FROM accounts WHERE id=${id} FOR UPDATE`
+      const existing = await tx`SELECT id FROM accounts WHERE id=${id} AND retired_at IS NULL FOR UPDATE`
       if (!existing.length) throw new NotFoundException('Account not found')
       // Preserve both account IDs and their audit trail even after separation.
       const history = await tx`SELECT 1 FROM account_merges WHERE source_account_id=${id} OR target_account_id=${id} LIMIT 1`
@@ -179,6 +179,12 @@ export class AccountsService {
         const admins = await tx`SELECT COUNT(*)::INTEGER AS count FROM account_roles WHERE role='admin'`
         if (Number(admins[0].count) <= 1) throw new ConflictException('Cannot delete the final administrator')
       }
+      const applicant = await tx`SELECT 1 FROM territories WHERE applicant_account_id=${id} LIMIT 1`
+      if (applicant.length) throw new ConflictException('領地の申請者履歴が残っています。所有者を移転しても申請者履歴は移転されません。削除には履歴保持方針に沿ったアカウント統合または匿名化が必要です。')
+      const submitted = await tx`SELECT 1 FROM territory_applications WHERE submitted_by_account_id=${id} LIMIT 1`
+      if (submitted.length) throw new ConflictException('領地の提出者履歴が残っています。匿名化・退会処理を行ってください。')
+      const owner = await tx`SELECT 1 FROM territories WHERE owner_account_id=${id} LIMIT 1`
+      if (owner.length) throw new ConflictException('所有中の領地があります。所有者を移転するか、アカウント統合を行ってください。')
       const images = await tx`SELECT 1 FROM images WHERE uploaded_by=${id} LIMIT 1`
       if (images.length) throw new ConflictException('Account owns images; merge into another account before deletion')
       await tx`DELETE FROM accounts WHERE id=${id}`

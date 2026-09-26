@@ -58,3 +58,15 @@ function handleFocusOut(event: FocusEvent) {
   }
 }
 </script>
+
+<style scoped>
+/* Bootstrap makes navbar dropdowns static by default. Keep the expanded menu out of
+   the header navigation’s size, so its top-level items stay centered. */
+.nav-item.dropdown { position: relative; }
+.nav-item.dropdown > .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0;
+}
+</style>

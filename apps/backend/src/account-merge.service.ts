@@ -14,7 +14,7 @@ export class AccountMergeService {
     if (target === source) throw new BadRequestException('Choose two different accounts')
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
-      const records = await tx`SELECT id FROM accounts WHERE id IN (${target}, ${source}) FOR UPDATE`
+      const records = await tx`SELECT id FROM accounts WHERE id IN (${target}, ${source}) AND retired_at IS NULL FOR UPDATE`
       if (records.length !== 2) throw new NotFoundException('Both accounts must exist')
       const linked = await tx`SELECT id FROM account_merges WHERE restored_at IS NULL
         AND (source_account_id IN (${target},${source}) OR target_account_id IN (${target},${source}))`
@@ -36,6 +36,8 @@ export class AccountMergeService {
       await tx`UPDATE account_discord_identities SET account_id=${target}, merge_origin=${source} WHERE account_id=${source}`
       await tx`UPDATE account_minecraft_identities SET account_id=${target}, merge_origin=${source} WHERE account_id=${source}`
       await tx`UPDATE images SET uploaded_by=${target}, merge_origin=${source} WHERE uploaded_by=${source}`
+      await tx`UPDATE territories SET applicant_account_id=${target}, applicant_merge_origin=${source} WHERE applicant_account_id=${source}`
+      await tx`UPDATE territories SET owner_account_id=${target}, owner_merge_origin=${source} WHERE owner_type='account' AND owner_account_id=${source}`
       await tx`DELETE FROM account_sessions WHERE account_id=${source}`
     })
   }
@@ -55,7 +57,10 @@ export class AccountMergeService {
       const minecraftDisplaced = await tx`SELECT id FROM account_minecraft_identities
         WHERE merge_origin=${source} AND account_id<>${target}`
       const imagesDisplaced = await tx`SELECT id FROM images WHERE merge_origin=${source} AND uploaded_by<>${target}`
-      if (displaced.length || minecraftDisplaced.length || imagesDisplaced.length) {
+      const territoryDisplaced = await tx`SELECT id FROM territories WHERE
+        (applicant_merge_origin=${source} AND applicant_account_id<>${target}) OR
+        (owner_merge_origin=${source} AND owner_account_id<>${target})`
+      if (displaced.length || minecraftDisplaced.length || imagesDisplaced.length || territoryDisplaced.length) {
         throw new ConflictException('Merged ownership changed; manual reconciliation is required')
       }
       const identities = await tx`SELECT discord_id FROM account_discord_identities WHERE merge_origin=${source} AND account_id=${target}`
@@ -66,6 +71,10 @@ export class AccountMergeService {
         WHERE account_id=${target} AND merge_origin=${source}`
       await tx`UPDATE images SET uploaded_by=${source}, merge_origin=NULL
         WHERE uploaded_by=${target} AND merge_origin=${source}`
+      await tx`UPDATE territories SET applicant_account_id=${source}, applicant_merge_origin=NULL
+        WHERE applicant_account_id=${target} AND applicant_merge_origin=${source}`
+      await tx`UPDATE territories SET owner_account_id=${source}, owner_merge_origin=NULL
+        WHERE owner_type='account' AND owner_account_id=${target} AND owner_merge_origin=${source}`
       if (record.source_was_admin) {
         await tx`INSERT INTO account_roles(account_id,role) VALUES (${source},'admin') ON CONFLICT DO NOTHING`
         if (!record.target_was_admin) await tx`DELETE FROM account_roles WHERE account_id=${target} AND role='admin'`

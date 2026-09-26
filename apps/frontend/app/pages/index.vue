@@ -52,10 +52,17 @@
         <UiCard
           :image="bluemapImage"
           title="Bluemapを見る"
-          to="/bluemap/"
+           :to="bluemapBase"
           native
         />
       </div>
+    </div>
+
+    <UiSectionHeading title="サイト案内" class="mb-3" />
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-xl-4"><UiCard :image="infoImage" title="情報" to="/info" /></div>
+      <div class="col-12 col-md-6 col-xl-4"><UiCard :image="listsImage" title="一覧" to="/lists" /></div>
+      <div class="col-12 col-md-6 col-xl-4"><UiCard :image="applicationsImage" title="申請" to="/applications" /></div>
     </div>
 
     <!-- 場所案内見出し -->
@@ -64,12 +71,6 @@
     <!-- 一覧・検索見出し -->
     <!-- カード形式：領地一覧 -->
     <!-- カード形式：企業一覧 -->
-    <!-- 情報ページ見出し -->
-    <!-- カード形式：各情報ページ -->
-    <!-- 一覧ページ見出し -->
-    <!-- カード形式：各一覧ページ -->
-    <!-- 申請ページ見出し -->
-    <!-- カード形式：各申請ページ -->
   </section>
 </template>
 
@@ -77,8 +78,12 @@
 import { sortNotices } from "../utils/notice";
 
 const siteImages = useSiteImages()
+const infoImage = computed(() => siteImages.image('card.info', '/images/card-default.svg', '/images/card-default.svg'))
+const listsImage = computed(() => siteImages.image('card.lists', '/images/card-default.svg', '/images/card-default.svg'))
+const applicationsImage = computed(() => siteImages.image('card.applications', '/images/card-default.svg', '/images/card-default.svg'))
 const discordImage = computed(() => siteImages.image('card.discord', '/images/discord.png', '/images/card-default.svg'))
 const ofuseImage = computed(() => siteImages.image('card.ofuse', '/images/card-ofuse.jpg', '/images/card-default.svg'))
+const { public: { bluemapBase } } = useRuntimeConfig()
 const bluemapImage = computed(() => siteImages.image('card.bluemap', '/images/bluemap.png', '/images/card-default.svg'))
 const { data: notices, status, error } = usePublicNotices();
 const latest = computed(() =>

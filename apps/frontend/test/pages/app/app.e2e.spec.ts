@@ -8,14 +8,61 @@ test('navigates from the centered hover menu and returns home through the logo',
   const logo = page.locator('header a.xplay-site-logo')
   await expect(logo).toHaveText('もふもふ広場')
   await expect(logo).toHaveAttribute('href', '/')
-  await expect(page.locator('#header-navigation')).toHaveCSS('justify-content', 'center')
+  const nav = page.locator('#header-navigation')
+  await expect(nav).toBeVisible()
+  const headerBounds = await page.locator('.xplay-shell > header.navbar').boundingBox()
+  const initialNavBounds = await nav.boundingBox()
+  expect(headerBounds).not.toBeNull()
+  expect(initialNavBounds).not.toBeNull()
+  const headerCenterX = headerBounds!.x + headerBounds!.width / 2
+  const headerCenterY = headerBounds!.y + headerBounds!.height / 2
+  expect(Math.abs(initialNavBounds!.x + initialNavBounds!.width / 2 - headerCenterX)).toBeLessThanOrEqual(1)
+  expect(Math.abs(initialNavBounds!.y + initialNavBounds!.height / 2 - headerCenterY)).toBeLessThanOrEqual(1)
   await expect(page.locator('#header-navigation a[href="/"]')).toHaveCount(0)
   await page.getByRole('button', { name: '情報' }).hover()
+  const expandedNavBounds = await nav.boundingBox()
+  const dropdownBounds = await nav.locator('.dropdown-menu').first().boundingBox()
+  expect(expandedNavBounds).not.toBeNull()
+  expect(dropdownBounds).not.toBeNull()
+  expect(Math.abs(expandedNavBounds!.y - initialNavBounds!.y)).toBeLessThanOrEqual(1)
+  expect(Math.abs(expandedNavBounds!.height - initialNavBounds!.height)).toBeLessThanOrEqual(1)
+  expect(Math.abs(expandedNavBounds!.x + expandedNavBounds!.width / 2 - headerCenterX)).toBeLessThanOrEqual(1)
+  expect(dropdownBounds!.y).toBeGreaterThanOrEqual(initialNavBounds!.y + initialNavBounds!.height - 1)
   await expect(page.getByRole('link', { name: 'お知らせ', exact: true }).first()).toBeVisible()
   await page.locator('#header-navigation a[href="/info/notice"]').click()
   await expect(page).toHaveURL(/\/info\/notice$/)
   await logo.click()
   await expect(page).toHaveURL(/\/$/)
+})
+
+test('centers the administrator menu at the viewport midpoint', async ({ page, goto }) => {
+  await page.route('**/api/auth/session', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: {
+        'access-control-allow-origin': new URL(route.request().headers()['origin'] ?? 'http://localhost:3000').origin,
+        'access-control-allow-credentials': 'true',
+      },
+      body: JSON.stringify({ authenticated: true, is_admin: true, account_id: 'ci-admin' }),
+    })
+  })
+  await page.setViewportSize({ width: 2200, height: 900 })
+  await goto('/', { waitUntil: 'hydration' })
+
+  const nav = page.locator('#header-navigation')
+  const adminGroup = nav.getByRole('button', { name: '申請管理' })
+  await expect(adminGroup).toBeVisible()
+  const header = page.locator('.xplay-shell > header.navbar')
+  const midpoint = (await header.boundingBox())!.x + (await header.boundingBox())!.width / 2
+  const before = (await nav.boundingBox())!
+  expect(Math.abs(before.x + before.width / 2 - midpoint)).toBeLessThanOrEqual(1)
+  await adminGroup.hover()
+  await expect(nav.getByRole('link', { name: '領地承認' })).toBeVisible()
+  const after = (await nav.boundingBox())!
+  expect(Math.abs(after.x + after.width / 2 - midpoint)).toBeLessThanOrEqual(1)
+  expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1)
+  expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(1)
 })
 
 test('uses branded document titles and declares the favicon', async ({ page, goto }) => {

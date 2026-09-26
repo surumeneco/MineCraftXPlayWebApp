@@ -4,22 +4,69 @@ import HeaderMenu from '../../../app/components/layout/HeaderMenu.vue'
 import Layout from '../../../app/layouts/layout.vue'
 
 describe('Responsive header menus', () => {
+  it('switches to the hamburger only when the intrinsic navigation fits between logo and account', async () => {
+    const wrapper = await mountSuspended(HeaderMenu, {
+      props: { items: [{ label: '長いナビゲーション', to: '/info' }] },
+    })
+    const row = wrapper.get('.xplay-header-row').element as HTMLElement
+    const brand = wrapper.get('.xplay-header-brand').element as HTMLElement
+    const account = wrapper.get('.account-menu').element as HTMLElement
+    const nav = wrapper.get('#header-navigation').element as HTMLElement
+    const rect = (width: number) => ({ width, height: 50, top: 0, bottom: 50, left: 0, right: width, x: 0, y: 0, toJSON: () => ({}) })
+    const rowWidth = vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(rect(1100))
+    vi.spyOn(brand, 'getBoundingClientRect').mockReturnValue(rect(180))
+    vi.spyOn(account, 'getBoundingClientRect').mockReturnValue(rect(60))
+    Object.defineProperty(nav, 'scrollWidth', { configurable: true, value: 680 })
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.xplay-header-row').classes()).toContain('xplay-header-row--desktop')
+    expect(wrapper.get('.xplay-header-side-toggle').attributes('style')).toContain('display: none')
+    rowWidth.mockReturnValue(rect(800))
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.xplay-header-row').classes()).not.toContain('xplay-header-row--desktop')
+    expect(wrapper.get('#header-navigation').classes()).toContain('xplay-desktop-navigation--hidden')
+    wrapper.unmount()
+  })
+
+  it('measures top-level width independently of expanded dropdown overflow', async () => {
+    const wrapper = await mountSuspended(HeaderMenu, {
+      props: { items: [{ label: '申請管理', children: [{ label: '領地申請', to: '/admin/territories' }] }] },
+    })
+    const rect = (width: number) => ({
+      width, height: 50, top: 0, bottom: 50, left: 0, right: width,
+      x: 0, y: 0, toJSON: () => ({}),
+    })
+    vi.spyOn(wrapper.get('.xplay-header-row').element, 'getBoundingClientRect').mockReturnValue(rect(1100))
+    vi.spyOn(wrapper.get('.xplay-header-brand').element, 'getBoundingClientRect').mockReturnValue(rect(180))
+    vi.spyOn(wrapper.get('.account-menu').element, 'getBoundingClientRect').mockReturnValue(rect(60))
+    const nav = wrapper.get('#header-navigation')
+    const topLevel = nav.get('ul.navbar-nav')
+    vi.spyOn(topLevel.element, 'getBoundingClientRect').mockReturnValue(rect(500))
+    Object.defineProperty(nav.element, 'scrollWidth', { configurable: true, value: 1200 })
+    await nav.get('.dropdown').trigger('mouseenter')
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.xplay-header-row').classes()).toContain('xplay-header-row--desktop')
+    wrapper.unmount()
+  })
+
   it('keeps the desktop navigation separate and switches left/right drawers from the header', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       props: { items: [{ label: '概要', to: '/info' }] },
       slots: { 'side-menu': '<p>サイドメニューの内容</p>' },
     })
-    expect(wrapper.get('header').classes()).toEqual(expect.arrayContaining(['navbar', 'navbar-expand-lg', 'sticky-top']))
+    expect(wrapper.get('header').classes()).toEqual(expect.arrayContaining(['navbar', 'sticky-top']))
     expect(wrapper.get('a.xplay-site-logo').text()).toBe('もふもふ広場')
     expect(wrapper.get('a.xplay-site-logo').attributes('href')).toBe('/')
     const sideToggle = wrapper.get('button[aria-label="サイドメニュー"]')
     const navToggle = wrapper.get('button[aria-label="ナビゲーションメニュー"]')
     expect(sideToggle.attributes('aria-controls')).toBe('mobile-menu-drawer')
     expect(navToggle.attributes('aria-controls')).toBe('mobile-menu-drawer')
-    expect(sideToggle.element.closest('.col')?.classList.contains('d-lg-none')).toBe(true)
-    expect(navToggle.element.closest('.col')?.classList.contains('d-lg-none')).toBe(true)
-    expect(wrapper.get('#header-navigation').classes()).toContain('d-lg-flex')
-    expect(wrapper.get('#header-navigation').classes()).toContain('justify-content-lg-center')
+    expect(sideToggle.element.closest('.xplay-header-side-toggle')).not.toBeNull()
+    expect(navToggle.element.closest('.xplay-header-nav-toggle')).not.toBeNull()
+    expect(wrapper.get('#header-navigation').classes()).toContain('xplay-desktop-navigation')
+    expect(wrapper.get('#header-navigation').classes()).toContain('xplay-desktop-navigation--hidden')
     const drawer = wrapper.get('#mobile-menu-drawer')
     expect(drawer.attributes('open')).toBeUndefined()
     await sideToggle.trigger('click')
@@ -79,7 +126,7 @@ describe('Responsive header menus', () => {
     const toggle = wrapper.get('button[aria-label="ナビゲーションメニュー"]')
     await toggle.trigger('click')
     expect(document.body.style.overflow).toBe('hidden')
-    expect(wrapper.get('#header-navigation').classes()).toContain('d-lg-flex')
+    expect(wrapper.get('#header-navigation').classes()).toContain('xplay-desktop-navigation')
     await wrapper.get('.xplay-mobile-drawer__scrim').trigger('click')
     await vi.waitFor(() => expect(wrapper.get('#mobile-menu-drawer').attributes('open')).toBeUndefined())
     expect(toggle.attributes('aria-expanded')).toBe('false')

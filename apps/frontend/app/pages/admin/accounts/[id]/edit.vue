@@ -53,6 +53,7 @@
         </div>
         <div class="col-auto"><button type="submit" class="btn btn-primary" :disabled="busy || !minecraftName.trim()">追加</button></div>
       </form>
+      <AccountMapColorEditor :account-id="account.id" />
       <section class="border rounded p-3 mb-4" aria-labelledby="merge-title">
         <h2 id="merge-title" class="h4">アカウント統合・分離</h2>
         <p class="small text-body-secondary">このアカウントを統合先とし、既存の別アカウントを統合元に選びます。元のアカウントと所有者情報はDBに残るため、後から分離できます。</p>
@@ -76,6 +77,7 @@
       </section>
       <div class="d-flex gap-2 flex-wrap mt-4">
         <NuxtLink to="/admin/accounts" class="btn btn-outline-secondary">一覧へ戻る</NuxtLink>
+        <button type="button" class="btn btn-outline-danger" :disabled="busy || account.is_protected || account.merged_sources.length > 0" @click="askRetire">匿名化・退会</button>
         <button type="button" class="btn btn-danger" :disabled="busy || account.is_protected || account.merged_sources.length > 0"
           @click="ask('delete', account.id, `アカウント「${account.name}」を完全に削除します。取り消せません。続行しますか？`)">削除</button>
       </div>
@@ -91,7 +93,7 @@
 import type { AccountRecord, DiscordIdentity } from '../../../../composables/useAccountApi'
 import { accountError } from '../../../../composables/useAccountApi'
 
-type Decision = { kind: 'role' | 'delete' | 'discord' | 'minecraft' | 'merge' | 'restore'; value: string; title: string; message: string }
+type Decision = { kind: 'role' | 'delete' | 'retire' | 'discord' | 'minecraft' | 'merge' | 'restore'; value: string; title: string; message: string }
 const route = useRoute()
 const auth = useAccountSession()
 const { get, mutate } = useAccountApi()
@@ -122,6 +124,10 @@ async function addMinecraft() {
   if (!error.value) minecraftName.value = ''
 }
 function ask(kind: Decision['kind'], value: string, text: string) { decision.value = { kind, value, title: '操作の確認', message: text } }
+function askRetire() {
+  if (!account.value || busy.value) return
+  ask('retire', account.value.id, `「${account.value.name}」を匿名化して退会処理します。ログイン・Discord・Minecraft連携を失効させ、申請者履歴の内部IDは保持します。所有中の領地と未承認申請がある場合は先に処理が必要です。実行しますか？`)
+}
 function askMerge() {
   if (!account.value || account.value.merged_sources.length || !mergeSource.value || busy.value) return
   decision.value = { kind: 'merge', value: mergeSource.value.id, title: 'アカウント統合の最終確認',
@@ -156,6 +162,12 @@ async function execute() {
       decision.value = null; await auth.refresh()
       if (!auth.isAdmin.value) { await navigateTo('/login'); return }
       await load(); message.value = 'アカウントを分離しました。'
+      return
+    }
+    if (selected.kind === 'retire') {
+      await mutate(`/admin/accounts/${id.value}/retire`, 'POST')
+      await auth.refresh(); decision.value = null
+      await navigateTo(auth.isAdmin.value ? '/admin/accounts' : '/account')
       return
     }
     if (selected.kind === 'delete') {

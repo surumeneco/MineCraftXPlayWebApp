@@ -1,8 +1,8 @@
 <template>
-  <header class="navbar navbar-expand-lg sticky-top border-bottom bg-body py-3">
-    <div class="container">
-      <div class="row align-items-center w-100 g-2 xplay-header-row">
-        <div class="col d-lg-none">
+  <header class="navbar sticky-top border-bottom bg-body py-3">
+    <div class="container-fluid px-3 px-lg-4">
+      <div ref="headerRow" class="xplay-header-row w-100" :class="{ 'xplay-header-row--desktop': desktop }">
+        <div v-show="!desktop" class="xplay-header-side-toggle">
           <button
             type="button"
             class="navbar-toggler xplay-hamburger"
@@ -18,7 +18,7 @@
             }}</span>
           </button>
         </div>
-        <div class="col-auto text-center xplay-header-brand">
+        <div ref="brand" class="xplay-header-brand">
           <NuxtLink
             to="/"
             class="xplay-site-logo"
@@ -30,7 +30,7 @@
             >
           </NuxtLink>
         </div>
-        <div class="col d-lg-none d-flex justify-content-end">
+        <div v-show="!desktop" class="xplay-header-nav-toggle">
           <button
             type="button"
             class="navbar-toggler xplay-hamburger"
@@ -48,45 +48,10 @@
             }}</span>
           </button>
         </div>
-        <nav
-          id="header-navigation"
-          class="col-12 col-lg d-none d-lg-flex justify-content-lg-center xplay-desktop-navigation"
-          aria-label="メインナビゲーション"
-        >
-          <ul
-            class="navbar-nav flex-row flex-wrap gap-2 w-100 justify-content-lg-center"
-          >
-            <li
-              v-for="(item, index) in items"
-              :key="item.label"
-              class="nav-item"
-            >
-              <LayoutNavigationDropdown
-                v-if="item.children?.length"
-                :key="`${index}-${desktopDropdownCycle}`"
-                :label="item.label"
-                :links="item.children"
-                @link-selected="closeNavigation"
-              />
-              <a
-                v-else-if="item.to && item.native"
-                :href="item.to"
-                class="nav-link"
-                @click="closeNavigation"
-                >{{ item.label }}</a
-              >
-              <NuxtLink
-                v-else-if="item.to"
-                :to="item.to"
-                class="nav-link"
-                @click="closeNavigation"
-                >{{ item.label }}</NuxtLink
-              >
-            </li>
-          </ul>
-        </nav>
         <div
-          class="col-auto d-none d-lg-block ms-lg-auto account-menu"
+          ref="accountMenu"
+          class="account-menu"
+          :class="{ 'account-menu--hidden': !desktop }"
           @focusout="handleAccountFocusOut"
           @keydown.esc="accountOpen = false"
         >
@@ -120,6 +85,48 @@
           </ul>
         </div>
       </div>
+      <!-- Header-wide absolute navigation: never a child of the logo/account grid. -->
+      <nav
+        id="header-navigation"
+        ref="desktopNavigation"
+        class="xplay-desktop-navigation"
+        :class="{ 'xplay-desktop-navigation--hidden': !desktop }"
+        :aria-hidden="!desktop"
+        :inert="!desktop"
+        aria-label="メインナビゲーション"
+      >
+        <ul
+          class="navbar-nav flex-row flex-nowrap gap-2 justify-content-center"
+        >
+          <li
+            v-for="(item, index) in items"
+            :key="item.label"
+            class="nav-item"
+          >
+            <LayoutNavigationDropdown
+              v-if="item.children?.length"
+              :key="`${index}-${desktopDropdownCycle}`"
+              :label="item.label"
+              :links="item.children"
+              @link-selected="closeNavigation"
+            />
+            <a
+              v-else-if="item.to && item.native"
+              :href="item.to"
+              class="nav-link"
+              @click="closeNavigation"
+              >{{ item.label }}</a
+            >
+            <NuxtLink
+              v-else-if="item.to"
+              :to="item.to"
+              class="nav-link"
+              @click="closeNavigation"
+              >{{ item.label }}</NuxtLink
+            >
+          </li>
+        </ul>
+      </nav>
     </div>
     <!-- Nonmodal dialog: unlike showModal(), show() does not make the header inert. -->
     <dialog
@@ -245,7 +252,7 @@
 
 <script setup lang="ts">
 import type { HeaderNavigationItem } from "../../types/header-navigation";
-withDefaults(defineProps<{ items?: HeaderNavigationItem[] }>(), {
+const props = withDefaults(defineProps<{ items?: HeaderNavigationItem[] }>(), {
   items: () => [],
 });
 type MobileMenu = "side" | "navigation";
@@ -257,6 +264,12 @@ const drawerVisible = ref(false);
 const drawerClosing = ref(false);
 const headerBottom = ref(0);
 const accountOpen = ref(false);
+const desktop = ref(false);
+const headerRow = ref<HTMLElement | null>(null);
+const desktopNavigation = ref<HTMLElement | null>(null);
+const brand = ref<HTMLElement | null>(null);
+const accountMenu = ref<HTMLElement | null>(null);
+let navigationObserver: ResizeObserver | undefined;
 const mobileDialog = ref<HTMLDialogElement | null>(null);
 const mobileAccordionCycle = ref(0),
   desktopDropdownCycle = ref(0);
@@ -354,9 +367,25 @@ function closeNavigation() {
   accountOpen.value = false;
   desktopDropdownCycle.value++;
 }
+function measureNavigation() {
+  const row = headerRow.value, nav = desktopNavigation.value
+  const logo = brand.value, account = accountMenu.value
+  if (!row || !nav || !logo || !account) return
+  const rowWidth = row.getBoundingClientRect().width
+  const logoWidth = logo.getBoundingClientRect().width
+  const accountWidth = account.getBoundingClientRect().width
+  // The navigation is absolutely positioned so its intrinsic width remains measurable while hidden.
+  // Top-level items determine the switch; expanded dropdowns must not affect it.
+  const topLevelWidth = nav.querySelector('ul.navbar-nav')?.getBoundingClientRect().width ?? 0
+  const requiredWidth = topLevelWidth > 0 ? topLevelWidth : nav.scrollWidth
+  const fits = rowWidth > 0 && requiredWidth > 0
+    && (rowWidth - requiredWidth) / 2 >= Math.max(logoWidth, accountWidth) + 16
+  desktop.value = fits
+  if (fits && openMobileMenu.value) finishClose()
+}
 function onViewportChange() {
-  if (window.innerWidth >= 992 && openMobileMenu.value) finishClose();
-  else if (openMobileMenu.value) positionDrawer();
+  measureNavigation()
+  if (openMobileMenu.value) positionDrawer()
 }
 function onKeydown(event: KeyboardEvent) {
   if (event.key === "Escape" && openMobileMenu.value) {
@@ -368,11 +397,21 @@ watch(
   () => route.fullPath,
   () => closeNavigation(),
 );
+watch(() => props.items, async () => { await nextTick(); measureNavigation() }, { deep: true });
 onMounted(() => {
+  measureNavigation()
+  if (typeof ResizeObserver !== 'undefined') {
+    navigationObserver = new ResizeObserver(measureNavigation)
+    for (const element of [headerRow.value, desktopNavigation.value, brand.value, accountMenu.value]) {
+      if (element) navigationObserver.observe(element)
+    }
+  }
+  void document.fonts?.ready.then(measureNavigation)
   window.addEventListener("resize", onViewportChange);
   document.addEventListener("keydown", onKeydown);
 });
 onBeforeUnmount(() => {
+  navigationObserver?.disconnect()
   window.removeEventListener("resize", onViewportChange);
   document.removeEventListener("keydown", onKeydown);
   if (openMobileMenu.value) finishClose();
@@ -380,8 +419,42 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.xplay-header-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+  position: relative;
+}
+.xplay-header-side-toggle { grid-column: 1; justify-self: start; }
+.xplay-header-brand { grid-column: 2; justify-self: center; white-space: nowrap; }
+.xplay-header-nav-toggle { grid-column: 3; justify-self: end; }
+.xplay-header-row--desktop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.xplay-header-row--desktop .xplay-header-brand { grid-column: 1; justify-self: start; }
+.xplay-desktop-navigation {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max-content;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+.xplay-desktop-navigation--hidden { visibility: hidden; pointer-events: none; }
+.xplay-desktop-navigation .navbar-nav { flex-wrap: nowrap; }
+.xplay-desktop-navigation .nav-item,
+.xplay-desktop-navigation .nav-link { white-space: nowrap; }
 .account-menu {
   position: relative;
+  grid-column: 2;
+  justify-self: end;
+}
+.account-menu--hidden {
+  position: absolute;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 .account-menu__button {
   display: inline-flex;
