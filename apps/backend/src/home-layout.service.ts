@@ -71,7 +71,7 @@ export class HomeLayoutService {
     const request = record(raw)
     const previous = await this.get()
     const revision = request.revision
-    if (!Number.isSafeInteger(revision) || Number(revision) < 1) throw new BadRequestException('設定の更新番号が不正です。')
+    if (typeof revision !== 'number' || !Number.isSafeInteger(revision) || revision < 1) throw new BadRequestException('設定の更新番号が不正です。')
     if (!Array.isArray(request.categories) || request.categories.length > 24) throw new BadRequestException('カテゴリは24個以内にしてください。')
     if (!Array.isArray(request.hubs) || request.hubs.length !== HUB_LINKS.length) throw new BadRequestException('トップカードの構成が不正です。')
     const knownCards = new Map(previous.data.categories.flatMap(category => category.cards.map(card => [card.id, card] as const)))
