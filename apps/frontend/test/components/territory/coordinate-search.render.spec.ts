@@ -26,7 +26,7 @@ describe('territory coordinate editor', () => {
       { x: null, z: null },
       { x: null, z: null },
     ])
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('button.btn-outline-secondary').trigger('click')
     const updated = wrapper.emitted('update:modelValue')
     expect(updated?.at(-1)?.[0]).toEqual([
       { x: 12, z: null },
