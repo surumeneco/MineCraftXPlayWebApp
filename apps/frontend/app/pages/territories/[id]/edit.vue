@@ -22,11 +22,9 @@
       <section class="border rounded p-3 mb-3">
         <h2 class="h5">新しい境界</h2>
         <p class="small text-body-secondary">選択範囲の両端は固定です。その間に必要な頂点を追加してください。</p>
-        <div class="row g-2 mb-2">
-          <div class="col-md-6"><label class="form-label">始点</label><input class="form-control" :value="`X ${range.startPoint.x} / Z ${range.startPoint.z}`" readonly /></div>
-          <div class="col-md-6"><label class="form-label">終点</label><input class="form-control" :value="`X ${range.endPoint.x} / Z ${range.endPoint.z}`" readonly /></div>
-        </div>
+        <div class="mb-2"><label class="form-label">始点</label><input class="form-control" :value="`X ${range.startPoint.x} / Z ${range.startPoint.z}`" readonly /></div>
         <TerritoryCoordinatesEditor v-model="intermediate" :min-points="0" />
+        <div class="mt-2"><label class="form-label">終点</label><input class="form-control" :value="`X ${range.endPoint.x} / Z ${range.endPoint.z}`" readonly /></div>
       </section>
     </template>
     <div class="mb-3">
