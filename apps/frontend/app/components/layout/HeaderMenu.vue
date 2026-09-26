@@ -86,47 +86,47 @@
         </div>
       </div>
       <!-- Header-wide absolute navigation: never a child of the logo/account grid. -->
-        <nav
-          id="header-navigation"
-          ref="desktopNavigation"
-          class="xplay-desktop-navigation"
-          :class="{ 'xplay-desktop-navigation--hidden': !desktop }"
-          :aria-hidden="!desktop"
-          :inert="!desktop"
-          aria-label="メインナビゲーション"
+      <nav
+        id="header-navigation"
+        ref="desktopNavigation"
+        class="xplay-desktop-navigation"
+        :class="{ 'xplay-desktop-navigation--hidden': !desktop }"
+        :aria-hidden="!desktop"
+        :inert="!desktop"
+        aria-label="メインナビゲーション"
+      >
+        <ul
+          class="navbar-nav flex-row flex-nowrap gap-2 justify-content-center"
         >
-          <ul
-            class="navbar-nav flex-row flex-nowrap gap-2 justify-content-center"
+          <li
+            v-for="(item, index) in items"
+            :key="item.label"
+            class="nav-item"
           >
-            <li
-              v-for="(item, index) in items"
-              :key="item.label"
-              class="nav-item"
+            <LayoutNavigationDropdown
+              v-if="item.children?.length"
+              :key="`${index}-${desktopDropdownCycle}`"
+              :label="item.label"
+              :links="item.children"
+              @link-selected="closeNavigation"
+            />
+            <a
+              v-else-if="item.to && item.native"
+              :href="item.to"
+              class="nav-link"
+              @click="closeNavigation"
+              >{{ item.label }}</a
             >
-              <LayoutNavigationDropdown
-                v-if="item.children?.length"
-                :key="`${index}-${desktopDropdownCycle}`"
-                :label="item.label"
-                :links="item.children"
-                @link-selected="closeNavigation"
-              />
-              <a
-                v-else-if="item.to && item.native"
-                :href="item.to"
-                class="nav-link"
-                @click="closeNavigation"
-                >{{ item.label }}</a
-              >
-              <NuxtLink
-                v-else-if="item.to"
-                :to="item.to"
-                class="nav-link"
-                @click="closeNavigation"
-                >{{ item.label }}</NuxtLink
-              >
-            </li>
-          </ul>
-        </nav>
+            <NuxtLink
+              v-else-if="item.to"
+              :to="item.to"
+              class="nav-link"
+              @click="closeNavigation"
+              >{{ item.label }}</NuxtLink
+            >
+          </li>
+        </ul>
+      </nav>
     </div>
     <!-- Nonmodal dialog: unlike showModal(), show() does not make the header inert. -->
     <dialog
