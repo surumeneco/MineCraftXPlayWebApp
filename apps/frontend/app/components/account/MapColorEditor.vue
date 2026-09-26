@@ -23,6 +23,7 @@
         <div class="mb-2"><label class="form-label" for="sat">S: {{ hsv.s }}%</label><input id="sat" v-model.number="hsv.s" type="range" min="0" max="100" class="form-range" @input="syncFromHsv" /></div>
         <div class="mb-2"><label class="form-label" for="val">V: {{ hsv.v }}%</label><input id="val" v-model.number="hsv.v" type="range" min="0" max="100" class="form-range" @input="syncFromHsv" /></div>
       </div>
+      </div>
       <p v-if="error" class="text-danger small">{{ error }}</p>
       <button type="button" class="btn btn-primary" :disabled="busy" @click="save">保存</button>
     </template>
