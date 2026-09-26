@@ -308,6 +308,15 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(special.data.owner).toMatchObject({ type: 'shared_area', account_id: null, name: '共同建築エリア' })
     expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, otherSession)).data.can_edit).toBe(false)
     expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, adminSession)).data.can_edit).toBe(true)
+    const beforeTransfer = await request(`/api/admin/accounts/${memberId}/retire`, 'POST', {}, adminSession)
+    expect(beforeTransfer.status).toBe(409)
+    // The preceding lifecycle test also created a territory owned by this member.
+    const remainingOwned = await sql`SELECT id FROM territories WHERE owner_account_id=${memberId}`
+    for (const owned of remainingOwned) {
+      const moved = await request(`/api/admin/territories/${owned.id}/owner`, 'POST',
+        { operation_id: randomUUID(), owner_type: 'shared_area' }, adminSession)
+      expect(moved.status).toBe(201)
+    }
     const retired = await request(`/api/admin/accounts/${memberId}/retire`, 'POST', {}, adminSession)
     expect(retired.status).toBe(201)
     expect(retired.data).toMatchObject({ id: memberId, retired: true })
