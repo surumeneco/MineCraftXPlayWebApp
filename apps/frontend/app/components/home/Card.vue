@@ -19,7 +19,7 @@ const props = defineProps<{
   hubs: HubCardConfig[]
   links: HubCardLink[]
 }>()
-const { imageSource, destination, isNative } = useHomeLayout()
+const { imageSource, destination, isNative } = useManagedCardImage()
 const resolved = computed<{
   title: string; note: string; url: string; image: ManagedCardImage; new_tab: boolean
 } | null>(() => {
