@@ -228,9 +228,11 @@ export class TerritoryService {
       if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can reapply')
       if (!['returned','withdrawn'].includes(String(locked[0].status))) throw new ConflictException('Territory is not available for reapplication')
       await this.assertMinecraft(accountId, tx)
-      const previous = await tx`SELECT name,coordinates FROM territory_applications WHERE territory_id=${id}
+      const previous = await tx`SELECT name,coordinates,image_id FROM territory_applications WHERE territory_id=${id}
         ORDER BY submitted_at DESC,id DESC LIMIT 1`
+      const imageId = body?.image_id === undefined ? (previous[0]?.image_id ?? null) : await this.images.attach(tx, body.image_id, id, accountId)
       if (previous.length && previous[0].name === name && samePoints(previous[0].coordinates as Point[], coordinates)
+        && String(previous[0].image_id ?? '') === String(imageId ?? '')
         && String(locked[0].owner_type) === owner.type && String(locked[0].owner_account_id ?? '') === String(owner.accountId ?? '')) {
         throw new BadRequestException('Change at least one field before reapplying')
       }
