@@ -29,6 +29,28 @@ describe('Responsive header menus', () => {
     wrapper.unmount()
   })
 
+  it('measures top-level width independently of expanded dropdown overflow', async () => {
+    const wrapper = await mountSuspended(HeaderMenu, {
+      props: { items: [{ label: '申請管理', children: [{ label: '領地申請', to: '/admin/territories' }] }] },
+    })
+    const rect = (width: number) => ({
+      width, height: 50, top: 0, bottom: 50, left: 0, right: width,
+      x: 0, y: 0, toJSON: () => ({}),
+    })
+    vi.spyOn(wrapper.get('.xplay-header-row').element, 'getBoundingClientRect').mockReturnValue(rect(1100))
+    vi.spyOn(wrapper.get('.xplay-header-brand').element, 'getBoundingClientRect').mockReturnValue(rect(180))
+    vi.spyOn(wrapper.get('.account-menu').element, 'getBoundingClientRect').mockReturnValue(rect(60))
+    const nav = wrapper.get('#header-navigation')
+    const topLevel = nav.get('ul.navbar-nav')
+    vi.spyOn(topLevel.element, 'getBoundingClientRect').mockReturnValue(rect(500))
+    Object.defineProperty(nav.element, 'scrollWidth', { configurable: true, value: 1200 })
+    await nav.get('.dropdown').trigger('mouseenter')
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.xplay-header-row').classes()).toContain('xplay-header-row--desktop')
+    wrapper.unmount()
+  })
+
   it('keeps the desktop navigation separate and switches left/right drawers from the header', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       props: { items: [{ label: '概要', to: '/info' }] },
