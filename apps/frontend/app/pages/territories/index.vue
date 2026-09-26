@@ -34,11 +34,11 @@ const filters=reactive({name:'',owner:'',x:'',z:'',status:'',sort:'approved_at'}
 const visibleStatuses=computed(()=>Object.fromEntries(Object.entries(territoryStatusLabel).filter(([key])=>key!=='rejected'||auth.isAdmin.value)) as Record<TerritoryStatus,string>)
 function pasteSearchCoordinates(event: ClipboardEvent) {
   const text = event.clipboardData?.getData('text/plain')?.trim()
-  if (!text || !/\\s/.test(text)) return
+  if (!text || !/\s/.test(text)) return
   event.preventDefault()
-  const parts = text.split(/\\s+/)
+  const parts = text.split(/\s+/)
   if (parts.length !== 2 && parts.length !== 3) return
-  const values = parts.map(value => /^-?\\d+$/.test(value) ? Number(value) : NaN)
+  const values = parts.map(value => /^-?\d+$/.test(value) ? Number(value) : NaN)
   if (!values.every(Number.isSafeInteger)) return
   filters.x = String(values[0]); filters.z = String(values[values.length - 1])
 }
