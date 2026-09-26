@@ -336,7 +336,7 @@ export class TerritoryService {
       const overlapsAtReview = this.overlaps(await this.rows(tx), id, app.coordinates as Point[])
       if (action === 'approve') {
         await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${appId}`
-        await tx`UPDATE territories SET status='approved',approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
+        await tx`UPDATE territories SET status='approved',current_name=${app.name},current_image_id=${app.image_id},approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
         await this.notify(tx, operationId, id, 'approved', applicationType, app.coordinates as Point[], String(app.name))
       } else {
         const status = action === 'return' ? 'returned' : 'rejected'
