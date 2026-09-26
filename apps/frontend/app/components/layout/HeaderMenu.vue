@@ -48,6 +48,44 @@
             }}</span>
           </button>
         </div>
+        <div
+          ref="accountMenu"
+          class="account-menu"
+          :class="{ 'account-menu--hidden': !desktop }"
+          @focusout="handleAccountFocusOut"
+          @keydown.esc="accountOpen = false"
+        >
+          <button
+            type="button"
+            class="nav-link account-menu__button"
+            aria-label="アカウントメニュー"
+            :aria-expanded="accountOpen"
+            aria-controls="desktop-account-menu"
+            @click="accountOpen = !accountOpen"
+          >
+            <UiBootstrapIcon name="person-circle" /><span
+              class="visually-hidden"
+              >アカウント</span
+            >
+          </button>
+          <ul
+            v-if="accountOpen"
+            id="desktop-account-menu"
+            class="dropdown-menu dropdown-menu-end show"
+          >
+            <li>
+              <NuxtLink
+                class="dropdown-item"
+                :to="authenticated ? '/account' : '/login'"
+                @click="closeNavigation"
+              >
+                {{ authenticated ? "詳細" : "ログイン" }}
+              </NuxtLink>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Header-wide absolute navigation: never a child of the logo/account grid. -->
         <nav
           id="header-navigation"
           ref="desktopNavigation"
@@ -89,43 +127,6 @@
             </li>
           </ul>
         </nav>
-        <div
-          ref="accountMenu"
-          class="account-menu"
-          :class="{ 'account-menu--hidden': !desktop }"
-          @focusout="handleAccountFocusOut"
-          @keydown.esc="accountOpen = false"
-        >
-          <button
-            type="button"
-            class="nav-link account-menu__button"
-            aria-label="アカウントメニュー"
-            :aria-expanded="accountOpen"
-            aria-controls="desktop-account-menu"
-            @click="accountOpen = !accountOpen"
-          >
-            <UiBootstrapIcon name="person-circle" /><span
-              class="visually-hidden"
-              >アカウント</span
-            >
-          </button>
-          <ul
-            v-if="accountOpen"
-            id="desktop-account-menu"
-            class="dropdown-menu dropdown-menu-end show"
-          >
-            <li>
-              <NuxtLink
-                class="dropdown-item"
-                :to="authenticated ? '/account' : '/login'"
-                @click="closeNavigation"
-              >
-                {{ authenticated ? "詳細" : "ログイン" }}
-              </NuxtLink>
-            </li>
-          </ul>
-        </div>
-      </div>
     </div>
     <!-- Nonmodal dialog: unlike showModal(), show() does not make the header inert. -->
     <dialog
