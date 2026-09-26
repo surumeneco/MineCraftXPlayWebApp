@@ -11,6 +11,7 @@ type ApplicationType = 'new' | 'edit'
 type OperationKind = 'create' | 'reapply' | 'edit' | 'withdraw' | 'approve' | 'return' | 'reject' | 'transfer'
 type ApplicationData = {
   id: string
+  submitted_by_account_id: string
   application_type: ApplicationType
   name: string
   image_id: string | null
@@ -72,15 +73,15 @@ export class TerritoryService {
     return await sql`
       SELECT t.id,t.applicant_account_id,applicant.name AS applicant_name,t.owner_type,t.owner_account_id,t.current_name,t.current_image_id,
         owner.name AS owner_account_name,t.status,t.first_applied_at,t.approved_at,t.status_changed_at,
-        (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,
+        (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
           'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
           ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1) AS approved_application,
-        (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,
+        (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
           'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='pending'
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS pending_application,
-        (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,
+        (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
           'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason)
           FROM territory_applications a WHERE a.territory_id=t.id
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS latest_application
@@ -163,7 +164,7 @@ export class TerritoryService {
     const canEdit = row.status === 'approved' && (viewer.is_admin === true
       || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id))
     const canReapply = viewer.account_id === row.applicant_account_id && ['returned','withdrawn'].includes(row.status)
-    const canWithdraw = viewer.account_id === row.applicant_account_id && row.status === 'pending'
+    const canWithdraw = viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending'
     return { ...value, can_edit: canEdit, can_reapply: canReapply, can_withdraw: canWithdraw,
       nearby: await this.nearby(id, value.coordinates) }
   }
