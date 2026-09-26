@@ -181,9 +181,10 @@ export class AccountsService {
       }
       const images = await tx`SELECT 1 FROM images WHERE uploaded_by=${id} LIMIT 1`
       if (images.length) throw new ConflictException('Account owns images; merge into another account before deletion')
-      const territories = await tx`SELECT 1 FROM territories
-        WHERE applicant_account_id=${id} OR owner_account_id=${id} LIMIT 1`
-      if (territories.length) throw new ConflictException('Account is referenced by territories; merge into another account before deletion')
+      const applicant = await tx`SELECT 1 FROM territories WHERE applicant_account_id=${id} LIMIT 1`
+      if (applicant.length) throw new ConflictException('領地の申請者履歴が残っています。所有者を移転しても申請者履歴は移転されません。削除には履歴保持方針に沿ったアカウント統合または匿名化が必要です。')
+      const owner = await tx`SELECT 1 FROM territories WHERE owner_account_id=${id} LIMIT 1`
+      if (owner.length) throw new ConflictException('所有中の領地があります。所有者を移転するか、アカウント統合を行ってください。')
       await tx`DELETE FROM accounts WHERE id=${id}`
     })
     return this.list()
