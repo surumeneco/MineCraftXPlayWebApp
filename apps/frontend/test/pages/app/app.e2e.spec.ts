@@ -10,7 +10,7 @@ test('navigates from the centered hover menu and returns home through the logo',
   await expect(logo).toHaveAttribute('href', '/')
   const nav = page.locator('#header-navigation')
   await expect(nav).toBeVisible()
-  const headerBounds = await page.locator('header').boundingBox()
+  const headerBounds = await page.locator('.xplay-shell > header.navbar').boundingBox()
   const initialNavBounds = await nav.boundingBox()
   expect(headerBounds).not.toBeNull()
   expect(initialNavBounds).not.toBeNull()
@@ -53,7 +53,7 @@ test('centers the administrator menu at the viewport midpoint', async ({ page, g
   const nav = page.locator('#header-navigation')
   const adminGroup = nav.getByRole('button', { name: '申請管理' })
   await expect(adminGroup).toBeVisible()
-  const header = page.locator('header')
+  const header = page.locator('.xplay-shell > header.navbar')
   const midpoint = (await header.boundingBox())!.x + (await header.boundingBox())!.width / 2
   const before = (await nav.boundingBox())!
   expect(Math.abs(before.x + before.width / 2 - midpoint)).toBeLessThanOrEqual(1)
