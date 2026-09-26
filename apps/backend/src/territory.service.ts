@@ -338,6 +338,7 @@ export class TerritoryService {
         await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${appId}`
         await tx`UPDATE territories SET status='approved',current_name=${app.name},current_image_id=${app.image_id},approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
         await this.notify(tx, operationId, id, 'approved', applicationType, app.coordinates as Point[], String(app.name))
+        if (locked[0].current_name && locked[0].current_name !== app.name) await this.notify(tx, operationId, id, 'renamed', applicationType, app.coordinates as Point[], String(app.name), undefined, String(locked[0].current_name))
       } else {
         const status = action === 'return' ? 'returned' : 'rejected'
         await tx`UPDATE territory_applications SET status=${status},decided_at=clock_timestamp(),reason=${reviewReason} WHERE id=${appId}`
