@@ -5,6 +5,9 @@ export type TerritoryOwnerType = 'account' | 'shared_area' | 'administration' | 
 export type TerritoryRecord = {
   id: string
   name: string
+  image_id?: string | null
+  approved_image_id?: string | null
+  pending_image_id?: string | null
   applicant: { id: string; name: string }
   owner: { type: TerritoryOwnerType; account_id: string | null; name: string }
   status: TerritoryStatus
