@@ -49,6 +49,7 @@ import { userFacingError } from '../../../utils/user-error'
 
 const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi()
 const territory=ref<TerritoryRecord|null>(null),name=ref(''),intermediate=ref<TerritoryDraftPoint[]>([])
+const breadcrumbNames=useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const selected=ref<Set<number>>(new Set()),loading=ref(true),busy=ref(false),error=ref(''),operationId=ref('')
 const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
 const approved=computed(()=>territory.value?.approved_coordinates ?? territory.value?.coordinates ?? [])
@@ -123,6 +124,7 @@ onMounted(async()=>{
       ? '承認済みの領地だけ編集できます。申請中の変更は承認結果を確認してください。'
       : 'この領地を編集する権限がありません。')
     territory.value=loaded;name.value=loaded.name
+    breadcrumbNames.value = { ...breadcrumbNames.value, [loaded.id]: loaded.name }
   }catch(e){error.value=userFacingError(e)}finally{loading.value=false}
 })
 </script>
