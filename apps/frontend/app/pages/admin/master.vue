@@ -6,6 +6,7 @@
       マスタメンテには管理者権限が必要です。<NuxtLink to="/login">ログイン</NuxtLink>
     </div>
     <nav v-else aria-label="マスタメンテ一覧" class="d-grid gap-3">
+      <UiCardLink to="/admin/home">ホームメンテ</UiCardLink>
       <UiCardLink to="/admin/accounts">アカウント管理</UiCardLink>
       <UiCardLink to="/admin/images">画像管理</UiCardLink>
       <UiCardLink to="/admin/image-presets">画像プリセット管理</UiCardLink>
