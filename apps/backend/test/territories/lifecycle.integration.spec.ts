@@ -166,5 +166,88 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(restored.data.coordinates).toEqual(original)
     expect(restored.data.pending_coordinates).toBeNull()
     expect(events).toHaveLength(4)
+  })  it('keeps image and metadata revisions separate from boundary review and sends only real renames', async () => {
+    const original = [{ x: 1000, z: 1000 }, { x: 1010, z: 1000 }, { x: 1010, z: 1010 }]
+    const territoryId = randomUUID()
+    const first = await uploadImage()
+    expect(first.status).toBe(201)
+    expect(first.data.image_id).toMatch(/^[0-9a-f-]{36}$/)
+    const wrongMime = await uploadImage(memberSession, 'image/jpeg')
+    expect(wrongMime.status).toBe(400)
+    const otherImage = await uploadImage(otherSession)
+    expect(otherImage.status).toBe(201)
+    const foreignImage = await request('/api/territories', 'POST', {
+      operation_id: randomUUID(), name: '他人の画像', owner_type: 'account',
+      image_id: otherImage.data.image_id, coordinates: original,
+    })
+    expect(foreignImage.status).toBe(403)
+    const created = await request('/api/territories', 'POST', {
+      operation_id: territoryId, name: '元の領地', owner_type: 'account',
+      image_id: first.data.image_id, coordinates: original,
+    })
+    expect(created.status).toBe(201)
+    expect(created.data.image_id).toBe(first.data.image_id)
+    const imageResponse = await fetch(`${root}/api/territory-images/${first.data.image_id}`)
+    expect(imageResponse.status).toBe(200)
+    expect(imageResponse.headers.get('content-type')).toBe('image/png')
+    expect((await imageResponse.arrayBuffer()).byteLength).toBe(samplePng.length)
+
+    const approveId = randomUUID()
+    const approved = await request(`/api/admin/territories/${territoryId}/review`, 'POST',
+      { operation_id: approveId, action: 'approve' }, adminSession)
+    expect(approved.status).toBe(201)
+    expect(approved.data.image_id).toBe(first.data.image_id)
+    const firstRename = randomUUID(), renameBody = { operation_id: firstRename, name: '改名後' }
+    const renamed = await request(`/api/territories/${territoryId}/edit`, 'POST', renameBody)
+    expect(renamed.status).toBe(201)
+    expect(renamed.data.status).toBe('approved')
+    expect(renamed.data.image_id).toBe(first.data.image_id)
+    expect(events.filter(e => e.event_id === `${firstRename}:renamed`)).toHaveLength(1)
+    expect(events.find(e => e.event_id === `${firstRename}:renamed`)?.previous_name).toBe('元の領地')
+    const renameRetry = await request(`/api/territories/${territoryId}/edit`, 'POST', renameBody)
+    expect(renameRetry.status).toBe(201)
+    expect(events.filter(e => e.event_id === `${firstRename}:renamed`)).toHaveLength(1)
+    expect(await sql`SELECT id FROM territory_applications WHERE territory_id=${territoryId}`).toHaveLength(1)
+
+    const secondImage = await uploadImage()
+    expect(secondImage.status).toBe(201)
+    const imageChange = randomUUID()
+    const imageOnly = await request(`/api/territories/${territoryId}/edit`, 'POST', {
+      operation_id: imageChange, name: '改名後', image_id: secondImage.data.image_id,
+    })
+    expect(imageOnly.status).toBe(201)
+    expect(imageOnly.data.status).toBe('approved')
+    expect(imageOnly.data.image_id).toBe(secondImage.data.image_id)
+    expect(events.filter(e => e.event_id === `${imageChange}:renamed`)).toHaveLength(0)
+    const history = await sql`SELECT kind,old_name,new_name,old_image_id,new_image_id,actor_account_id
+      FROM territory_change_history WHERE operation_id=${imageChange}`
+    expect(history).toHaveLength(1)
+    expect(history[0].actor_account_id).toBe(memberId)
+    expect(history[0].old_image_id).toBe(first.data.image_id)
+    expect(history[0].new_image_id).toBe(secondImage.data.image_id)
+
+    const thirdImage = await uploadImage()
+    const boundaryId = randomUUID()
+    const pending = await request(`/api/territories/${territoryId}/edit`, 'POST', {
+      operation_id: boundaryId, name: '未承認名', image_id: thirdImage.data.image_id,
+      replacement: { start: 0, end: 1, intermediate: [{ x: 1005, z: 995 }] },
+    })
+    expect(pending.status).toBe(201)
+    expect(pending.data.status).toBe('pending')
+    expect(pending.data.approved_image_id).toBe(secondImage.data.image_id)
+    expect(pending.data.pending_image_id).toBe(thirdImage.data.image_id)
+    expect((await request(`/api/territories/${territoryId}/edit`, 'POST',
+      { operation_id: randomUUID(), name: '同時変更' })).status).toBe(409)
+    const returned = await request(`/api/admin/territories/${territoryId}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'return', reason: '変更後の境界を再確認してください',
+    }, adminSession)
+    expect(returned.status).toBe(201)
+    expect(returned.data.status).toBe('approved')
+    expect(returned.data.name).toBe('改名後')
+    expect(returned.data.image_id).toBe(secondImage.data.image_id)
+    expect(returned.data.approved_image_id).toBe(secondImage.data.image_id)
+    expect(returned.data.pending_image_id).toBeNull()
   })
+
+
 })
