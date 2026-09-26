@@ -24,8 +24,9 @@
         <div class="mb-2"><label class="form-label" for="val">V: {{ hsv.v }}%</label><input id="val" v-model.number="hsv.v" type="range" min="0" max="100" class="form-range map-color-range" :style="{ '--map-color-track': valueGradient }" @input="syncFromHsv" /></div>
       </div>
       </div>
-      <p v-if="error" class="text-danger small">{{ error }}</p>
-      <button type="button" class="btn btn-primary" :disabled="busy" @click="save">保存</button>
+      <p v-if="error" class="text-danger small" role="alert">{{ error }}</p>
+      <p v-if="saved" class="alert alert-success" role="status">{{ saved }}</p>
+      <div class="text-end"><button type="button" class="btn btn-primary" :disabled="busy" @click="save">保存</button></div>
     </template>
   </section>
 </template>
@@ -34,7 +35,7 @@ import { accountError } from '../../composables/useAccountApi'
 type Color={r:number;g:number;b:number};type Hsv={h:number;s:number;v:number}
 const props=defineProps<{accountId?:string}>()
 const {get,mutate}=useAccountApi()
-const loading=ref(true),busy=ref(false),error=ref('')
+const loading=ref(true),busy=ref(false),error=ref(''),saved=ref('')
 const color=reactive<Color>({r:255,g:0,b:0}),hsv=reactive<Hsv>({h:0,s:100,v:100})
 const hexInput=ref('#ff0000'),rgbInput=ref('255, 0, 0'),hsvInput=ref('0, 100, 100')
 const rgbKeys=['r','g','b'] as const
@@ -55,13 +56,13 @@ const saturationGradient = computed(()=>`linear-gradient(to right, ${rgbCss(hsvT
 const valueGradient = computed(()=>`linear-gradient(to right, ${rgbCss(hsvToRgb({h:hsv.h,s:hsv.s,v:0}))}, ${rgbCss(hsvToRgb({h:hsv.h,s:hsv.s,v:100}))})`)
 function refreshTexts(){hexInput.value=hex.value;rgbInput.value=`${color.r}, ${color.g}, ${color.b}`;hsvInput.value=`${hsv.h}, ${hsv.s}, ${hsv.v}`}
 function assign(c:Color){color.r=c.r;color.g=c.g;color.b=c.b;Object.assign(hsv,rgbToHsv(c));refreshTexts()}
-function syncFromRgb(){Object.assign(hsv,rgbToHsv(color));refreshTexts()}
-function syncFromHsv(){Object.assign(color,hsvToRgb(hsv));refreshTexts()}
-function applyHex(){const m=hexInput.value.trim().match(/^#?([0-9a-f]{6})$/i);if(!m){error.value='6桁の16進カラーコードを入力してください。';return}const n=parseInt(m[1],16);error.value='';assign({r:(n>>16)&255,g:(n>>8)&255,b:n&255})}
+function syncFromRgb(){saved.value='';Object.assign(hsv,rgbToHsv(color));refreshTexts()}
+function syncFromHsv(){saved.value='';Object.assign(color,hsvToRgb(hsv));refreshTexts()}
+function applyHex(){saved.value='';const m=hexInput.value.trim().match(/^#?([0-9a-f]{6})$/i);if(!m){error.value='6桁の16進カラーコードを入力してください。';return}const n=parseInt(m[1],16);error.value='';assign({r:(n>>16)&255,g:(n>>8)&255,b:n&255})}
 function parseTriple(text:string,max:[number,number,number]){const parts=text.split(/[,\s]+/).filter(Boolean).map(Number);return parts.length===3&&parts.every((v,i)=>Number.isFinite(v)&&v>=0&&v<=max[i])?parts:null}
-function applyRgbText(){const p=parseTriple(rgbInput.value,[255,255,255]);if(!p){error.value='RGBは0～255の3値で入力してください。';return}error.value='';assign({r:Math.round(p[0]),g:Math.round(p[1]),b:Math.round(p[2])})}
-function applyHsvText(){const p=parseTriple(hsvInput.value,[359,100,100]);if(!p){error.value='HSVはH=0～359、S/V=0～100で入力してください。';return}error.value='';Object.assign(hsv,{h:Math.round(p[0]),s:Math.round(p[1]),v:Math.round(p[2])});syncFromHsv()}
-async function save(){busy.value=true;error.value='';try{assign(await mutate<Color>(endpoint.value,'PATCH',{...color}))}catch(e){error.value=accountError(e)}finally{busy.value=false}}
+function applyRgbText(){saved.value='';const p=parseTriple(rgbInput.value,[255,255,255]);if(!p){error.value='RGBは0～255の3値で入力してください。';return}error.value='';assign({r:Math.round(p[0]),g:Math.round(p[1]),b:Math.round(p[2])})}
+function applyHsvText(){saved.value='';const p=parseTriple(hsvInput.value,[359,100,100]);if(!p){error.value='HSVはH=0～359、S/V=0～100で入力してください。';return}error.value='';Object.assign(hsv,{h:Math.round(p[0]),s:Math.round(p[1]),v:Math.round(p[2])});syncFromHsv()}
+async function save(){if(busy.value)return;busy.value=true;error.value='';saved.value='';try{assign(await mutate<Color>(endpoint.value,'PATCH',{...color}));saved.value='保存されました。'}catch(e){error.value=accountError(e)}finally{busy.value=false}}
 onMounted(async()=>{try{assign(await get<Color>(endpoint.value))}catch(e){error.value=accountError(e)}finally{loading.value=false}})
 </script>
 <style scoped>

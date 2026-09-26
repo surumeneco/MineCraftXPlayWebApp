@@ -2,7 +2,7 @@
   <component
     :is="destination ? (native ? 'a' : NuxtLink) : 'article'"
     class="xplay-card"
-    :class="{ 'xplay-card--link': Boolean(destination) }"
+    :class="{ 'xplay-card--link': Boolean(destination), 'xplay-card--no-image': !imageSource }"
     :to="destination && !native ? destination : undefined"
     :href="destination && native ? destination : undefined"
     :target="destination && newTab ? '_blank' : undefined"
@@ -10,7 +10,7 @@
     :style="{ height: cardHeight }"
     :aria-label="destination && !title && !note ? 'リンク先を開く' : undefined"
   >
-    <div class="xplay-card__media">
+    <div v-if="imageSource" class="xplay-card__media">
       <img class="xplay-card__image" :src="imageSource" alt="" loading="lazy" @error="onImageError" />
     </div>
     <div v-if="title || note" class="xplay-card__content">
@@ -37,14 +37,16 @@ const props = withDefaults(defineProps<{
   newTab?: boolean
   /** Use a native anchor for server-served paths outside Nuxt routes (e.g. BlueMap). */
   native?: boolean
+  /** Suppress default placeholder when the card image is explicitly unset. */
+  hideImageWhenUnset?: boolean
   /** Fixed height in pixels (number) or as a CSS length (string). */
   height?: number | string
-}>(), { height: 320, newTab: false, native: false })
+}>(), { height: 320, newTab: false, native: false, hideImageWhenUnset: false })
 
 const destination = computed(() => props.to?.trim() || props.url?.trim() || '')
 const cardHeight = computed(() => typeof props.height === 'number' ? `${props.height}px` : props.height)
 const imageFailed = ref(false)
-const imageSource = computed(() => imageFailed.value ? defaultImage : props.image?.trim() || defaultImage)
+const imageSource = computed(() => imageFailed.value ? defaultImage : props.image?.trim() || (props.hideImageWhenUnset ? '' : defaultImage))
 watch(() => props.image, () => { imageFailed.value = false })
 function onImageError() {
   if (imageSource.value !== defaultImage) imageFailed.value = true
@@ -91,6 +93,7 @@ function onImageError() {
   object-fit: cover;
   object-position: center;
 }
+.xplay-card--no-image .xplay-card__content { flex: 1 1 auto; max-height: 100%; display: flex; flex-direction: column; justify-content: center; }
 .xplay-card__content {
   flex: 0 1 auto;
   box-sizing: border-box;

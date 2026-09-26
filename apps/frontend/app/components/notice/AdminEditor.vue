@@ -15,7 +15,7 @@
         <label class="form-label mt-3">本文</label>
         <ClientOnly><div ref="editor" class="mb-3" aria-label="お知らせ本文" /></ClientOnly>
         <p class="form-text">本文中の任意位置に画像を挿入できます。画像の変更は保存時に確定します。</p>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
           <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
           <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published' || !selectedTags.length" @click="request('publish')">公開する</button>
           <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="request('unpublish')">公開取り消し</button>

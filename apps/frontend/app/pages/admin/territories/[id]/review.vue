@@ -9,7 +9,7 @@
   <h2 class="h4">座標</h2><TerritoryCoordinatesList :coordinates="item.coordinates" />
   <h2 class="h4 mt-4">申請者の他の領地</h2><div class="accordion mb-4"><UiAccordion v-for="status in statuses" :key="status" :title="`${territoryStatusLabel[status]} (${grouped[status].length})`"><ul class="list-group list-group-flush"><li v-for="other in grouped[status]" :key="other.id" class="list-group-item"><NuxtLink :to="`/territories/${other.id}`">{{ other.name }}</NuxtLink><span class="d-block small text-body-secondary">申請: {{ new Date(other.applied_at).toLocaleString('ja-JP') }} / 場所 {{ formatCentroid(other.centroid) }} / 面積 {{ formatArea(other.area) }}</span></li><li v-if="!grouped[status].length" class="list-group-item text-body-secondary">なし</li></ul></UiAccordion></div>
   <div class="mb-3"><label for="review-reason" class="form-label">差戻・却下理由</label><textarea id="review-reason" v-model="reason" class="form-control" rows="3" /></div>
-  <div class="d-flex gap-2 flex-wrap"><button class="btn btn-success" :disabled="busy" @click="review('approve')">承認</button><button class="btn btn-warning" :disabled="busy||!reason.trim()" @click="review('return')">差戻</button><button class="btn btn-danger" :disabled="busy||!reason.trim()" @click="review('reject')">却下</button></div>
+  <div class="d-flex gap-2 flex-wrap justify-content-end"><button class="btn btn-success" :disabled="busy" @click="review('approve')">承認</button><button class="btn btn-warning" :disabled="busy||!reason.trim()" @click="review('return')">差戻</button><button class="btn btn-danger" :disabled="busy||!reason.trim()" @click="review('reject')">却下</button></div>
 </template></section></template>
 <script setup lang="ts">
 import type {TerritoryRecord,TerritoryStatus} from '../../../../utils/territory'

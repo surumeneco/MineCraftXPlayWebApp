@@ -37,9 +37,9 @@
       <p v-if="validationError" class="text-danger small">{{ validationError }}</p>
       <TerritoryBlueMapPreview :coordinates="approved" />
     </div>
-    <div class="d-flex gap-2 flex-wrap">
-      <button type="submit" class="btn btn-primary" :disabled="busy || imageUploading || !name.trim() || !!validationError || unchanged">{{ boundaryChanged ? "変更を申請" : "保存" }}</button>
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
       <NuxtLink :to="`/territories/${territory.id}`" class="btn btn-outline-secondary">戻る</NuxtLink>
+      <button type="submit" class="btn btn-primary" :disabled="busy || imageUploading || !name.trim() || !!validationError || unchanged">{{ boundaryChanged ? "変更を申請" : "保存" }}</button>
     </div>
   </form>
   <TerritoryOwnerEditor v-if="territory && auth.isAdmin.value" :territory="territory" @updated="ownerSaved" />
