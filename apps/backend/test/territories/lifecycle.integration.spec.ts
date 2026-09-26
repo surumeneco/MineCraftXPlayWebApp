@@ -247,6 +247,27 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(returned.data.image_id).toBe(secondImage.data.image_id)
     expect(returned.data.approved_image_id).toBe(secondImage.data.image_id)
     expect(returned.data.pending_image_id).toBeNull()
+
+    const lookup = await request('/api/admin/territories/owners?name=Recipient', 'GET', undefined, adminSession)
+    expect(lookup.status).toBe(200)
+    expect(lookup.data).toEqual(expect.arrayContaining([expect.objectContaining({ id: otherId })]))
+    expect((await request('/api/admin/territories/owners?name=Recipient', 'GET')).status).toBe(403)
+    const transferOperation = randomUUID()
+    const transferBody = { operation_id: transferOperation, owner_type: 'account', owner_account_id: otherId }
+    expect((await request(`/api/admin/territories/${territoryId}/owner`, 'POST', transferBody)).status).toBe(403)
+    const transferred = await request(`/api/admin/territories/${territoryId}/owner`, 'POST', transferBody, adminSession)
+    expect(transferred.status).toBe(201)
+    expect(transferred.data.owner.account_id).toBe(otherId)
+    expect(transferred.data.applicant.id).toBe(memberId)
+    const retriedTransfer = await request(`/api/admin/territories/${territoryId}/owner`, 'POST', transferBody, adminSession)
+    expect(retriedTransfer.status).toBe(201)
+    const audit = await sql`SELECT old_owner_account_id,new_owner_account_id,new_owner_name,actor_account_id
+      FROM territory_change_history WHERE operation_id=${transferOperation}`
+    expect(audit).toHaveLength(1)
+    expect(audit[0].old_owner_account_id).toBe(memberId)
+    expect(audit[0].new_owner_account_id).toBe(otherId)
+    expect(audit[0].actor_account_id).toBe(adminId)
+    expect(audit[0].new_owner_name).toBe('Territory Recipient')
   })
 
 
