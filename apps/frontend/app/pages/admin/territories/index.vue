@@ -5,8 +5,8 @@
   <div v-else-if="!auth.isAdmin.value" class="alert alert-warning">管理者権限が必要です。</div>
   <template v-else>
     <form class="row g-2 mb-4" @submit.prevent="load">
-      <div class="col-md-3"><input v-model="filters.name" class="form-control" placeholder="領地名" aria-label="領地名で検索" /></div>
-      <div class="col-md-3"><input v-model="filters.owner" class="form-control" placeholder="所有者名" aria-label="所有者名で検索" /></div>
+      <div class="col-md-3"><TerritorySearchField v-model="filters.name" :options="nameOptions" placeholder="領地名" label="領地名で検索" @selected="load" /></div>
+      <div class="col-md-3"><TerritorySearchField v-model="filters.owner" :options="ownerOptions" placeholder="所有者名" label="所有者名で検索" @selected="load" /></div>
       <div class="col-6 col-md-1"><input v-model="filters.x" type="number" step="1" class="form-control" placeholder="X" aria-label="X座標" /></div>
       <div class="col-6 col-md-1"><input v-model="filters.z" type="number" step="1" class="form-control" placeholder="Z" aria-label="Z座標" /></div>
       <div class="col-md-2"><select v-model="filters.sort" class="form-select" aria-label="並べ替え"><option value="approved_at">承認日時順</option><option value="applied_at">申請日時順</option><option value="changed_at">変更日時順</option><option value="name">領地名順</option><option value="owner">所有者名順</option></select></div>
@@ -29,7 +29,9 @@ import type { TerritoryRecord } from '../../../utils/territory'
 import { formatCentroid, territoryStatusLabel } from '../../../utils/territory'
 import { userFacingError } from '../../../utils/user-error'
 const auth=useAccountSession(),{get}=useAccountApi()
-const items=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
+const items=ref<TerritoryRecord[]>([]),source=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
+const nameOptions=computed(()=>source.value.map(item=>item.name))
+const ownerOptions=computed(()=>source.value.map(item=>item.owner.name))
 const filters=reactive({name:'',owner:'',x:'',z:'',sort:'approved_at'})
 async function load(){
   loading.value=true;error.value=''
@@ -39,5 +41,13 @@ async function load(){
     items.value=await get<TerritoryRecord[]>(`/admin/territories?${q}`)
   }catch(e){error.value=userFacingError(e)}finally{loading.value=false}
 }
-onMounted(async()=>{try{await auth.refresh();if(auth.isAdmin.value)await load()}catch(e){error.value=userFacingError(e);loading.value=false}})
+onMounted(async()=>{
+  try {
+    await auth.refresh()
+    if(auth.isAdmin.value){
+      source.value=await get<TerritoryRecord[]>('/admin/territories')
+      items.value=source.value
+    }
+  } catch(e){error.value=userFacingError(e)} finally{loading.value=false}
+})
 </script>
