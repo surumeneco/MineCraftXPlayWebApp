@@ -39,6 +39,7 @@
       <NuxtLink :to="`/territories/${territory.id}`" class="btn btn-outline-secondary">戻る</NuxtLink>
     </div>
   </form>
+  <TerritoryOwnerEditor v-if="territory && auth.isAdmin.value" :territory="territory" @updated="reloadOwner" />
 </section></template>
 
 <script setup lang="ts">
@@ -104,6 +105,11 @@ const unchanged=computed(()=>{
   if(!territory.value)return true
   return name.value.trim()===territory.value.name && imageId.value===(territory.value.image_id??null) && JSON.stringify(proposed.value)===JSON.stringify(approved.value)
 })
+async function reloadOwner(){
+  if (!territory.value) return
+  try { territory.value = await get<TerritoryRecord>(`/territories/${territory.value.id}`) }
+  catch(e) { error.value = userFacingError(e) }
+}
 async function submit(){
   if(!territory.value||validationError.value||unchanged.value)return
   busy.value=true;error.value=''
