@@ -398,13 +398,14 @@ export class TerritoryService {
 
   private async notify(sql: any, operationId: string, territoryId: string,
     kind: TerritoryNotificationEvent['kind'], applicationType: ApplicationType,
-    coordinates: Point[], name: string, reviewReason?: string) {
+    coordinates: Point[], name: string, reviewReason?: string, previousName?: string) {
     const territory = (await this.rows(sql)).find(row => row.id === territoryId)
     if (!territory) throw new NotFoundException('Territory not found')
     const discord = await sql`SELECT discord_id FROM account_discord_identities WHERE account_id=${territory.applicant_account_id} ORDER BY discord_id`
     const event: TerritoryNotificationEvent = {
       event_id: `${operationId}:${kind}`,
       kind, application_type: applicationType, territory_name: name,
+      ...(previousName ? { previous_name: previousName } : {}),
       account_name: territory.applicant_name,
       discord_ids: discord.map((entry: any) => String(entry.discord_id)),
       territory_id: territoryId,
