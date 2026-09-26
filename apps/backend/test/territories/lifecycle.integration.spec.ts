@@ -13,9 +13,9 @@ suite('territory lifecycle (PostgreSQL)', () => {
   let sql: ReturnType<typeof postgres>
   let bot: Server
   let root = ''
-  const adminId = randomUUID(), memberId = randomUUID()
-  const adminDiscord = '991000000000000001', memberDiscord = '991000000000000002'
-  const adminSession = randomUUID(), memberSession = randomUUID(), csrf = randomUUID()
+  const adminId = randomUUID(), memberId = randomUUID(), otherId = randomUUID()
+  const adminDiscord = '991000000000000001', memberDiscord = '991000000000000002', otherDiscord = '991000000000000003'
+  const adminSession = randomUUID(), memberSession = randomUUID(), otherSession = randomUUID(), csrf = randomUUID()
   const digest = (value: string) => createHash('sha256').update(value).digest('hex')
   const origin = 'http://localhost:3000'
   const secret = 'territory-test-secret-'.padEnd(48, 'x')
@@ -57,6 +57,7 @@ suite('territory lifecycle (PostgreSQL)', () => {
     for (const [id, name, discord] of [
       [adminId, 'Territory Admin', adminDiscord],
       [memberId, 'Territory Member', memberDiscord],
+      [otherId, 'Territory Recipient', otherDiscord],
     ]) {
       await sql`INSERT INTO accounts(id,name) VALUES (${id},${name})`
       await sql`INSERT INTO account_discord_identities(discord_id,account_id,username,display_name)
@@ -67,7 +68,8 @@ suite('territory lifecycle (PostgreSQL)', () => {
       VALUES (${memberId},'je',${'territory_' + memberId.slice(0, 6)})`
     await sql`INSERT INTO account_sessions(token_hash,account_id,csrf_hash,expires_at)
       VALUES (${digest(adminSession)},${adminId},${digest(csrf)},now()+interval '1 hour'),
-      (${digest(memberSession)},${memberId},${digest(csrf)},now()+interval '1 hour')`
+      (${digest(memberSession)},${memberId},${digest(csrf)},now()+interval '1 hour'),
+      (${digest(otherSession)},${otherId},${digest(csrf)},now()+interval '1 hour')`
 
     app = await NestFactory.create(AppModule, { logger: false })
     app.setGlobalPrefix('api')
@@ -79,8 +81,11 @@ suite('territory lifecycle (PostgreSQL)', () => {
     await app?.close()
     if (bot) await new Promise<void>((resolve) => bot.close(() => resolve()))
     if (sql) {
-      await sql`DELETE FROM territories WHERE applicant_account_id IN (${adminId},${memberId}) OR owner_account_id IN (${adminId},${memberId})`
-      await sql`DELETE FROM accounts WHERE id IN (${adminId},${memberId})`
+      await sql`DELETE FROM territory_change_history WHERE territory_id IN (
+        SELECT id FROM territories WHERE applicant_account_id IN (${adminId},${memberId},${otherId}))`
+      await sql`DELETE FROM territories WHERE applicant_account_id IN (${adminId},${memberId},${otherId}) OR owner_account_id IN (${adminId},${memberId},${otherId})`
+      await sql`DELETE FROM images WHERE purpose='territory' AND uploaded_by IN (${memberId},${otherId})`
+      await sql`DELETE FROM accounts WHERE id IN (${adminId},${memberId},${otherId})`
       await sql.end()
     }
     delete process.env.TERRITORY_BOT_URL
