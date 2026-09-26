@@ -433,7 +433,7 @@ export class TerritoryService {
     for (const row of rows) {
       if (row.id === id) continue
       if (row.approved_application && polygonsOverlapArea(candidate, row.approved_application.coordinates)) {
-        approved.push({ id: row.id, name: row.approved_application.name })
+        approved.push({ id: row.id, name: row.current_name ?? row.approved_application.name })
       }
       if (row.pending_application && polygonsOverlapArea(candidate, row.pending_application.coordinates)) {
         pending.push({ id: row.id, name: row.pending_application.name })
@@ -448,7 +448,7 @@ export class TerritoryService {
       if (row.id === id || !['pending','approved'].includes(row.status)) continue
       const shapes = [row.approved_application?.coordinates, row.pending_application?.coordinates].filter(Boolean) as Point[][]
       if (shapes.some(shape => polygonDistance(candidate, shape) <= 32)) {
-        values.push({ id: row.id, name: this.displayApp(row).name })
+        values.push({ id: row.id, name: this.dto(row).name })
       }
     }
     return values
