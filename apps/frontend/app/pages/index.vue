@@ -17,7 +17,7 @@
     <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
       <UiSectionHeading title="最近のお知らせ" class="mb-0 flex-grow-1" />
     </div>
-    <p v-if="status === 'pending' || status === 'idle'" role="status">
+    <p v-if="!layout && (status === 'pending' || status === 'idle')" role="status">
       お知らせを読み込んでいます…
     </p>
     <p v-else-if="error" class="text-body-secondary">
@@ -38,8 +38,8 @@
       >
     </div>
 
-    <p v-if="homeStatus === 'pending' || homeStatus === 'idle'" role="status">カードを読み込んでいます…</p>
-    <p v-else-if="homeError" class="text-body-secondary">カードを取得できませんでした。</p>
+    <p v-if="!homeLayout && (homeStatus === 'pending' || homeStatus === 'idle')" role="status">カードを読み込んでいます…</p>
+    <p v-else-if="homeError && !homeLayout" class="text-body-secondary">カードを取得できませんでした。</p>
     <template v-else-if="homeLayout">
       <section v-for="category in homeLayout.data.categories" :key="category.id" class="mb-4" :aria-label="category.title">
         <UiSectionHeading :title="category.title" class="mb-3" />
