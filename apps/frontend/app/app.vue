@@ -75,7 +75,13 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
   { label: "要望を送る", to: "/request" },
   ...(isAdmin.value
     ? [
-        { label: "申請管理", to: "/admin/applications" },
+        {
+          label: "申請管理",
+          children: [
+            { label: "申請管理トップ", to: "/admin/applications" },
+            { label: "領地申請", to: "/admin/territories" },
+          ],
+        },
         {
           label: "お知らせ管理",
           children: [
