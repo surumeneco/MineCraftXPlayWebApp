@@ -1,5 +1,5 @@
 <template>
-  <header class="navbar navbar-expand-lg sticky-top border-bottom bg-body py-3">
+  <header class="navbar navbar-expand-xxl sticky-top border-bottom bg-body py-3">
     <div class="container">
       <div class="row align-items-center w-100 g-2 xplay-header-row">
         <div class="col d-xxl-none">
