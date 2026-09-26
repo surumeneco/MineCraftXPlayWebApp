@@ -357,12 +357,12 @@ export class TerritoryService {
       if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
-      if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can withdraw')
       if (locked[0].status !== 'pending') throw new ConflictException('Only pending territory can be withdrawn')
-      const apps = await tx`SELECT id,application_type,name,coordinates,image_id FROM territory_applications
+      const apps = await tx`SELECT id,submitted_by_account_id,application_type,name,coordinates,image_id FROM territory_applications
         WHERE territory_id=${id} AND status='pending' ORDER BY submitted_at DESC,id DESC LIMIT 1 FOR UPDATE`
       if (!apps.length) throw new ConflictException('Pending application not found')
       const app = apps[0]
+      if (String(app.submitted_by_account_id) !== accountId) throw new ForbiddenException('Only the pending application submitter can withdraw')
       const previousApproved = await tx`SELECT 1 FROM territory_applications WHERE territory_id=${id} AND status='approved' LIMIT 1`
       await tx`UPDATE territory_applications SET status='withdrawn',decided_at=clock_timestamp() WHERE id=${app.id}`
       const nextStatus = previousApproved.length ? 'approved' : 'withdrawn'
