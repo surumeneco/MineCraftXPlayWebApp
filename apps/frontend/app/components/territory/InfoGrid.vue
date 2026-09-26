@@ -43,22 +43,24 @@ const date = (value: string | null) => value ? new Date(value).toLocaleString('j
 </script>
 <style scoped>
 .territory-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: .65rem;
   margin-bottom: 1rem;
 }
 .territory-info__group {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
-  gap: .6rem;
+  display: flex;
+  flex: 1 0 auto;
+  flex-wrap: nowrap;
+  gap: .9rem;
+  max-width: 100%;
   border: 1px solid var(--xplay-border-subtle);
   background: var(--xplay-background-surface-subtle);
   border-radius: var(--xplay-input-radius);
   padding: .65rem .8rem;
 }
-.territory-info__item { min-width: 0; }
+.territory-info__item { min-width: 0; flex: 0 1 auto; }
 .territory-info dt {
   color: var(--xplay-text-note);
   font-size: .85rem;
@@ -66,4 +68,7 @@ const date = (value: string | null) => value ? new Date(value).toLocaleString('j
   margin-bottom: .2rem;
 }
 .territory-info dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 575.98px) {
+  .territory-info__group { flex-wrap: wrap; }
+}
 </style>

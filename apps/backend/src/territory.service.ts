@@ -20,6 +20,7 @@ type ApplicationData = {
   submitted_at: string
   decided_at: string | null
   reason: string | null
+  note: string
 }
 type TerritoryRow = {
   id: string
@@ -30,6 +31,7 @@ type TerritoryRow = {
   owner_account_name: string | null
   current_name: string | null
   current_image_id: string | null
+  development_concept: string
   status: TerritoryStatus
   first_applied_at: string
   approved_at: string | null
@@ -60,6 +62,20 @@ function reason(value: unknown): string {
   if (typeof value !== 'string' || !value.trim()) throw new BadRequestException('Review reason is required')
   return value.trim()
 }
+function optionalText(value: unknown, label: string, fallback = ''): string {
+  if (value === undefined) return fallback
+  if (typeof value !== 'string' || value.length > 20000 || value.includes('\u0000')) {
+    throw new BadRequestException(`${label}は20,000文字以内の文字列で入力してください。`)
+  }
+  return value
+}
+function applicationArea(row: TerritoryRow): number {
+  const pending = row.pending_application
+  if (!pending) return 0
+  const proposed = area(pending.coordinates)
+  return pending.application_type === 'edit' && row.approved_application
+    ? Math.max(0, proposed - area(row.approved_application.coordinates)) : proposed
+}
 function samePoints(a: Point[], b: Point[]): boolean {
   return a.length === b.length && a.every((point, index) => point.x === b[index].x && point.z === b[index].z)
 }
@@ -71,18 +87,18 @@ export class TerritoryService {
 
   private async rows(sql: any = this.database.sql): Promise<TerritoryRow[]> {
     return await sql`
-      SELECT t.id,t.applicant_account_id,applicant.name AS applicant_name,t.owner_type,t.owner_account_id,t.current_name,t.current_image_id,
+      SELECT t.id,t.applicant_account_id,applicant.name AS applicant_name,t.owner_type,t.owner_account_id,t.current_name,t.current_image_id,t.development_concept,
         owner.name AS owner_account_name,t.status,t.first_applied_at,t.approved_at,t.status_changed_at,
         (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
-          'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason)
+          'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason,'note',a.note)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
           ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1) AS approved_application,
         (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
-          'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason)
+          'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason,'note',a.note)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='pending'
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS pending_application,
         (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
-          'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason)
+          'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason,'note',a.note)
           FROM territory_applications a WHERE a.territory_id=t.id
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS latest_application
       FROM territories t
@@ -109,6 +125,7 @@ export class TerritoryService {
       id: row.id,
       name: row.pending_application ? app.name : (approvedName ?? app.name),
       image_id: imageId,
+      development_concept: row.development_concept,
       approved_image_id: row.approved_application ? row.current_image_id : null,
       pending_image_id: row.pending_application?.image_id ?? null,
       applicant: { id: row.applicant_account_id, name: row.applicant_name },
@@ -121,7 +138,6 @@ export class TerritoryService {
       area: area(coordinates),
       centroid: centroid(coordinates),
       application_type: app.application_type,
-      reason: app.reason,
       approved_coordinates: row.approved_application?.coordinates ?? null,
       pending_coordinates: row.pending_application?.coordinates ?? null,
     }
@@ -133,6 +149,13 @@ export class TerritoryService {
     const owner = typeof query.owner === 'string' ? query.owner.trim().toLocaleLowerCase('ja') : ''
     if (name) values = values.filter(value => value.name.toLocaleLowerCase('ja').includes(name))
     if (owner) values = values.filter(value => value.owner.name.toLocaleLowerCase('ja').includes(owner))
+    const minimum = this.areaFilter(query.area_min, '面積の下限')
+    const maximum = this.areaFilter(query.area_max, '面積の上限')
+    if (minimum !== null && maximum !== null && minimum > maximum) {
+      throw new BadRequestException('面積の下限は上限以下にしてください。')
+    }
+    if (minimum !== null) values = values.filter(value => value.area >= minimum)
+    if (maximum !== null) values = values.filter(value => value.area <= maximum)
     if (query.status) {
       if (!Object.hasOwn(statusRank, String(query.status))) throw new BadRequestException('Invalid territory status')
       values = values.filter(value => value.status === query.status)
@@ -162,15 +185,42 @@ export class TerritoryService {
     return values
   }
 
+  private areaFilter(raw: unknown, label: string): number | null {
+    if (raw === undefined || raw === '') return null
+    if (typeof raw !== 'string' || !/^\d+(?:\.\d+)?$/.test(raw.trim())) {
+      throw new BadRequestException(`${label}は0以上の数値で入力してください。`)
+    }
+    const value = Number(raw.trim())
+    if (!Number.isFinite(value) || value < 0) throw new BadRequestException(`${label}が不正です。`)
+    return value
+  }
+
+  private async assertPendingArea(sql: any, accountId: string, requested: number) {
+    const rows = await this.rows(sql)
+    const pending = rows.reduce((sum, row) => row.pending_application?.submitted_by_account_id === accountId
+      ? sum + applicationArea(row) : sum, 0)
+    if (pending + requested > 100000) {
+      throw new BadRequestException(`申請中の領地面積が上限の100,000を超えています（現在 ${pending.toLocaleString('ja-JP')}、今回 ${requested.toLocaleString('ja-JP')}）。`)
+    }
+  }
+
   async get(idRaw: unknown, viewer: { account_id?: string; is_admin?: boolean }) {
     const id = uuid(idRaw), row = (await this.rows()).find(value => value.id === id)
-    if (!row || (row.status === 'rejected' && !viewer.is_admin)) throw new NotFoundException('Territory not found')
+    if (!row || (row.status === 'rejected' && !viewer.is_admin
+      && viewer.account_id !== row.applicant_account_id
+      && viewer.account_id !== row.latest_application?.submitted_by_account_id)) {
+      throw new NotFoundException('Territory not found')
+    }
     const value = this.dto(row)
     const canEdit = row.status === 'approved' && (viewer.is_admin === true
       || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id))
     const canReapply = viewer.account_id === row.applicant_account_id && ['returned','withdrawn'].includes(row.status)
     const canWithdraw = viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending'
-    return { ...value, can_edit: canEdit, can_reapply: canReapply, can_withdraw: canWithdraw,
+    const canConcept = viewer.is_admin === true ||
+      (row.owner_type === 'account' && viewer.account_id === row.owner_account_id)
+    const canNote = row.status !== 'approved' && (viewer.is_admin === true || viewer.account_id === row.latest_application?.submitted_by_account_id)
+    return { ...value, can_edit: canEdit, can_edit_concept: canConcept, can_reapply: canReapply, can_withdraw: canWithdraw,
+      ...(canNote ? { note: row.latest_application?.note ?? '' } : {}),
       nearby: await this.nearby(id, value.coordinates) }
   }
 
@@ -204,17 +254,20 @@ export class TerritoryService {
     const operationId = uuid(body?.operation_id)
     const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
+    const concept = optionalText(body?.development_concept, '開発構想')
+    const note = optionalText(body?.note, '備考')
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, operationId, 'create', accountId)
       if (completed) return completed
       await this.assertMinecraft(accountId, tx)
+      await this.assertPendingArea(tx, accountId, area(coordinates))
       const imageId = body?.image_id === undefined ? null : await this.images.attach(tx, body.image_id, operationId, accountId)
-      const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status)
-        VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending') RETURNING id`
+      const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status,development_concept)
+        VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending',${concept}) RETURNING id`
       const id = String(territories[0].id)
-      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status)
-        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending')`
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
+        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'create', accountId)
       return this.getFromRows(await this.rows(tx), id)
@@ -225,27 +278,32 @@ export class TerritoryService {
     const id = uuid(idRaw), operationId = uuid(body?.operation_id)
     const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
+    const conceptRaw = body?.development_concept
+    const note = optionalText(body?.note, '備考')
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'reapply', accountId)
       if (completed) return completed
-      const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id FROM territories WHERE id=${id} FOR UPDATE`
+      const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can reapply')
       if (!['returned','withdrawn'].includes(String(locked[0].status))) throw new ConflictException('Territory is not available for reapplication')
+      const concept = optionalText(conceptRaw, '開発構想', String(locked[0].development_concept))
       await this.assertMinecraft(accountId, tx)
-      const previous = await tx`SELECT name,coordinates,image_id FROM territory_applications WHERE territory_id=${id}
+      await this.assertPendingArea(tx, accountId, area(coordinates))
+      const previous = await tx`SELECT name,coordinates,image_id,note FROM territory_applications WHERE territory_id=${id}
         ORDER BY submitted_at DESC,id DESC LIMIT 1`
       const imageId = body?.image_id === undefined ? (previous[0]?.image_id ?? null) : await this.images.attach(tx, body.image_id, id, accountId)
       if (previous.length && previous[0].name === name && samePoints(previous[0].coordinates as Point[], coordinates)
         && String(previous[0].image_id ?? '') === String(imageId ?? '')
+        && String(previous[0].note ?? '') === note && locked[0].development_concept === concept
         && String(locked[0].owner_type) === owner.type && String(locked[0].owner_account_id ?? '') === String(owner.accountId ?? '')) {
         throw new BadRequestException('Change at least one field before reapplying')
       }
       await tx`UPDATE territories SET owner_type=${owner.type},owner_account_id=${owner.accountId},
-        status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
-      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status)
-        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending')`
+        status='pending',development_concept=${concept},status_changed_at=clock_timestamp() WHERE id=${id}`
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
+        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'reapply', accountId)
       return this.getFromRows(await this.rows(tx), id)
@@ -258,7 +316,7 @@ export class TerritoryService {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'edit', accountId)
       if (completed) return completed
-      const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status,current_name,current_image_id FROM territories WHERE id=${id} FOR UPDATE`
+      const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status,current_name,current_image_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       const row = locked[0]
       const selfOwned = row.owner_type === 'account' && String(row.owner_account_id) === accountId
@@ -273,14 +331,20 @@ export class TerritoryService {
       const imageId = body?.image_id === undefined ? row.current_image_id :
         await this.images.attach(tx, body.image_id, id, accountId)
       const boundaryChanged = !samePoints(approvedCoordinates, coordinates)
+      const concept = optionalText(body?.development_concept, '開発構想', row.development_concept)
+      const conceptChanged = concept !== row.development_concept
+      const note = optionalText(body?.note, '備考')
+      if (boundaryChanged) {
+        await this.assertPendingArea(tx, accountId, Math.max(0, area(coordinates) - area(approvedCoordinates)))
+      }
       const nameChanged = approvedName !== name
       const imageChanged = String(row.current_image_id ?? '') !== String(imageId ?? '')
-      if (!boundaryChanged && !nameChanged && !imageChanged) {
+      if (!boundaryChanged && !nameChanged && !imageChanged && !conceptChanged) {
         throw new BadRequestException('Change the territory before submitting an edit')
       }
       if (!boundaryChanged) {
         // Metadata does not change the approved boundary or need a review.
-        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId},status_changed_at=clock_timestamp() WHERE id=${id}`
+        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId},development_concept=${concept} WHERE id=${id}`
         await this.completeOperation(tx, operationId, id, 'edit', accountId)
         await tx`INSERT INTO territory_change_history(
           operation_id,territory_id,actor_account_id,kind,old_name,new_name,old_image_id,new_image_id)
@@ -289,11 +353,29 @@ export class TerritoryService {
         if (nameChanged) await this.notify(tx, operationId, id, 'renamed', 'edit', approvedCoordinates, name, undefined, approvedName)
         return this.getFromRows(await this.rows(tx), id)
       }
-      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status)
-        VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},${imageId},'pending')`
-      await tx`UPDATE territories SET status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
+        VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
+      await tx`UPDATE territories SET status='pending',development_concept=${concept},status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'edit', accountId)
+      return this.getFromRows(await this.rows(tx), id)
+    })
+  }
+
+  async updateConcept(accountId: string, isAdmin: boolean, idRaw: unknown, body: any) {
+    const id = uuid(idRaw)
+    if (typeof body?.development_concept !== 'string') {
+      throw new BadRequestException('開発構想を入力してください。')
+    }
+    const concept = optionalText(body.development_concept, '開発構想')
+    return this.database.sql.begin(async tx => {
+      const rows = await tx`SELECT owner_type,owner_account_id FROM territories WHERE id=${id} FOR UPDATE`
+      if (!rows.length) throw new NotFoundException('領地が見つかりません。')
+      const owner = rows[0]
+      if (!isAdmin && !(owner.owner_type === 'account' && String(owner.owner_account_id) === accountId)) {
+        throw new ForbiddenException('開発構想を編集する権限がありません。')
+      }
+      await tx`UPDATE territories SET development_concept=${concept} WHERE id=${id}`
       return this.getFromRows(await this.rows(tx), id)
     })
   }
@@ -399,13 +481,13 @@ export class TerritoryService {
       const app = apps[0], appId = String(app.id), applicationType = app.application_type as ApplicationType
       const overlapsAtReview = this.overlaps(await this.rows(tx), id, app.coordinates as Point[])
       if (action === 'approve') {
-        await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${appId}`
+        await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL,note='' WHERE id=${appId}`
         await tx`UPDATE territories SET status='approved',current_name=${app.name},current_image_id=${app.image_id},approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
         await this.notify(tx, operationId, id, 'approved', applicationType, app.coordinates as Point[], String(app.name))
         if (locked[0].current_name && locked[0].current_name !== app.name) await this.notify(tx, operationId, id, 'renamed', applicationType, app.coordinates as Point[], String(app.name), undefined, String(locked[0].current_name))
       } else {
         const status = action === 'return' ? 'returned' : 'rejected'
-        await tx`UPDATE territory_applications SET status=${status},decided_at=clock_timestamp(),reason=${reviewReason} WHERE id=${appId}`
+        await tx`UPDATE territory_applications SET status=${status},decided_at=clock_timestamp(),reason=${reviewReason},note=${reviewReason} WHERE id=${appId}`
         const previousApproved = await tx`SELECT 1 FROM territory_applications WHERE territory_id=${id} AND status='approved' LIMIT 1`
         const nextStatus = previousApproved.length ? 'approved' : status
         await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
@@ -425,7 +507,7 @@ export class TerritoryService {
     if (!row || row.status !== 'pending' || !row.pending_application) throw new NotFoundException('Pending territory not found')
     const current = this.dto(row), overlaps = this.overlaps(rows, id, current.coordinates)
     const others = rows.filter(value => value.id !== id && value.applicant_account_id === row.applicant_account_id).map(value => this.dto(value))
-    return { ...current, overlaps, applicant_other_territories: others }
+    return { ...current, note: row.pending_application.note, overlaps, applicant_other_territories: others }
   }
 
   private overlaps(rows: TerritoryRow[], id: string, candidate: Point[]) {
