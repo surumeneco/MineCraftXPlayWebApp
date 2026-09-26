@@ -4,7 +4,7 @@
       <div class="col">
         <label class="visually-hidden" :for="`coord-x-${id}-${index}`">X座標</label>
         <input :id="`coord-x-${id}-${index}`" v-model="point.x" type="number" step="1"
-          class="form-control" placeholder="x" inputmode="numeric" @input="emitValue" />
+          class="form-control" placeholder="x" inputmode="numeric" @input="emitValue" @paste="pasteCoordinates($event, index)" />
       </div>
       <div class="col">
         <label class="visually-hidden" :for="`coord-z-${id}-${index}`">Z座標</label>
@@ -51,6 +51,17 @@ const error = computed(() => {
   if (local.value.length < props.minPoints || local.value.some(p => !String(p.x).trim() || !String(p.z).trim())) return ''
   return territoryCoordinateError(parsed(local.value), props.minPoints)
 })
+function pasteCoordinates(event: ClipboardEvent, index: number) {
+  const text = event.clipboardData?.getData('text/plain')?.trim()
+  if (!text || !/\\s/.test(text)) return
+  event.preventDefault()
+  const parts = text.split(/\\s+/)
+  if (parts.length !== 2 && parts.length !== 3) return
+  const x = integer(parts[0]!), z = integer(parts[parts.length - 1]!)
+  if (x === null || z === null || (parts.length === 3 && integer(parts[1]!) === null)) return
+  local.value[index] = { x: String(x), z: String(z) }
+  emitValue()
+}
 function emitValue() { emit('update:modelValue', parsed(local.value)) }
 function add() { local.value.push({ x: '', z: '' }); emitValue() }
 function remove(index: number) {
