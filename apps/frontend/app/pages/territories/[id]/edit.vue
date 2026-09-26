@@ -103,7 +103,7 @@ const validationError=computed(()=>territoryCoordinateError(proposed.value))
 const area=computed(()=>validationError.value ? null : territoryArea(proposed.value as TerritoryPoint[]))
 const unchanged=computed(()=>{
   if(!territory.value)return true
-  return name.value.trim()===territory.value.name && JSON.stringify(proposed.value)===JSON.stringify(approved.value)
+  return name.value.trim()===territory.value.name && imageId.value===(territory.value.image_id??null) && JSON.stringify(proposed.value)===JSON.stringify(approved.value)
 })
 async function submit(){
   if(!territory.value||validationError.value||unchanged.value)return
@@ -112,6 +112,7 @@ async function submit(){
     const result=await mutate<TerritoryRecord>(`/territories/${territory.value.id}/edit`,'POST',{
       operation_id:operation(),
       name:name.value.trim(),
+      image_id:imageId.value,
       ...(range.value?{replacement:{start:range.value.start,end:range.value.end,intermediate:intermediate.value}}:{})
     })
     await navigateTo(`/territories/${result.id}`)
@@ -124,7 +125,7 @@ onMounted(async()=>{
     if(!loaded.can_edit)throw new Error(loaded.status !== 'approved'
       ? '承認済みの領地だけ編集できます。申請中の変更は承認結果を確認してください。'
       : 'この領地を編集する権限がありません。')
-    territory.value=loaded;name.value=loaded.name
+    territory.value=loaded;name.value=loaded.name;imageId.value=loaded.image_id??null
     breadcrumbNames.value = { ...breadcrumbNames.value, [loaded.id]: loaded.name }
   }catch(e){error.value=userFacingError(e)}finally{loading.value=false}
 })
