@@ -9,7 +9,7 @@ describe('Responsive header menus', () => {
       props: { items: [{ label: '概要', to: '/info' }] },
       slots: { 'side-menu': '<p>サイドメニューの内容</p>' },
     })
-    expect(wrapper.get('header').classes()).toEqual(expect.arrayContaining(['navbar', 'navbar-expand-lg', 'sticky-top']))
+    expect(wrapper.get('header').classes()).toEqual(expect.arrayContaining(['navbar', 'navbar-expand-xxl', 'sticky-top']))
     expect(wrapper.get('a.xplay-site-logo').text()).toBe('もふもふ広場')
     expect(wrapper.get('a.xplay-site-logo').attributes('href')).toBe('/')
     const sideToggle = wrapper.get('button[aria-label="サイドメニュー"]')
