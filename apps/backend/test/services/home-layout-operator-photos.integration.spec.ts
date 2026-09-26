@@ -96,6 +96,7 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     const updated = await json('/admin/home-layout','PUT',{revision:original.revision,...proposed})
     expect(updated.status).toBe(200)
     const result = await updated.json() as any
+    console.log('HOME_UPDATED_RESPONSE', JSON.stringify(result))
     expect(result.data.categories[0].title).toBe('サイト案内')
     expect(result.data.categories[0].cards.at(-1)).toEqual({id:'new-hub',type:'hub',hub_key:'info.rules'})
     expect(result.data.hubs[0].key).toBe('applications.territories')
@@ -108,6 +109,7 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     imageIds.push(id)
     const initial = await (await request('/home-layout')).json() as any
     const next = structuredClone(initial.data)
+    console.log('HOME_PUBLIC_RESPONSE', JSON.stringify(initial))
     next.categories[0].cards[0].image = {image_id:id}
     const updated = await json('/admin/home-layout','PUT',{revision:initial.revision,...next})
     expect(updated.status).toBe(200)
