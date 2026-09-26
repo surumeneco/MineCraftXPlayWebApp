@@ -5,6 +5,8 @@
     <div class="col-md-3"><TerritorySearchField v-model="filters.owner" :options="ownerOptions" placeholder="所有者名" label="所有者名で検索" @selected="load" /></div>
     <div class="col-6 col-md-1"><input v-model="filters.x" type="number" step="1" class="form-control" placeholder="X" aria-label="X座標" @paste="pasteSearchCoordinates" /></div>
     <div class="col-6 col-md-1"><input v-model="filters.z" type="number" step="1" class="form-control" placeholder="Z" aria-label="Z座標" @paste="pasteSearchCoordinates" /></div>
+    <div class="col-6 col-md-2"><input v-model="filters.area_min" type="number" min="0" step="any" class="form-control" placeholder="面積以上" aria-label="面積の下限" /></div>
+    <div class="col-6 col-md-2"><input v-model="filters.area_max" type="number" min="0" step="any" class="form-control" placeholder="面積以下" aria-label="面積の上限" /></div>
     <div class="col-md-2"><select v-model="filters.status" class="form-select" aria-label="承認状況"><option value="">全状態</option><option v-for="(label,key) in visibleStatuses" :key="key" :value="key">{{ label }}</option></select></div>
     <div class="col-md-2"><select v-model="filters.sort" class="form-select" aria-label="並べ替え"><option value="approved_at">承認日時順</option><option value="applied_at">申請日時順</option><option value="changed_at">変更日時順</option><option value="name">領地名順</option><option value="owner">所有者名順</option></select></div>
     <div class="col-12"><button class="btn btn-primary" type="submit">検索・並べ替え</button></div>
@@ -14,7 +16,7 @@
   <div v-else class="row g-3">
     <div v-for="item in territories" :key="item.id" class="col-md-6 col-xl-4">
       <NuxtLink :to="`/territories/${item.id}`" class="card h-100 text-decoration-none text-body overflow-hidden">
-        <TerritoryImage :image-id="item.image_id" :name="item.name" />
+        <TerritoryImage v-if="item.image_id" :image-id="item.image_id" :name="item.name" />
         <div class="card-body"><div class="d-flex justify-content-between gap-2"><h2 class="h5 card-title">{{ item.name }}</h2><TerritoryStatusBadge :status="item.status" class="align-self-start" /></div>
           <dl class="mb-0"><dt>所有者</dt><dd>{{ item.owner.name }}</dd><dt>場所</dt><dd>{{ formatCentroid(item.centroid) }}</dd></dl>
         </div>
@@ -31,7 +33,7 @@ const {get}=useAccountApi(),auth=useAccountSession()
 const territories=ref<TerritoryRecord[]>([]),source=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
 const nameOptions=computed(()=>source.value.map(item=>item.name))
 const ownerOptions=computed(()=>source.value.map(item=>item.owner.name))
-const filters=reactive({name:'',owner:'',x:'',z:'',status:'',sort:'approved_at'})
+const filters=reactive({name:'',owner:'',x:'',z:'',area_min:'',area_max:'',status:'',sort:'approved_at'})
 const visibleStatuses=computed(()=>Object.fromEntries(Object.entries(territoryStatusLabel).filter(([key])=>key!=='rejected'||auth.isAdmin.value)) as Record<TerritoryStatus,string>)
 function pasteSearchCoordinates(event: ClipboardEvent) {
   const point = parseBlueMapCoordinates(event.clipboardData?.getData('text/plain') ?? '')
