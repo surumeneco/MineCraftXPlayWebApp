@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Database } from './database.js'
 import { uuid } from './notice-validation.js'
 import { area, centroid, pointInPolygon, polygonDistance, polygonsOverlapArea, replaceBoundarySegment, validateCoordinates, type Point } from './territory-geometry.js'
+import { TerritoryImagesService } from './territory-images.service.js'
 import { TerritoryNotificationService, type TerritoryNotificationEvent } from './territory-notification.service.js'
 
 export type TerritoryStatus = 'pending' | 'approved' | 'returned' | 'withdrawn' | 'rejected'
@@ -64,7 +65,8 @@ function samePoints(a: Point[], b: Point[]): boolean {
 
 @Injectable()
 export class TerritoryService {
-  constructor(private readonly database: Database, private readonly notifications: TerritoryNotificationService) {}
+  constructor(private readonly database: Database, private readonly notifications: TerritoryNotificationService,
+    private readonly images: TerritoryImagesService) {}
 
   private async rows(sql: any = this.database.sql): Promise<TerritoryRow[]> {
     return await sql`
