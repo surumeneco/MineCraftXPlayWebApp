@@ -385,7 +385,7 @@ export class TerritoryService {
       const locked = await tx`SELECT status,current_name FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (locked[0].status !== 'pending') throw new ConflictException('Territory is not pending')
-      const apps = await tx`SELECT id,application_type,name,coordinates FROM territory_applications
+      const apps = await tx`SELECT id,application_type,name,coordinates,image_id FROM territory_applications
         WHERE territory_id=${id} AND status='pending' ORDER BY submitted_at DESC,id DESC LIMIT 1 FOR UPDATE`
       if (!apps.length) throw new ConflictException('Pending application not found')
       const app = apps[0], appId = String(app.id), applicationType = app.application_type as ApplicationType
