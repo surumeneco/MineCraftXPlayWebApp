@@ -1,8 +1,8 @@
 <template><section>
   <UiPageTitle title="領地一覧" />
   <form class="row g-2 mb-4" @submit.prevent="load">
-    <div class="col-md-3"><input v-model="filters.name" class="form-control" placeholder="領地名" aria-label="領地名で検索" /></div>
-    <div class="col-md-3"><input v-model="filters.owner" class="form-control" placeholder="所有者名" aria-label="所有者名で検索" /></div>
+    <div class="col-md-3"><TerritorySearchField v-model="filters.name" :options="nameOptions" placeholder="領地名" label="領地名で検索" @selected="load" /></div>
+    <div class="col-md-3"><TerritorySearchField v-model="filters.owner" :options="ownerOptions" placeholder="所有者名" label="所有者名で検索" @selected="load" /></div>
     <div class="col-6 col-md-1"><input v-model="filters.x" type="number" step="1" class="form-control" placeholder="X" aria-label="X座標" /></div>
     <div class="col-6 col-md-1"><input v-model="filters.z" type="number" step="1" class="form-control" placeholder="Z" aria-label="Z座標" /></div>
     <div class="col-md-2"><select v-model="filters.status" class="form-select" aria-label="承認状況"><option value="">全状態</option><option v-for="(label,key) in visibleStatuses" :key="key" :value="key">{{ label }}</option></select></div>
@@ -27,9 +27,17 @@ import type { TerritoryRecord, TerritoryStatus } from '../../utils/territory'
 import { formatCentroid, territoryStatusLabel } from '../../utils/territory'
 import { userFacingError } from '../../utils/user-error'
 const {get}=useAccountApi(),auth=useAccountSession()
-const territories=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
+const territories=ref<TerritoryRecord[]>([]),source=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
+const nameOptions=computed(()=>source.value.map(item=>item.name))
+const ownerOptions=computed(()=>source.value.map(item=>item.owner.name))
 const filters=reactive({name:'',owner:'',x:'',z:'',status:'',sort:'approved_at'})
 const visibleStatuses=computed(()=>Object.fromEntries(Object.entries(territoryStatusLabel).filter(([key])=>key!=='rejected'||auth.isAdmin.value)) as Record<TerritoryStatus,string>)
 async function load(){loading.value=true;error.value='';try{const q=new URLSearchParams();for(const [k,v] of Object.entries(filters))if(v!=='')q.set(k,v);territories.value=await get<TerritoryRecord[]>(`/territories?${q}`)}catch(e){error.value=userFacingError(e)}finally{loading.value=false}}
-onMounted(async()=>{await auth.refresh();await load()})
+onMounted(async()=>{
+  try {
+    await auth.refresh()
+    source.value=await get<TerritoryRecord[]>('/territories')
+    territories.value=source.value
+  } catch(e){error.value=userFacingError(e)} finally{loading.value=false}
+})
 </script>
