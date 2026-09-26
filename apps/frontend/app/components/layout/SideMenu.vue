@@ -1,6 +1,7 @@
 <template>
   <aside aria-label="サイドメニュー">
     <UiPanel>
+      <a :href="bluemapBase" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2 mb-3"><UiBootstrapIcon name="map" />BlueMap</a>
       <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
         <UiSectionHeading as="h2" title="お知らせ" class="mb-0 flex-grow-1" />
       </div>
@@ -20,13 +21,13 @@
           :preview-length="120"
         />
       </div>
-      <!-- TODO: Bluemap リンク -->
     </UiPanel>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { sortNotices } from "../../utils/notice";
+const { public: { bluemapBase } } = useRuntimeConfig()
 
 const { data: notices, status, error } = usePublicNotices();
 const latest = computed(() =>
