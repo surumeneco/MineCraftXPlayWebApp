@@ -29,13 +29,13 @@
     </template>
     <div class="mb-3">
       <h2 class="h5">変更後の領地</h2>
-      <p v-if="range" class="small text-body-secondary">選択した境界の間に新しい座標を入力してください。名称のみの変更ならチェックを外してください。</p>
+      <p v-if="range" class="small text-body-secondary">選択した境界の間に新しい座標を入力してください。領地名・画像のみの変更ならチェックを外してください。</p>
       <p>面積: <strong>{{ area === null ? '—' : formatArea(area) }}</strong></p>
       <p v-if="validationError" class="text-danger small">{{ validationError }}</p>
       <TerritoryBlueMapPreview :coordinates="approved" />
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <button type="submit" class="btn btn-primary" :disabled="busy || !name.trim() || !!validationError || unchanged">変更を申請</button>
+      <button type="submit" class="btn btn-primary" :disabled="busy || imageUploading || !name.trim() || !!validationError || unchanged">{{ boundaryChanged ? "変更を申請" : "保存" }}</button>
       <NuxtLink :to="`/territories/${territory.id}`" class="btn btn-outline-secondary">戻る</NuxtLink>
     </div>
   </form>
@@ -97,6 +97,7 @@ const proposed=computed<TerritoryDraftPoint[]>(()=>{
   if(start<end)return[...source.slice(0,start+1),...intermediate.value.map(p=>({...p})),...source.slice(end)]
   return[...source.slice(end,start+1),...intermediate.value.map(p=>({...p}))]
 })
+const boundaryChanged=computed(()=>JSON.stringify(proposed.value)!==JSON.stringify(approved.value))
 const validationError=computed(()=>territoryCoordinateError(proposed.value))
 const area=computed(()=>validationError.value ? null : territoryArea(proposed.value as TerritoryPoint[]))
 const unchanged=computed(()=>{
