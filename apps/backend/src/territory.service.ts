@@ -188,7 +188,7 @@ export class TerritoryService {
 
   private areaFilter(raw: unknown, label: string): number | null {
     if (raw === undefined || raw === '') return null
-    if (typeof raw !== 'string' || !/^(?:\\d+)(?:\\.\\d+)?$/.test(raw.trim())) {
+    if (typeof raw !== 'string' || !/^\d+(?:\.\d+)?$/.test(raw.trim())) {
       throw new BadRequestException(`${label}は0以上の数値で入力してください。`)
     }
     const value = Number(raw.trim())
