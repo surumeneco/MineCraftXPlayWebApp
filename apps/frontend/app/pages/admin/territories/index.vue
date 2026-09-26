@@ -27,7 +27,7 @@
 </section></template>
 <script setup lang="ts">
 import type { TerritoryRecord } from '../../../utils/territory'
-import { formatCentroid, territoryStatusLabel } from '../../../utils/territory'
+import { formatCentroid, territoryStatusLabel, parseBlueMapCoordinates } from '../../../utils/territory'
 import { userFacingError } from '../../../utils/user-error'
 const auth=useAccountSession(),{get}=useAccountApi()
 const items=ref<TerritoryRecord[]>([]),source=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
@@ -35,14 +35,11 @@ const nameOptions=computed(()=>source.value.map(item=>item.name))
 const ownerOptions=computed(()=>source.value.map(item=>item.owner.name))
 const filters=reactive({name:'',owner:'',x:'',z:'',sort:'approved_at'})
 function pasteSearchCoordinates(event: ClipboardEvent) {
-  const text = event.clipboardData?.getData('text/plain')?.trim()
-  if (!text || !/\s/.test(text)) return
-  const parts = text.split(/\s+/)
-  if (parts.length !== 2 && parts.length !== 3) return
-  const values = parts.map(value => /^-?\d+$/.test(value) ? Number(value) : NaN)
-  if (!values.every(Number.isSafeInteger)) return
+  const point = parseBlueMapCoordinates(event.clipboardData?.getData('text/plain') ?? '')
+  if (!point) return
   event.preventDefault()
-  filters.x = String(values[0]); filters.z = String(values[values.length - 1])
+  filters.x = String(point.x)
+  filters.z = String(point.z)
 }
 async function load(){
   loading.value=true;error.value=''
