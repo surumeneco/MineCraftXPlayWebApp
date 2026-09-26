@@ -39,13 +39,14 @@ import type {
 } from "./types/footer-links";
 
 const { isAdmin, refresh } = useAccountSession();
+const { public: { bluemapBase } } = useRuntimeConfig();
 const { feedback, success, closeFeedback, closeSuccess } = useUiFeedback();
 onMounted(() => {
   void refresh();
 });
 
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
-  { label: "Bluemap", to: "/bluemap/", native: true },
+  { label: "Bluemap", to: bluemapBase, native: true },
   {
     label: "情報",
     children: [
