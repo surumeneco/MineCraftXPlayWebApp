@@ -10,8 +10,8 @@
   </template>
 </section></template>
 <script setup lang="ts">
-import type { TerritoryRecord } from '../../utils/territory'
-import { userFacingError } from '../../utils/user-error'
+import type { TerritoryRecord } from '../../../utils/territory'
+import { userFacingError } from '../../../utils/user-error'
 const route=useRoute(),{get,mutate}=useAccountApi(),auth=useAccountSession()
 const territory=ref<TerritoryRecord|null>(null),loading=ref(true),busy=ref(false),error=ref(''),withdrawOperationId=ref('')
 const withdrawOperation=()=>withdrawOperationId.value||(withdrawOperationId.value=crypto.randomUUID())
