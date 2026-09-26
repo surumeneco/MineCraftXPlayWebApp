@@ -302,7 +302,8 @@ export class TerritoryService {
     const term = typeof raw === 'string' ? raw.trim() : ''
     if (term.length > 100) throw new BadRequestException('検索文字列が長すぎます。')
     return this.database.sql`SELECT a.id,a.name FROM accounts a
-      WHERE EXISTS (SELECT 1 FROM account_discord_identities d WHERE d.account_id=a.id)
+      WHERE (EXISTS (SELECT 1 FROM account_discord_identities d WHERE d.account_id=a.id)
+        OR EXISTS (SELECT 1 FROM account_minecraft_identities m WHERE m.account_id=a.id))
         AND NOT EXISTS (SELECT 1 FROM account_merges m
           WHERE m.source_account_id=a.id AND m.restored_at IS NULL)
         AND strpos(lower(a.name),lower(${term}))>0
@@ -332,7 +333,8 @@ export class TerritoryService {
       let nextName: string
       if (nextId) {
         const accounts = await tx`SELECT a.id,a.name FROM accounts a WHERE a.id=${nextId}
-          AND EXISTS (SELECT 1 FROM account_discord_identities d WHERE d.account_id=a.id)
+          AND (EXISTS (SELECT 1 FROM account_discord_identities d WHERE d.account_id=a.id)
+          OR EXISTS (SELECT 1 FROM account_minecraft_identities m WHERE m.account_id=a.id))
           AND NOT EXISTS (SELECT 1 FROM account_merges m
             WHERE m.source_account_id=a.id AND m.restored_at IS NULL)`
         if (!accounts.length) throw new BadRequestException('有効な参加者アカウントを指定してください。')
