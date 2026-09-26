@@ -44,7 +44,7 @@
             @click="ask('minecraft', identity.id, `${identity.username} の登録を解除しますか？`)">解除</button>
         </li>
       </ul>
-      <form class="row g-2 align-items-end mb-4" @submit.prevent="addMinecraft">
+      <form class="row g-2 align-items-end justify-content-end mb-4" @submit.prevent="addMinecraft">
         <div class="col-auto">
           <select id="new-minecraft-edition" v-model="edition" class="form-select" aria-label="版" :disabled="busy"><option value="je">JE</option><option value="be">BE</option></select>
         </div>
@@ -64,7 +64,7 @@
             <button type="button" class="btn btn-warning" :disabled="busy" @click="askRestore(source.id, source.name)">分離する</button>
           </div>
         </template>
-        <form v-else class="d-flex flex-wrap align-items-end gap-2" @submit.prevent="askMerge">
+        <form v-else class="d-flex flex-wrap align-items-end gap-2 justify-content-end" @submit.prevent="askMerge">
           <div class="flex-grow-1">
             <label class="form-label" for="merge-source">統合元アカウント</label>
             <select id="merge-source" v-model="mergeSourceId" class="form-select" required :disabled="busy">
