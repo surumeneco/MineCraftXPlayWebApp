@@ -12,7 +12,7 @@
     <div class="mb-3"><label for="territory-note" class="form-label">承認者への備考（任意）</label><textarea id="territory-note" v-model="note" class="form-control" rows="3" maxlength="20000" /></div>
     <div class="mb-3"><label class="form-label">座標 (X/Z) *</label><TerritoryCoordinatesEditor v-model="coordinates" /></div>
     <p>面積: <strong>{{ area===null?'—':formatArea(area) }}</strong></p>
-    <button type="submit" class="btn btn-primary" :disabled="busy||!!coordinateError||!profile.minecraft_ids.length||!name.trim()||unchanged||imageUploading">{{ sourceId?'再申請':'申請' }}</button>
+    <div class="text-end"><button type="submit" class="btn btn-primary" :disabled="busy||!!coordinateError||!profile.minecraft_ids.length||!name.trim()||unchanged||imageUploading">{{ sourceId?'再申請':'申請' }}</button></div>
   </form>
 </section></template>
 <script setup lang="ts">
