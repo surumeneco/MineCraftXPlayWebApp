@@ -10,7 +10,7 @@
       <UiPageTitle :title="notice.title"><span class="text-break">{{ notice.title }}</span></UiPageTitle>
       <div class="mb-4"><NoticeMeta :published-at="notice.published_at" :updated-at="notice.updated_at" :tags="notice.tags" /></div>
       <ClientOnly>
-        <div ref="editor" aria-label="お知らせ本文" />
+        <div ref="editor" class="xplay-notice-readonly" aria-label="お知らせ本文" />
         <template #fallback><p>本文を表示しています…</p></template>
       </ClientOnly>
     </template>
@@ -42,3 +42,7 @@ watch([notice, editor], async ([item, element]) => {
   viewer.disable()
 }, { immediate: true, flush: 'post' })
 </script>
+
+<style scoped>
+.xplay-notice-readonly :deep(.ql-container.ql-bubble .ql-editor) { padding: 0; }
+</style>
