@@ -44,7 +44,7 @@ export class OperatorPhotosService {
     const row = rows[0]
     if (row.static_path) {
       const origin = (process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000').split(',')[0].trim().replace(/\/$/, '')
-      res.setHeader('Cache-Control','public,max-age=300')
+      res.setHeader('Cache-Control','public,max-age=0,must-revalidate')
       res.redirect(302, `${origin}${row.static_path}`)
       return
     }
