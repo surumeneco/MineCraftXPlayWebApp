@@ -2,7 +2,7 @@
   <header class="navbar navbar-expand-lg sticky-top border-bottom bg-body py-3">
     <div class="container">
       <div class="row align-items-center w-100 g-2 xplay-header-row">
-        <div class="col d-lg-none">
+        <div class="col d-xxl-none">
           <button
             type="button"
             class="navbar-toggler xplay-hamburger"
@@ -30,7 +30,7 @@
             >
           </NuxtLink>
         </div>
-        <div class="col d-lg-none d-flex justify-content-end">
+        <div class="col d-xxl-none d-flex justify-content-end">
           <button
             type="button"
             class="navbar-toggler xplay-hamburger"
@@ -50,11 +50,11 @@
         </div>
         <nav
           id="header-navigation"
-          class="col-12 col-lg d-none d-lg-flex justify-content-lg-center xplay-desktop-navigation"
+          class="col-12 col-xxl d-none d-xxl-flex justify-content-xxl-center xplay-desktop-navigation"
           aria-label="メインナビゲーション"
         >
           <ul
-            class="navbar-nav flex-row flex-wrap gap-2 w-100 justify-content-lg-center"
+            class="navbar-nav flex-row flex-nowrap gap-2 w-100 justify-content-xxl-center"
           >
             <li
               v-for="(item, index) in items"
@@ -86,7 +86,7 @@
           </ul>
         </nav>
         <div
-          class="col-auto d-none d-lg-block ms-lg-auto account-menu"
+          class="col-auto d-none d-xxl-block ms-xxl-auto account-menu"
           @focusout="handleAccountFocusOut"
           @keydown.esc="accountOpen = false"
         >
@@ -355,7 +355,7 @@ function closeNavigation() {
   desktopDropdownCycle.value++;
 }
 function onViewportChange() {
-  if (window.innerWidth >= 992 && openMobileMenu.value) finishClose();
+  if (window.innerWidth >= 1400 && openMobileMenu.value) finishClose();
   else if (openMobileMenu.value) positionDrawer();
 }
 function onKeydown(event: KeyboardEvent) {
