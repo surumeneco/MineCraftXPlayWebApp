@@ -12,15 +12,12 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  filename: string
+  memberKey: string
   name: string
-  imageKey?: string
 }>()
 
-const { image } = useSiteImages()
-const fallback = computed(() => `/images/operators/${props.filename}`)
-// A temporary manifest failure retains the bundled photo; an explicit 'none' hides it.
-const source = computed(() => props.imageKey ? image(props.imageKey, fallback.value, '') : fallback.value)
+const { public: { apiBase } } = useRuntimeConfig()
+const source = computed(() => `${apiBase}/operator-photos/${encodeURIComponent(props.memberKey)}`)
 const failed = ref(false)
 watch(source, () => { failed.value = false })
 </script>
