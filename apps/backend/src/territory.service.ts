@@ -263,11 +263,28 @@ export class TerritoryService {
       if (!approved.length) throw new ConflictException('Approved territory data is missing')
       const approvedCoordinates = approved[0].coordinates as Point[]
       const coordinates = replaceBoundarySegment(approvedCoordinates, body?.replacement)
-      if (approved[0].name === name && samePoints(approvedCoordinates, coordinates)) {
+      const approvedName = String(row.current_name ?? approved[0].name)
+      const imageId = body?.image_id === undefined ? row.current_image_id :
+        await this.images.attach(tx, body.image_id, id, accountId)
+      const boundaryChanged = !samePoints(approvedCoordinates, coordinates)
+      const nameChanged = approvedName !== name
+      const imageChanged = String(row.current_image_id ?? '') !== String(imageId ?? '')
+      if (!boundaryChanged && !nameChanged && !imageChanged) {
         throw new BadRequestException('Change the territory before submitting an edit')
       }
-      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
-        VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},'pending')`
+      if (!boundaryChanged) {
+        // Metadata does not change the approved boundary or need a review.
+        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId} WHERE id=${id}`
+        await this.completeOperation(tx, operationId, id, 'edit', accountId)
+        await tx`INSERT INTO territory_change_history(
+          operation_id,territory_id,actor_account_id,kind,old_name,new_name,old_image_id,new_image_id)
+          VALUES (${operationId},${id},${accountId},'metadata',${approvedName},${name},
+            ${row.current_image_id},${imageId})`
+        if (nameChanged) await this.notify(tx, operationId, id, 'renamed', 'edit', approvedCoordinates, name, undefined, approvedName)
+        return this.getFromRows(await this.rows(tx), id)
+      }
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status)
+        VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},${imageId},'pending')`
       await tx`UPDATE territories SET status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'edit', accountId)
