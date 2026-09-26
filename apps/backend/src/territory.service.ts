@@ -280,7 +280,7 @@ export class TerritoryService {
       }
       if (!boundaryChanged) {
         // Metadata does not change the approved boundary or need a review.
-        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId} WHERE id=${id}`
+        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId},status_changed_at=clock_timestamp() WHERE id=${id}`
         await this.completeOperation(tx, operationId, id, 'edit', accountId)
         await tx`INSERT INTO territory_change_history(
           operation_id,territory_id,actor_account_id,kind,old_name,new_name,old_image_id,new_image_id)
@@ -344,8 +344,8 @@ export class TerritoryService {
       }
       const previousName = previous.owner_type === 'account'
         ? String(previous.owner_name) : specialOwnerNames[previous.owner_type as Exclude<OwnerType, 'account'>]
-      await tx`UPDATE territories SET owner_type=${type},owner_account_id=${nextId},owner_merge_origin=NULL
-        WHERE id=${id}`
+      await tx`UPDATE territories SET owner_type=${type},owner_account_id=${nextId},owner_merge_origin=NULL,
+        status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.completeOperation(tx, operationId, id, 'transfer', actorId)
       await tx`INSERT INTO territory_change_history(
         operation_id,territory_id,actor_account_id,kind,old_owner_type,new_owner_type,
