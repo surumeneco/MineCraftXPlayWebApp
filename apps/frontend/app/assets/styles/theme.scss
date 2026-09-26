@@ -291,11 +291,6 @@ body {
   .form-control::placeholder { color: var(--xplay-text-note); opacity: 1; }
 }
 
-@media (min-width: 992px) {
-  .xplay-header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); }
-  .xplay-header-brand { grid-column: 1; justify-self: start; }
-  .xplay-desktop-navigation { grid-column: 2; justify-self: center; width: max-content; max-width: 100%; flex: none; }
-}
 @media (max-width: 991.98px) {
   .xplay-shell > header nav .accordion { width: 100%; }
   .xplay-shell > header nav .accordion .accordion-item { border-radius: var(--xplay-input-radius); }
