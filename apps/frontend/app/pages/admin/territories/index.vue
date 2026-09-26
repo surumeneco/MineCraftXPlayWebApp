@@ -1,5 +1,5 @@
 <template><section>
-  <UiPageTitle title="未承認領地一覧" />
+  <UiPageTitle title="領地承認" />
   <p v-if="loading && !auth.loaded.value">アカウントを確認しています…</p>
   <p v-else-if="error && !auth.isAdmin.value" class="alert alert-danger">{{ error }}</p>
   <div v-else-if="!auth.isAdmin.value" class="alert alert-warning">管理者権限が必要です。</div>
