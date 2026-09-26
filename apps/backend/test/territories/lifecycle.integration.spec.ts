@@ -166,7 +166,9 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(restored.data.coordinates).toEqual(original)
     expect(restored.data.pending_coordinates).toBeNull()
     expect(events).toHaveLength(4)
-  })  it('keeps image and metadata revisions separate from boundary review and sends only real renames', async () => {
+  })
+
+  it('keeps image and metadata revisions separate from boundary review and sends only real renames', async () => {
     const original = [{ x: 1000, z: 1000 }, { x: 1010, z: 1000 }, { x: 1010, z: 1010 }]
     const territoryId = randomUUID()
     const first = await uploadImage()
