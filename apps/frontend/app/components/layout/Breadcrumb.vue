@@ -20,52 +20,77 @@
 type Crumb = { label: string; to?: string }
 const route = useRoute()
 const router = useRouter()
-const territoryNames = useState<Record<string, string>>('xplay-territory-breadcrumb-names', () => ({}))
+const territoryNames = useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const territoryName = (id: string) => territoryNames.value[id] || '領地詳細'
-const labels: Record<string, string> = {
-  info: '情報', notice: 'お知らせ', about: 'コミュニティ概要', operators: '運営メンバー紹介',
-  server: 'サーバー情報', rules: '運営方針とルール', login: 'ログイン', account: 'アカウント',
-  admin: '管理', accounts: 'アカウント管理', merge: 'アカウント統合', edit: '編集',
+const home: Crumb = { label: 'ホーム', to: '/' }
+const info: Crumb = { label: '情報', to: '/info' }
+const lists: Crumb = { label: '一覧', to: '/lists' }
+const applications: Crumb = { label: '申請', to: '/applications' }
+const territories: Crumb = { label: '領地一覧', to: '/territories' }
+const requests: Crumb = { label: '申請一覧', to: '/admin/territories' }
+const notices: Crumb = { label: 'お知らせ管理', to: '/admin/notices' }
+const master: Crumb = { label: 'マスタメンテ', to: '/admin/master' }
+
+const infoPages: Record<string,string> = {
+  about: 'コミュニティ概要', operators: '運営メンバー紹介',
+  server: 'サーバー情報', rules: '運営方針とルール',
 }
 const items = computed<Crumb[]>(() => {
-  const home: Crumb = { label: 'ホーム', to: '/' }
   const path = route.path.replace(/\/$/, '') || '/'
+  const id = String(route.params.id ?? '')
   if (path === '/') return [{ label: 'ホーム' }]
-  if (path === '/territories') return [home, { label: '一覧' }, { label: '領地一覧' }]
-  if (path === '/territories/apply') {
-    return [home, { label: '申請' }, { label: route.query.source ? '領地再申請' : '領地申請' }]
+  if (path === '/info') return [home, { label: '情報' }]
+  if (path === '/info/notice') return [home, info, { label: 'お知らせ' }]
+  if (path.startsWith('/info/notice/')) {
+    const title = String(route.params.title ?? 'お知らせ詳細')
+    return [home, info, { label: 'お知らせ', to: '/info/notice' }, { label: title }]
   }
-  if (path === '/admin/territories') return [home, { label: '申請' }, { label: '申請一覧' }]
-  if (/^\/admin\/territories\/[^/]+\/review$/.test(path)) {
-    const id = String(route.params.id ?? '')
-    return [home, { label: '申請' }, { label: '申請一覧', to: '/admin/territories' },
-      { label: territoryName(id) }, { label: '領地審査' }]
+  if (path.startsWith('/info/') && infoPages[path.slice('/info/'.length)]) {
+    return [home, info, { label: infoPages[path.slice('/info/'.length)] }]
+  }
+  if (path === '/lists') return [home, { label: '一覧' }]
+  if (path === '/territories') return [home, lists, { label: '領地一覧' }]
+  if (path === '/applications') return [home, { label: '申請' }]
+  if (path === '/territories/apply') {
+    if (typeof route.query.source === 'string' && route.query.source) {
+      return [home, lists, territories,
+        { label: territoryName(route.query.source), to: `/territories/${route.query.source}` },
+        { label: '領地再申請' }]
+    }
+    return [home, applications, { label: '領地申請' }]
   }
   if (/^\/territories\/[^/]+\/edit$/.test(path)) {
-    const id = String(route.params.id ?? '')
-    return [home, { label: '一覧' }, { label: '領地一覧', to: '/territories' },
-      { label: territoryName(id), to: `/territories/${id}` }, { label: '領地変更申請' }]
+    return [home, lists, territories,
+      { label: territoryName(id), to: `/territories/${id}` },
+      { label: '領地変更申請' }]
   }
   if (/^\/territories\/[^/]+$/.test(path)) {
-    const id = String(route.params.id ?? '')
-    return [home, { label: '一覧' }, { label: '領地一覧', to: '/territories' }, { label: territoryName(id) }]
+    return [home, lists, territories, { label: territoryName(id) }]
   }
-  if (path === '/admin/notices') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧' }]
-  if (path === '/admin/notices/new') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: '新規投稿' }]
-  if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧', to: '/admin/notices' }, { label: '記事編集' }]
+  if (path === '/admin/territories') return [home, applications, { label: '申請一覧' }]
+  if (/^\/admin\/territories\/[^/]+\/review$/.test(path)) {
+    return [home, applications, requests, { label: `領地審査：${territoryName(id)}` }]
+  }
+  if (path === '/admin/notices') return [home, { label: 'お知らせ管理' }]
+  if (path === '/admin/notices/new') return [home, notices, { label: '新規投稿' }]
+  if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) {
+    return [home, notices, { label: '記事編集' }]
+  }
   if (path === '/admin/master') return [home, { label: 'マスタメンテ' }]
-  if (path === '/admin/accounts') return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理' }]
-  if (path === '/admin/accounts/merge') return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント統合' }]
-  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) return [home, { label: 'マスタメンテ', to: '/admin/master' }, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
-  if (/^\/info\/notice\/[^/]+$/.test(path)) {
-    const title = String(route.params.title ?? path.split('/').at(-1) ?? '')
-    return [home, { label: '情報', to: '/info' }, { label: 'お知らせ', to: '/info/notice' }, { label: title }]
+  const masterPages: Record<string,string> = {
+    '/admin/accounts': 'アカウント管理',
+    '/admin/images': '画像管理',
+    '/admin/image-presets': '画像プリセット管理',
   }
-  const segments = path.split('/').filter(Boolean)
-  return [home, ...segments.map((segment, index) => ({
-    label: labels[segment] ?? decodeURIComponent(segment),
-    ...(index < segments.length - 1 ? { to: '/' + segments.slice(0, index + 1).join('/') } : {}),
-  }))]
+  if (masterPages[path]) return [home, master, { label: masterPages[path] }]
+  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) {
+    return [home, master, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
+  }
+  if (path === '/account') return [home, { label: 'アカウント' }]
+  if (path === '/login') return [home, { label: 'ログイン' }]
+  if (path === '/request') return [home, { label: '要望を送る' }]
+  // Unknown routes never create links to nonexistent ancestor pages.
+  return [home, { label: '現在のページ' }]
 })
 function goBack() {
   const state = window.history.state as { back?: string | null } | null

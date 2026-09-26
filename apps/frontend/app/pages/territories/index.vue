@@ -14,8 +14,8 @@
   <div v-else class="row g-3">
     <div v-for="item in territories" :key="item.id" class="col-md-6 col-xl-4">
       <NuxtLink :to="`/territories/${item.id}`" class="card h-100 text-decoration-none text-body">
-        <div class="card-body"><div class="d-flex justify-content-between gap-2"><h2 class="h5 card-title">{{ item.name }}</h2><span class="badge text-bg-secondary align-self-start">{{ territoryStatusLabel[item.status] }}</span></div>
-          <dl class="mb-0"><dt>所有者</dt><dd>{{ item.owner.name }}</dd><dt>座標重心</dt><dd>{{ formatCentroid(item.centroid) }}</dd></dl>
+        <div class="card-body"><div class="d-flex justify-content-between gap-2"><h2 class="h5 card-title">{{ item.name }}</h2><TerritoryStatusBadge :status="item.status" class="align-self-start" /></div>
+          <dl class="mb-0"><dt>所有者</dt><dd>{{ item.owner.name }}</dd><dt>場所</dt><dd>{{ formatCentroid(item.centroid) }}</dd></dl>
         </div>
       </NuxtLink>
     </div>

@@ -61,19 +61,28 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
   {
     label: "一覧",
     children: [
+      { label: "一覧トップ", to: "/lists" },
       { label: "領地一覧", to: "/territories" },
     ],
   },
   {
     label: "申請",
     children: [
+      { label: "申請トップ", to: "/applications" },
       { label: "領地申請", to: "/territories/apply" },
-      ...(isAdmin.value ? [{ label: "申請一覧", to: "/admin/territories" }] : []),
     ],
   },
+  { label: "要望を送る", to: "/request" },
   ...(isAdmin.value
     ? [
-        { label: "お知らせ投稿", to: "/admin/notices/new" },
+        { label: "申請管理", to: "/admin/territories" },
+        {
+          label: "お知らせ管理",
+          children: [
+            { label: "お知らせ一覧", to: "/admin/notices" },
+            { label: "新規投稿", to: "/admin/notices/new" },
+          ],
+        },
         {
           label: "マスタメンテ",
           children: [
@@ -85,7 +94,6 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
         },
       ]
     : []),
-  { label: "要望を送る", to: "/request" },
 ]);
 
 const footerExternalLinks: FooterExternalLink[] = [

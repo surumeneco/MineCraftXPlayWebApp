@@ -77,5 +77,5 @@ export function blueMapTerritoryUrl(points: TerritoryPoint[], base = '/bluemap/'
   const prefix = base.endsWith('/') ? base : `${base}/`
   return `${prefix}#world:${Math.round(center.x)}:250:${Math.round(center.z)}:${distance}:0.1:0.19:0:0:perspective`
 }
-export const formatCentroid=(p:TerritoryPoint)=>`(${Math.round(p.x)}, ${Math.round(p.z)})`
+export const formatCentroid=(p:TerritoryPoint)=>`x: ${Math.round(p.x)}, z: ${Math.round(p.z)}`
 export const formatArea=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1)

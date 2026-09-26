@@ -18,6 +18,7 @@ import type { TerritoryOwnerType, TerritoryDraftPoint, TerritoryPoint, Territory
 import { formatArea, territoryArea, territoryCoordinateError } from '../../utils/territory'
 import { userFacingError } from '../../utils/user-error'
 const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi()
+const breadcrumbNames=useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const sourceId=computed(()=>typeof route.query.source==='string'?route.query.source:'')
 const profile=ref<AccountRecord|null>(null),name=ref(''),ownerType=ref<TerritoryOwnerType>('account')
 const coordinates=ref<TerritoryDraftPoint[]>([{x:null,z:null},{x:null,z:null},{x:null,z:null}])
@@ -30,5 +31,5 @@ const snapshot=computed(()=>JSON.stringify({name:name.value.trim(),owner_type:ow
 const unchanged=computed(()=>!!sourceId.value&&snapshot.value===initial.value)
 async function addMinecraft(){busy.value=true;error.value='';try{profile.value=await mutate<AccountRecord>('/accounts/me/minecraft','POST',{edition:edition.value,username:minecraftName.value});minecraftName.value=''}catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
 async function submit(){if(!profile.value||coordinateError.value||unchanged.value)return;busy.value=true;error.value='';try{const body={operation_id:operation(),name:name.value.trim(),owner_type:ownerType.value,coordinates:coordinates.value as TerritoryPoint[]};const result=sourceId.value?await mutate<TerritoryRecord>(`/territories/${sourceId.value}/reapply`,'POST',body):await mutate<TerritoryRecord>('/territories','POST',body);await navigateTo(`/territories/${result.id}`)}catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
-onMounted(async()=>{try{await auth.refresh();if(!auth.authenticated.value)return;profile.value=await get<AccountRecord>('/accounts/me');await get('/accounts/me/map-color');if(sourceId.value){const source=await get<TerritoryRecord>(`/territories/${sourceId.value}`);if(!source.can_reapply)throw new Error('この領地は再申請できません。');name.value=source.name;ownerType.value=source.owner.type;coordinates.value=source.coordinates.map(p=>({...p}));initial.value=snapshot.value}}catch(e){error.value=userFacingError(e)}finally{loading.value=false}})
+onMounted(async()=>{try{await auth.refresh();if(!auth.authenticated.value)return;profile.value=await get<AccountRecord>('/accounts/me');await get('/accounts/me/map-color');if(sourceId.value){const source=await get<TerritoryRecord>(`/territories/${sourceId.value}`);breadcrumbNames.value={...breadcrumbNames.value,[source.id]:source.name};if(!source.can_reapply)throw new Error('この領地は再申請できません。');name.value=source.name;ownerType.value=source.owner.type;coordinates.value=source.coordinates.map(p=>({...p}));initial.value=snapshot.value}}catch(e){error.value=userFacingError(e)}finally{loading.value=false}})
 </script>
