@@ -58,10 +58,10 @@ function refreshTexts(){hexInput.value=hex.value;rgbInput.value=`${color.r}, ${c
 function assign(c:Color){color.r=c.r;color.g=c.g;color.b=c.b;Object.assign(hsv,rgbToHsv(c));refreshTexts()}
 function syncFromRgb(){saved.value='';Object.assign(hsv,rgbToHsv(color));refreshTexts()}
 function syncFromHsv(){saved.value='';Object.assign(color,hsvToRgb(hsv));refreshTexts()}
-function applyHex(){const m=hexInput.value.trim().match(/^#?([0-9a-f]{6})$/i);if(!m){error.value='6桁の16進カラーコードを入力してください。';return}const n=parseInt(m[1],16);error.value='';assign({r:(n>>16)&255,g:(n>>8)&255,b:n&255})}
+function applyHex(){saved.value='';const m=hexInput.value.trim().match(/^#?([0-9a-f]{6})$/i);if(!m){error.value='6桁の16進カラーコードを入力してください。';return}const n=parseInt(m[1],16);error.value='';assign({r:(n>>16)&255,g:(n>>8)&255,b:n&255})}
 function parseTriple(text:string,max:[number,number,number]){const parts=text.split(/[,\s]+/).filter(Boolean).map(Number);return parts.length===3&&parts.every((v,i)=>Number.isFinite(v)&&v>=0&&v<=max[i])?parts:null}
-function applyRgbText(){const p=parseTriple(rgbInput.value,[255,255,255]);if(!p){error.value='RGBは0～255の3値で入力してください。';return}error.value='';assign({r:Math.round(p[0]),g:Math.round(p[1]),b:Math.round(p[2])})}
-function applyHsvText(){const p=parseTriple(hsvInput.value,[359,100,100]);if(!p){error.value='HSVはH=0～359、S/V=0～100で入力してください。';return}error.value='';Object.assign(hsv,{h:Math.round(p[0]),s:Math.round(p[1]),v:Math.round(p[2])});syncFromHsv()}
+function applyRgbText(){saved.value='';const p=parseTriple(rgbInput.value,[255,255,255]);if(!p){error.value='RGBは0～255の3値で入力してください。';return}error.value='';assign({r:Math.round(p[0]),g:Math.round(p[1]),b:Math.round(p[2])})}
+function applyHsvText(){saved.value='';const p=parseTriple(hsvInput.value,[359,100,100]);if(!p){error.value='HSVはH=0～359、S/V=0～100で入力してください。';return}error.value='';Object.assign(hsv,{h:Math.round(p[0]),s:Math.round(p[1]),v:Math.round(p[2])});syncFromHsv()}
 async function save(){if(busy.value)return;busy.value=true;error.value='';saved.value='';try{assign(await mutate<Color>(endpoint.value,'PATCH',{...color}));saved.value='保存されました。'}catch(e){error.value=accountError(e)}finally{busy.value=false}}
 onMounted(async()=>{try{assign(await get<Color>(endpoint.value))}catch(e){error.value=accountError(e)}finally{loading.value=false}})
 </script>
