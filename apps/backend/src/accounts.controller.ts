@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post,
 import { AuthService } from './auth.service.js'
 import { AccountsService } from './accounts.service.js'
 import { AccountMergeService } from './account-merge.service.js'
+import { AccountRetirementService } from './account-retirement.service.js'
 
 async function adoptFetchedName(accounts: AccountsService, accountId: string, discordId: unknown) {
   const account = await accounts.get(accountId)
@@ -40,7 +41,7 @@ export class SelfAccountsController {
 @Controller('admin/accounts')
 export class AccountsController {
   constructor(private readonly accounts: AccountsService, private readonly auth: AuthService,
-    private readonly merges: AccountMergeService) {}
+    private readonly merges: AccountMergeService, private readonly retirement: AccountRetirementService) {}
 
   @Get()
   async list(@Req() req: any) {
@@ -82,6 +83,12 @@ export class AccountsController {
   async removeDiscord(@Req() req: any, @Param('id') id: string, @Param('discord') discord: string) {
     await this.auth.requireAdmin(req, true)
     return this.accounts.removeDiscord(id, discord)
+  }
+
+  @Post(':id/retire')
+  async retire(@Req() req: any, @Param('id') id: string) {
+    await this.auth.requireAdmin(req, true)
+    return this.retirement.retire(id)
   }
 
   @Delete(':id')
