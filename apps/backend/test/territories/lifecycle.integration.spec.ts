@@ -388,6 +388,16 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(approved.status).toBe(201)
     expect((await request(`/api/territories/${id}`, 'GET', undefined, adminSession)).data).not.toHaveProperty('note')
     expect((await sql`SELECT note FROM territory_applications WHERE territory_id=${id} AND status='approved' ORDER BY submitted_at DESC LIMIT 1`)[0].note).toBe('')
+    const rejectedId = randomUUID()
+    expect((await request('/api/territories', 'POST', {
+      operation_id: rejectedId, name: '却下用領地', coordinates, note: '元の備考',
+    }, adminSession)).status).toBe(201)
+    expect((await request(`/api/admin/territories/${rejectedId}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'reject', reason: '却下時の理由',
+    }, adminSession)).status).toBe(201)
+    const rejected = await request(`/api/territories/${rejectedId}`, 'GET', undefined, adminSession)
+    expect(rejected.data.note).toBe('却下時の理由')
+    expect((await request(`/api/territories/${rejectedId}`, 'GET', undefined, otherSession)).status).toBe(404)
   })
 
   it('enforces the 100,000 pending-area budget, including only positive extension area', async () => {
