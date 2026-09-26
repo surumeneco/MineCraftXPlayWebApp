@@ -207,8 +207,8 @@ export class TerritoryService {
       const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status)
         VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending') RETURNING id`
       const id = String(territories[0].id)
-      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
-        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending')`
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status)
+        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending')`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'create', accountId)
       return this.getFromRows(await this.rows(tx), id)
