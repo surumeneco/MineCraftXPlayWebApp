@@ -40,7 +40,7 @@ const date = (value: string | null) => value ? new Date(value).toLocaleString('j
 <style scoped>
 .territory-info {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: .6rem;
   margin-bottom: 1rem;
 }
