@@ -24,7 +24,7 @@
 </template>
 <script setup lang="ts">
 import type { TerritoryDraftPoint } from '../../utils/territory'
-import { territoryCoordinateError } from '../../utils/territory'
+import { territoryCoordinateError, parseBlueMapCoordinates } from '../../utils/territory'
 
 const props = withDefaults(defineProps<{ modelValue: TerritoryDraftPoint[]; minPoints?: number }>(), { minPoints: 3 })
 const emit = defineEmits<{ 'update:modelValue': [TerritoryDraftPoint[]] }>()
@@ -54,14 +54,10 @@ const error = computed(() => {
   return territoryCoordinateError(parsed(local.value), props.minPoints)
 })
 function pasteCoordinates(event: ClipboardEvent, index: number) {
-  const text = event.clipboardData?.getData('text/plain')?.trim()
-  if (!text || !/\s/.test(text)) return
-  const parts = text.split(/\s+/)
-  if (parts.length !== 2 && parts.length !== 3) return
-  const x = integer(parts[0]!), z = integer(parts[parts.length - 1]!)
-  if (x === null || z === null || (parts.length === 3 && integer(parts[1]!) === null)) return
+  const point = parseBlueMapCoordinates(event.clipboardData?.getData('text/plain') ?? '')
+  if (!point) return
   event.preventDefault()
-  local.value[index] = { x: String(x), z: String(z) }
+  local.value[index] = { x: String(point.x), z: String(point.z) }
   emitValue()
 }
 function emitValue() { emit('update:modelValue', parsed(local.value)) }
