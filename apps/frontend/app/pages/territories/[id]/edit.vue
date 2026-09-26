@@ -9,9 +9,9 @@
     <fieldset class="mb-4">
       <legend class="h5">置き換える既存境界</legend>
       <p class="small text-body-secondary">最初の点を選択後は、選択済み範囲に隣接する点のみ追加できます。全頂点は選択できません。</p>
-      <div class="row g-2">
-        <div v-for="(point,index) in approved" :key="index" class="col-md-6">
-          <div class="form-check border rounded p-2 ps-5">
+      <div class="border rounded px-2">
+        <div v-for="(point,index) in approved" :key="index" class="py-2 border-bottom">
+          <div class="form-check ps-4">
             <input :id="`existing-${index}`" class="form-check-input" type="checkbox" :checked="selected.has(index)" :disabled="!canToggle(index)" @change="toggle(index)" />
             <label class="form-check-label" :for="`existing-${index}`">#{{ index + 1 }}: X {{ point.x }} / Z {{ point.z }}</label>
           </div>
