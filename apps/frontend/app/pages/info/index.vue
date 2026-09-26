@@ -1,21 +1,19 @@
 <template>
-  <section aria-labelledby="information-heading">
-    <UiPageTitle id="information-heading" title="情報" />
-    <nav aria-label="情報ページ一覧" class="row g-3">
-      <div v-for="item in links" :key="item.to" class="col-md-6 col-xl-4">
-        <UiCard :image="cardImage" :title="item.label" :to="item.to" />
+  <section aria-labelledby="info-heading">
+    <UiPageTitle id="info-heading" title="情報" />
+    <p v-if="status === 'pending' || status === 'idle'" role="status">カードを読み込んでいます…</p>
+    <p v-else-if="error" role="alert">カードを取得できませんでした。</p>
+    <nav v-else-if="layout" aria-label="情報ページ一覧" class="row g-3">
+      <div v-for="hub in hubs" :key="hub.key" class="col-md-6 col-xl-4">
+        <HomeCard :card="{ id: hub.key, type: 'hub', hub_key: hub.key }"
+          :hubs="layout.data.hubs" :links="layout.links" />
       </div>
     </nav>
   </section>
 </template>
+
 <script setup lang="ts">
-const siteImages = useSiteImages()
-const cardImage = computed(() => siteImages.image('card.info', '/images/card-default.svg', '/images/card-default.svg'))
-const links = [
-  { label: 'お知らせ', to: '/info/notice' },
-  { label: 'コミュニティ概要', to: '/info/about' },
-  { label: '運営メンバー紹介', to: '/info/operators' },
-  { label: 'サーバー情報', to: '/info/server' },
-  { label: '運営方針とルール', to: '/info/rules' },
-]
+const { data: layout, status, error } = useHomeLayout()
+const hubs = computed(() => layout.value?.data.hubs.filter(hub =>
+  layout.value!.links.some(link => link.key === hub.key && link.group === 'info')) ?? [])
 </script>
