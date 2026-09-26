@@ -338,4 +338,120 @@ suite('territory lifecycle (PostgreSQL)', () => {
   })
 
 
+  it('stores a public concept independently, keeps reviewer notes private and overwrites them on return', async () => {
+    await sql`INSERT INTO account_minecraft_identities(account_id,edition,username)
+      VALUES (${adminId},'je',${'territory_' + adminId.slice(0, 6)})`
+    const id = randomUUID()
+    const coordinates = [{ x: 3000, z: 3000 }, { x: 3200, z: 3000 }, { x: 3200, z: 3200 }]
+    const created = await request('/api/territories', 'POST', {
+      operation_id: id, name: '構想用領地', owner_type: 'account',
+      coordinates, development_concept: '建築案\\n資料館', note: '承認者だけへの連絡',
+    }, adminSession)
+    expect(created.status).toBe(201)
+    expect(created.data.development_concept).toBe('建築案\\n資料館')
+    const adminDetail = await request(`/api/territories/${id}`, 'GET', undefined, adminSession)
+    expect(adminDetail.data.note).toBe('承認者だけへの連絡')
+    expect(adminDetail.data.can_edit_concept).toBe(true)
+    const outsider = await request(`/api/territories/${id}`, 'GET', undefined, otherSession)
+    expect(outsider.data).not.toHaveProperty('note')
+    expect((await request('/api/territories', 'GET', undefined, otherSession)).data
+      .find((value: any) => value.id === id)).not.toHaveProperty('note')
+    const review = await request(`/api/admin/territories/${id}`, 'GET', undefined, adminSession)
+    expect(review.data.note).toBe('承認者だけへの連絡')
+    expect(review.data.development_concept).toBe('建築案\\n資料館')
+    const notificationsBefore = events.length
+    const changed = await request(`/api/territories/${id}/concept`, 'POST', {
+      development_concept: '修正版\\n二行目',
+    }, adminSession)
+    expect(changed.status).toBe(201)
+    expect(changed.data.development_concept).toBe('修正版\\n二行目')
+    expect(events).toHaveLength(notificationsBefore)
+    expect((await request(`/api/territories/${id}/concept`, 'POST', {
+      development_concept: '権限外',
+    }, otherSession)).status).toBe(403)
+    const returned = await request(`/api/admin/territories/${id}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'return', reason: '境界を再確認してください',
+    }, adminSession)
+    expect(returned.status).toBe(201)
+    const afterReturn = await request(`/api/territories/${id}`, 'GET', undefined, adminSession)
+    expect(afterReturn.data.note).toBe('境界を再確認してください')
+    const reapply = await request(`/api/territories/${id}/reapply`, 'POST', {
+      operation_id: randomUUID(), name: '構想用領地 再提出',
+      owner_type: 'account', coordinates, note: '追記',
+    }, adminSession)
+    expect(reapply.status).toBe(201)
+    expect(reapply.data.development_concept).toBe('修正版\\n二行目')
+    expect((await request(`/api/territories/${id}`, 'GET', undefined, adminSession)).data.note).toBe('追記')
+    const approved = await request(`/api/admin/territories/${id}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'approve',
+    }, adminSession)
+    expect(approved.status).toBe(201)
+    expect((await request(`/api/territories/${id}`, 'GET', undefined, adminSession)).data).not.toHaveProperty('note')
+    expect((await sql`SELECT note FROM territory_applications WHERE territory_id=${id} AND status='approved' ORDER BY submitted_at DESC LIMIT 1`)[0].note).toBe('')
+    const rejectedId = randomUUID()
+    expect((await request('/api/territories', 'POST', {
+      operation_id: rejectedId, name: '却下用領地', coordinates, note: '元の備考',
+    }, adminSession)).status).toBe(201)
+    expect((await request(`/api/admin/territories/${rejectedId}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'reject', reason: '却下時の理由',
+    }, adminSession)).status).toBe(201)
+    const rejected = await request(`/api/territories/${rejectedId}`, 'GET', undefined, adminSession)
+    expect(rejected.data.note).toBe('却下時の理由')
+    expect((await request(`/api/territories/${rejectedId}`, 'GET', undefined, otherSession)).status).toBe(404)
+  })
+
+  it('enforces the 100,000 pending-area budget, including only positive extension area', async () => {
+    const rect = (x: number, z: number, w: number, h: number) => [
+      { x, z }, { x: x + w, z }, { x: x + w, z: z + h }, { x, z: z + h },
+    ]
+    const submit = (id: string, name: string, coordinates: Array<{ x: number; z: number }>) =>
+      request('/api/territories', 'POST', {
+        operation_id: id, name, owner_type: 'account', coordinates,
+      }, adminSession)
+    const first = randomUUID(), second = randomUUID(), third = randomUUID()
+    expect((await submit(first, '八万', rect(4000, 4000, 200, 400))).status).toBe(201)
+    expect((await submit(second, '二万', rect(5000, 5000, 200, 100))).status).toBe(201)
+    const exceeded = await submit(third, '上限超過', rect(6000, 6000, 1, 1))
+    expect(exceeded.status).toBe(400)
+    expect(JSON.stringify(exceeded.data)).toContain('100,000')
+    expect((await sql`SELECT id FROM territories WHERE id=${third}`)).toHaveLength(0)
+    const inclusive = await request('/api/territories?area_min=20000&area_max=80000', 'GET', undefined, adminSession)
+    expect(inclusive.status).toBe(200)
+    expect(inclusive.data.map((v: any) => v.id)).toEqual(expect.arrayContaining([first, second]))
+    expect((await request('/api/territories?area_min=9&area_max=1', 'GET', undefined, adminSession)).status).toBe(400)
+    expect((await request('/api/territories?area_min=oops', 'GET', undefined, adminSession)).status).toBe(400)
+    expect((await request(`/api/admin/territories/${first}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'return', reason: '再提出',
+    }, adminSession)).status).toBe(201)
+    expect((await submit(third, '空き枠再利用', rect(6000, 6000, 1, 1))).status).toBe(201)
+    expect((await request(`/api/admin/territories/${second}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'approve',
+    }, adminSession)).status).toBe(201)
+    expect((await request(`/api/territories/${third}/withdraw`, 'POST', {
+      operation_id: randomUUID(),
+    }, adminSession)).status).toBe(201)
+
+    const large = randomUUID()
+    expect((await submit(large, '九万の領地', rect(7000, 7000, 300, 300))).status).toBe(201)
+    expect((await request(`/api/admin/territories/${large}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'approve',
+    }, adminSession)).status).toBe(201)
+    const extension = await request(`/api/territories/${large}/edit`, 'POST', {
+      operation_id: randomUUID(), name: '九万の領地',
+      replacement: { start: 0, end: 1, intermediate: [{ x: 7150, z: 6900 }] },
+    }, adminSession)
+    expect(extension.status).toBe(201)
+    expect(extension.data.area).toBe(105000)
+    expect(extension.data.status).toBe('pending')
+    const tooLarge = await request(`/api/territories/${second}/edit`, 'POST', {
+      operation_id: randomUUID(), name: '二万',
+      replacement: { start: 0, end: 1, intermediate: [{ x: 5100, z: 4100 }] },
+    }, adminSession)
+    expect(tooLarge.status).toBe(400)
+    expect(JSON.stringify(tooLarge.data)).toContain('100,000')
+    expect((await request(`/api/territories/${second}`, 'GET', undefined, adminSession)).data.status).toBe('approved')
+    expect((await request('/api/admin/territories?area_min=105000', 'GET', undefined, adminSession)).data
+      .some((v: any) => v.id === large)).toBe(true)
+  })
+
 })

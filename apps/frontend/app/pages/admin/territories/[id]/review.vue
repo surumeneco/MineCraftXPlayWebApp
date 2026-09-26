@@ -1,6 +1,9 @@
 <template><section><UiPageTitle :title="item?`領地審査 - ${item.name}`:'領地審査'" /><p v-if="loading">読み込んでいます…</p><p v-else-if="error" class="alert alert-danger">{{ error }}</p><template v-else-if="item">
   <TerritoryInfoGrid :territory="item" show-applicant />
-  <TerritoryImage class="mb-3" :image-id="item.image_id" :name="item.name" />
+  <section class="mb-3"><h2 class="h4">開発構想</h2><p class="territory-multiline">{{ item.development_concept || '未記入' }}</p></section>
+  <section class="mb-3"><h2 class="h4">備考</h2><p class="territory-multiline">{{ item.note ?? '' }}</p></section>
+  <TerritoryImage v-if="item.image_id" class="mb-3" :image-id="item.image_id" :name="item.name" />
+  <p v-else class="mb-3 text-body-secondary">画像が設定されていません</p>
   <div class="alert" :class="item.overlaps.approved.length||item.overlaps.pending.length?'alert-warning':'alert-success'"><strong>被り判定:</strong><div>承認済: {{ item.overlaps.approved.map(v=>v.name).join('、')||'なし' }}</div><div>申請中: {{ item.overlaps.pending.map(v=>v.name).join('、')||'なし' }}</div></div>
   <TerritoryBlueMapPreview class="mb-4" :coordinates="item.coordinates" />
   <h2 class="h4">座標</h2><TerritoryCoordinatesList :coordinates="item.coordinates" />
@@ -25,3 +28,7 @@ onMounted(async()=>{try{await auth.refresh();if(auth.isAdmin.value){
     breadcrumbNames.value = { ...breadcrumbNames.value, [value.id]: value.name }
   }}catch(e){error.value=userFacingError(e)}finally{loading.value=false}})
 </script>
+
+<style scoped>
+.territory-multiline { white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>

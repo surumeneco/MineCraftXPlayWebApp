@@ -39,6 +39,13 @@ export class TerritoryController {
     return this.territories.edit(accountId, session.is_admin === true, id, body)
   }
 
+  @Post(':id/concept')
+  async concept(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    const accountId = await this.auth.requireUser(req, true)
+    const session = await this.auth.info(req)
+    return this.territories.updateConcept(accountId, session.is_admin === true, id, body)
+  }
+
   @Post(':id/withdraw')
   async withdraw(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.territories.withdraw(await this.auth.requireUser(req, true), id, body?.operation_id)

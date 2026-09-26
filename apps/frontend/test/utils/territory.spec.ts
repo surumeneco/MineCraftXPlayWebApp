@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blueMapTerritoryUrl, territoryCoordinateError, parseBlueMapCoordinates } from '../../app/utils/territory'
+import { blueMapTerritoryUrl, territoryCoordinateError, parseBlueMapCoordinates, formatArea } from '../../app/utils/territory'
 
 describe('territory coordinate drafts and local BlueMap', () => {
   it('rejects incomplete input without silently treating an empty field as zero', () => {
@@ -24,4 +24,10 @@ describe('territory coordinate drafts and local BlueMap', () => {
     expect(blueMapTerritoryUrl(points, 'http://localhost:8100'))
       .toMatch(/^http:\/\/localhost:8100\/#world:/)
   })
+  it('formats area with thousands separators while keeping half-block precision', () => {
+    expect(formatArea(100000)).toBe('100,000')
+    expect(formatArea(100000.5)).toBe('100,000.5')
+    expect(formatArea(-12345.5)).toBe('-12,345.5')
+  })
+
 })
