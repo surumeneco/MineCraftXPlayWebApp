@@ -181,6 +181,8 @@ export class AccountsService {
       }
       const applicant = await tx`SELECT 1 FROM territories WHERE applicant_account_id=${id} LIMIT 1`
       if (applicant.length) throw new ConflictException('領地の申請者履歴が残っています。所有者を移転しても申請者履歴は移転されません。削除には履歴保持方針に沿ったアカウント統合または匿名化が必要です。')
+      const submitted = await tx`SELECT 1 FROM territory_applications WHERE submitted_by_account_id=${id} LIMIT 1`
+      if (submitted.length) throw new ConflictException('領地の提出者履歴が残っています。匿名化・退会処理を行ってください。')
       const owner = await tx`SELECT 1 FROM territories WHERE owner_account_id=${id} LIMIT 1`
       if (owner.length) throw new ConflictException('所有中の領地があります。所有者を移転するか、アカウント統合を行ってください。')
       const images = await tx`SELECT 1 FROM images WHERE uploaded_by=${id} LIMIT 1`
