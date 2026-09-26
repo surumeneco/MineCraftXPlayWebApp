@@ -33,7 +33,7 @@
       <p v-if="range" class="small text-body-secondary">選択した境界の間に新しい座標を入力してください。名称のみの変更ならチェックを外してください。</p>
       <p>面積: <strong>{{ area === null ? '—' : formatArea(area) }}</strong></p>
       <p v-if="validationError" class="text-danger small">{{ validationError }}</p>
-      <TerritoryBlueMapPreview :coordinates="proposed" />
+      <TerritoryBlueMapPreview :coordinates="approved" />
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <button type="submit" class="btn btn-primary" :disabled="busy || !name.trim() || !!validationError || unchanged">変更を申請</button>
