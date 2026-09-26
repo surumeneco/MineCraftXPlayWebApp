@@ -122,7 +122,7 @@ export class HomeLayoutService {
       throw new BadRequestException('トップカードの分類が不正です。')
     }
     const updated = await this.database.sql`
-      UPDATE home_layout SET data=${JSON.stringify({ categories, hubs })}::jsonb,
+      UPDATE home_layout SET data=${this.database.sql.json({ categories, hubs })},
         revision=revision+1,updated_at=clock_timestamp()
       WHERE singleton=true AND revision=${revision}
       RETURNING revision,data`
