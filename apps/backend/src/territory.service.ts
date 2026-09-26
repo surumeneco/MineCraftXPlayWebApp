@@ -252,11 +252,10 @@ export class TerritoryService {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'edit', accountId)
       if (completed) return completed
-      const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
+      const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status,current_name,current_image_id FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       const row = locked[0]
-      const selfOwned = String(row.applicant_account_id) === accountId && row.owner_type === 'account'
-        && String(row.owner_account_id) === accountId
+      const selfOwned = row.owner_type === 'account' && String(row.owner_account_id) === accountId
       if (!isAdmin && !selfOwned) throw new ForbiddenException('Territory cannot be edited by this account')
       if (row.status !== 'approved') throw new ConflictException('Only approved territory can be edited')
       const approved = await tx`SELECT name,coordinates FROM territory_applications WHERE territory_id=${id} AND status='approved'
