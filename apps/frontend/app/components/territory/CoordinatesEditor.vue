@@ -53,9 +53,9 @@ const error = computed(() => {
 })
 function pasteCoordinates(event: ClipboardEvent, index: number) {
   const text = event.clipboardData?.getData('text/plain')?.trim()
-  if (!text || !/\\s/.test(text)) return
+  if (!text || !/\s/.test(text)) return
   event.preventDefault()
-  const parts = text.split(/\\s+/)
+  const parts = text.split(/\s+/)
   if (parts.length !== 2 && parts.length !== 3) return
   const x = integer(parts[0]!), z = integer(parts[parts.length - 1]!)
   if (x === null || z === null || (parts.length === 3 && integer(parts[1]!) === null)) return
