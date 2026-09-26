@@ -43,6 +43,6 @@ watch([notice, editor], async ([item, element]) => {
 }, { immediate: true, flush: 'post' })
 </script>
 
-<style scoped>
-.xplay-notice-readonly :deep(.ql-container.ql-bubble .ql-editor) { padding: 0; }
+<style>
+.xplay-notice-readonly.ql-container.ql-bubble .ql-editor { padding: 0; }
 </style>
