@@ -14,6 +14,8 @@ import { AdminSiteImagePresetsController, AdminSiteImagesController, PublicSiteI
 import { RequestsController } from './request.controller.js'
 import { AccountColorService } from './account-color.service.js'
 import { AdminAccountColorController, SelfAccountColorController } from './account-color.controller.js'
+import { TerritoryImagesService } from './territory-images.service.js'
+import { TerritoryImagesController } from './territory-images.controller.js'
 import { TerritoryService } from './territory.service.js'
 import { TerritoryNotificationService } from './territory-notification.service.js'
 import { TerritoryBlueMapService } from './territory-bluemap.service.js'
@@ -23,8 +25,8 @@ import { AdminTerritoryController, InternalTerritoryController, TerritoryControl
   controllers: [AppController, PublicNoticesController, PublicTagsController, PublicImagesController,
     AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
     PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController,
-    SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController],
+    SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController, TerritoryImagesController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, NoticeService, NoticeNotificationService,
-    ImagesService, SiteImagesService, AccountColorService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService],
+    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService],
 })
 export class AppModule {}
