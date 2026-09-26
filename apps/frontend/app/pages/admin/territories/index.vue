@@ -17,7 +17,7 @@
     <div v-else class="row g-3">
       <div v-for="item in items" :key="item.id" class="col-md-6 col-xl-4">
         <NuxtLink :to="`/admin/territories/${item.id}/review`" class="card h-100 text-decoration-none text-body">
-          <div class="card-body"><h2 class="h5">{{ item.name }}</h2><p class="mb-1">所有者: {{ item.owner.name }}</p><p class="mb-1">重心: {{ formatCentroid(item.centroid) }}</p><span class="badge text-bg-secondary">{{ territoryStatusLabel[item.status] }}</span></div>
+          <div class="card-body"><h2 class="h5">{{ item.name }}</h2><p class="mb-1">所有者: {{ item.owner.name }}</p><p class="mb-1">場所: {{ formatCentroid(item.centroid) }}</p><TerritoryStatusBadge :status="item.status" /></div>
         </NuxtLink>
       </div>
       <p v-if="!items.length">承認待ちの領地はありません。</p>
