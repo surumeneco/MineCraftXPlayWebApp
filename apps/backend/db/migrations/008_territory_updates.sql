@@ -28,6 +28,8 @@ CREATE TABLE territory_change_history (
   new_image_id UUID REFERENCES images(id) ON DELETE RESTRICT,
   old_owner_type TEXT,
   new_owner_type TEXT,
+  old_owner_name TEXT,
+  new_owner_name TEXT,
   old_owner_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
   new_owner_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
   changed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
