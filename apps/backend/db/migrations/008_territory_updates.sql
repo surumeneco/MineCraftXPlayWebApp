@@ -6,12 +6,11 @@ ALTER TABLE territories ADD COLUMN current_name TEXT CHECK (current_name IS NULL
 -- statement
 ALTER TABLE territories ADD COLUMN current_image_id UUID REFERENCES images(id) ON DELETE RESTRICT;
 -- statement
-UPDATE territories t SET current_name = a.name
-FROM LATERAL (SELECT 1) AS seed,
-LATERAL (SELECT name FROM territory_applications a
-  WHERE a.territory_id = t.id AND a.status = 'approved'
-  ORDER BY a.decided_at DESC NULLS LAST, a.submitted_at DESC, a.id DESC LIMIT 1) a
-WHERE t.id IS NOT NULL;
+UPDATE territories t SET current_name = (
+  SELECT a.name FROM territory_applications a
+  WHERE a.territory_id=t.id AND a.status='approved'
+  ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1
+);
 -- statement
 ALTER TABLE territory_operations DROP CONSTRAINT territory_operations_operation_kind_check;
 -- statement
