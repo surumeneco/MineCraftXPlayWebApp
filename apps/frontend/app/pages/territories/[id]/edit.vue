@@ -30,7 +30,8 @@
     </template>
     <div class="mb-3">
       <h2 class="h5">変更後の領地</h2>
-      <p>面積: <strong>{{ validationError ? '—' : formatArea(area) }}</strong></p>
+      <p v-if="range" class="small text-body-secondary">選択した境界の間に新しい座標を入力してください。名称のみの変更ならチェックを外してください。</p>
+      <p>面積: <strong>{{ area === null ? '—' : formatArea(area) }}</strong></p>
       <p v-if="validationError" class="text-danger small">{{ validationError }}</p>
       <TerritoryBlueMapPreview :coordinates="proposed" />
     </div>
@@ -42,12 +43,13 @@
 </section></template>
 
 <script setup lang="ts">
-import type { TerritoryPoint, TerritoryRecord } from '../../../utils/territory'
+import type { TerritoryDraftPoint, TerritoryPoint, TerritoryRecord } from '../../../utils/territory'
 import { formatArea, territoryArea, territoryCoordinateError } from '../../../utils/territory'
 import { userFacingError } from '../../../utils/user-error'
 
 const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi()
-const territory=ref<TerritoryRecord|null>(null),name=ref(''),intermediate=ref<TerritoryPoint[]>([])
+const territory=ref<TerritoryRecord|null>(null),name=ref(''),intermediate=ref<TerritoryDraftPoint[]>([])
+const breadcrumbNames=useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const selected=ref<Set<number>>(new Set()),loading=ref(true),busy=ref(false),error=ref(''),operationId=ref('')
 const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
 const approved=computed(()=>territory.value?.approved_coordinates ?? territory.value?.coordinates ?? [])
@@ -81,7 +83,7 @@ function toggle(index:number){
   const next=new Set(selected.value)
   if(next.has(index))next.delete(index);else next.add(index)
   selected.value=next
-  intermediate.value=[]
+  intermediate.value=next.size >= 2 ? [{x:null,z:null}] : []
 }
 const range=computed(()=>{
   if(selected.value.size<2)return null
@@ -89,7 +91,7 @@ const range=computed(()=>{
   if(!ends)return null
   return{...ends,startPoint:approved.value[ends.start],endPoint:approved.value[ends.end]}
 })
-const proposed=computed<TerritoryPoint[]>(()=>{
+const proposed=computed<TerritoryDraftPoint[]>(()=>{
   const source=approved.value.map(p=>({...p}))
   if(!range.value)return source
   const {start,end}=range.value
@@ -97,7 +99,7 @@ const proposed=computed<TerritoryPoint[]>(()=>{
   return[...source.slice(end,start+1),...intermediate.value.map(p=>({...p}))]
 })
 const validationError=computed(()=>territoryCoordinateError(proposed.value))
-const area=computed(()=>territoryArea(proposed.value))
+const area=computed(()=>validationError.value ? null : territoryArea(proposed.value as TerritoryPoint[]))
 const unchanged=computed(()=>{
   if(!territory.value)return true
   return name.value.trim()===territory.value.name && JSON.stringify(proposed.value)===JSON.stringify(approved.value)
@@ -118,8 +120,11 @@ onMounted(async()=>{
   try{
     await auth.refresh()
     const loaded=await get<TerritoryRecord>(`/territories/${route.params.id}`)
-    if(!loaded.can_edit)throw new Error('この領地を編集する権限がありません。')
+    if(!loaded.can_edit)throw new Error(loaded.status !== 'approved'
+      ? '承認済みの領地だけ編集できます。申請中の変更は承認結果を確認してください。'
+      : 'この領地を編集する権限がありません。')
     territory.value=loaded;name.value=loaded.name
+    breadcrumbNames.value = { ...breadcrumbNames.value, [loaded.id]: loaded.name }
   }catch(e){error.value=userFacingError(e)}finally{loading.value=false}
 })
 </script>

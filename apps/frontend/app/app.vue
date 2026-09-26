@@ -39,21 +39,14 @@ import type {
 } from "./types/footer-links";
 
 const { isAdmin, refresh } = useAccountSession();
+const { public: { bluemapBase } } = useRuntimeConfig();
 const { feedback, success, closeFeedback, closeSuccess } = useUiFeedback();
 onMounted(() => {
   void refresh();
 });
 
 const navigationItems = computed<HeaderNavigationItem[]>(() => [
-  { label: "Bluemap", to: "/bluemap/", native: true },
-  {
-    label: "領地",
-    children: [
-      { label: "領地一覧", to: "/territories" },
-      { label: "領地申請", to: "/territories/apply" },
-      ...(isAdmin.value ? [{ label: "未承認領地", to: "/admin/territories" }] : []),
-    ],
-  },
+  { label: "Bluemap", to: bluemapBase, native: true },
   {
     label: "情報",
     children: [
@@ -65,16 +58,22 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
       { label: "運営方針とルール", to: "/info/rules" },
     ],
   },
-  { label: "要望を送る", to: "/request" },
+  {
+    label: "一覧",
+    children: [
+      { label: "領地一覧", to: "/territories" },
+    ],
+  },
+  {
+    label: "申請",
+    children: [
+      { label: "領地申請", to: "/territories/apply" },
+      ...(isAdmin.value ? [{ label: "申請一覧", to: "/admin/territories" }] : []),
+    ],
+  },
   ...(isAdmin.value
     ? [
-        {
-          label: "お知らせ管理",
-          children: [
-            { label: "お知らせ一覧", to: "/admin/notices" },
-            { label: "新規投稿", to: "/admin/notices/new" },
-          ],
-        },
+        { label: "お知らせ投稿", to: "/admin/notices/new" },
         {
           label: "マスタメンテ",
           children: [
@@ -86,6 +85,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
         },
       ]
     : []),
+  { label: "要望を送る", to: "/request" },
 ]);
 
 const footerExternalLinks: FooterExternalLink[] = [

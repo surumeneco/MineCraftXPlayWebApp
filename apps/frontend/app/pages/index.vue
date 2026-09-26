@@ -52,7 +52,7 @@
         <UiCard
           :image="bluemapImage"
           title="Bluemapを見る"
-          to="/bluemap/"
+           :to="bluemapBase"
           native
         />
       </div>
@@ -79,6 +79,7 @@ import { sortNotices } from "../utils/notice";
 const siteImages = useSiteImages()
 const discordImage = computed(() => siteImages.image('card.discord', '/images/discord.png', '/images/card-default.svg'))
 const ofuseImage = computed(() => siteImages.image('card.ofuse', '/images/card-ofuse.jpg', '/images/card-default.svg'))
+const { public: { bluemapBase } } = useRuntimeConfig()
 const bluemapImage = computed(() => siteImages.image('card.bluemap', '/images/bluemap.png', '/images/card-default.svg'))
 const { data: notices, status, error } = usePublicNotices();
 const latest = computed(() =>

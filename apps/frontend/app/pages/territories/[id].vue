@@ -16,8 +16,13 @@ import { userFacingError } from '../../utils/user-error'
 const route=useRoute(),{get,mutate}=useAccountApi(),auth=useAccountSession()
 const territory=ref<TerritoryRecord|null>(null),loading=ref(true),busy=ref(false),error=ref(''),withdrawOperationId=ref('')
 const withdrawOperation=()=>withdrawOperationId.value||(withdrawOperationId.value=crypto.randomUUID())
+const breadcrumbNames = useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const id=computed(()=>String(route.params.id));const date=(v:string|null)=>v?new Date(v).toLocaleString('ja-JP'):'—'
-async function load(){territory.value=await get<TerritoryRecord>(`/territories/${id.value}`)}
+async function load(){
+  const value = await get<TerritoryRecord>(`/territories/${id.value}`)
+  territory.value = value
+  breadcrumbNames.value = { ...breadcrumbNames.value, [value.id]: value.name }
+}
 async function withdraw(){busy.value=true;error.value='';try{await mutate(`/territories/${id.value}/withdraw`,'POST',{operation_id:withdrawOperation()});await navigateTo(`/territories/apply?source=${id.value}`)}catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
 onMounted(async()=>{try{await auth.refresh();await load()}catch(e){error.value=userFacingError(e)}finally{loading.value=false}})
 </script>

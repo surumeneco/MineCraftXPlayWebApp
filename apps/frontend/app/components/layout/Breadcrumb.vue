@@ -20,6 +20,8 @@
 type Crumb = { label: string; to?: string }
 const route = useRoute()
 const router = useRouter()
+const territoryNames = useState<Record<string, string>>('xplay-territory-breadcrumb-names', () => ({}))
+const territoryName = (id: string) => territoryNames.value[id] || '領地詳細'
 const labels: Record<string, string> = {
   info: '情報', notice: 'お知らせ', about: 'コミュニティ概要', operators: '運営メンバー紹介',
   server: 'サーバー情報', rules: '運営方針とルール', login: 'ログイン', account: 'アカウント',
@@ -29,6 +31,25 @@ const items = computed<Crumb[]>(() => {
   const home: Crumb = { label: 'ホーム', to: '/' }
   const path = route.path.replace(/\/$/, '') || '/'
   if (path === '/') return [{ label: 'ホーム' }]
+  if (path === '/territories') return [home, { label: '一覧' }, { label: '領地一覧' }]
+  if (path === '/territories/apply') {
+    return [home, { label: '申請' }, { label: route.query.source ? '領地再申請' : '領地申請' }]
+  }
+  if (path === '/admin/territories') return [home, { label: '申請' }, { label: '申請一覧' }]
+  if (/^\/admin\/territories\/[^/]+\/review$/.test(path)) {
+    const id = String(route.params.id ?? '')
+    return [home, { label: '申請' }, { label: '申請一覧', to: '/admin/territories' },
+      { label: territoryName(id) }, { label: '領地審査' }]
+  }
+  if (/^\/territories\/[^/]+\/edit$/.test(path)) {
+    const id = String(route.params.id ?? '')
+    return [home, { label: '一覧' }, { label: '領地一覧', to: '/territories' },
+      { label: territoryName(id), to: `/territories/${id}` }, { label: '領地変更申請' }]
+  }
+  if (/^\/territories\/[^/]+$/.test(path)) {
+    const id = String(route.params.id ?? '')
+    return [home, { label: '一覧' }, { label: '領地一覧', to: '/territories' }, { label: territoryName(id) }]
+  }
   if (path === '/admin/notices') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧' }]
   if (path === '/admin/notices/new') return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: '新規投稿' }]
   if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) return [home, { label: 'お知らせ管理', to: '/admin/notices' }, { label: 'お知らせ一覧', to: '/admin/notices' }, { label: '記事編集' }]
