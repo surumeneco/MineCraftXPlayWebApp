@@ -28,7 +28,7 @@ const lists: Crumb = { label: '一覧', to: '/lists' }
 const applications: Crumb = { label: '申請', to: '/applications' }
 const territories: Crumb = { label: '領地一覧', to: '/territories' }
 const adminApplications: Crumb = { label: '申請管理', to: '/admin/applications' }
-const requests: Crumb = { label: '領地申請一覧', to: '/admin/territories' }
+const requests: Crumb = { label: '領地承認', to: '/admin/territories' }
 const notices: Crumb = { label: 'お知らせ管理', to: '/admin/notices' }
 const master: Crumb = { label: 'マスタメンテ', to: '/admin/master' }
 
@@ -69,9 +69,9 @@ const items = computed<Crumb[]>(() => {
     return [home, lists, territories, { label: territoryName(id) }]
   }
   if (path === '/admin/applications') return [home, { label: '申請管理' }]
-  if (path === '/admin/territories') return [home, adminApplications, { label: '領地申請一覧' }]
+  if (path === '/admin/territories') return [home, adminApplications, { label: '領地承認' }]
   if (/^\/admin\/territories\/[^/]+\/review$/.test(path)) {
-    return [home, adminApplications, requests, { label: `領地審査：${territoryName(id)}` }]
+    return [home, adminApplications, requests, { label: `領地承認詳細：${territoryName(id)}` }]
   }
   if (path === '/admin/notices') return [home, { label: 'お知らせ管理' }]
   if (path === '/admin/notices/new') return [home, notices, { label: '新規投稿' }]
