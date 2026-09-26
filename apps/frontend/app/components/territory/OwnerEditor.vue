@@ -25,9 +25,9 @@
         <p v-if="searchLoading" role="status" class="small mt-2">参加者を検索しています…</p>
       </div>
       <p v-if="error" class="alert alert-danger">{{ error }}</p>
-      <button type="submit" class="btn btn-primary" :disabled="busy || searchLoading || !changed || (kind === 'account' && !accountId)">
+      <div class="text-end"><button type="submit" class="btn btn-primary" :disabled="busy || searchLoading || !changed || (kind === 'account' && !accountId)">
         {{ busy ? '保存しています…' : '所有者を変更' }}
-      </button>
+      </button></div>
     </form>
   </section>
 </template>
