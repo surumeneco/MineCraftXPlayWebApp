@@ -49,6 +49,7 @@ services:
     environment:
       NODE_ENV: production
       NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:3001/api}
+      NUXT_PUBLIC_BLUEMAP_BASE: ${NUXT_PUBLIC_BLUEMAP_BASE:-/bluemap/}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
 
