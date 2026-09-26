@@ -27,6 +27,15 @@ export type TerritoryRecord = {
   nearby?: Array<{ id: string; name: string }>
 }
 
+/** Parse BlueMap coordinate triples (X Y Z) or pairs (X Z); Y is ignored. */
+export function parseBlueMapCoordinates(raw: string): TerritoryPoint | null {
+  const parts = raw.trim().split(/\s+/)
+  if (parts.length !== 2 && parts.length !== 3) return null
+  const values = parts.map(part => /^-?\d+$/.test(part) ? Number(part) : NaN)
+  if (!values.every(Number.isSafeInteger)) return null
+  return { x: values[0]!, z: values[values.length - 1]! }
+}
+
 export const territoryStatusLabel: Record<TerritoryStatus,string> = {
   approved: '承認済', pending: '申請中', returned: '差戻', withdrawn: '取下', rejected: '却下',
 }
