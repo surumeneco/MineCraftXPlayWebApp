@@ -296,6 +296,16 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(withdrawn.status).toBe(201)
     expect(withdrawn.data.status).toBe('approved')
     expect(withdrawn.data.name).toBe('新所有者の改名')
+    const deleteApplicant = await request(`/api/admin/accounts/${memberId}`, 'DELETE', undefined, adminSession)
+    expect(deleteApplicant.status).toBe(409)
+    expect(JSON.stringify(deleteApplicant.data)).toContain('申請者履歴')
+    const special = await request(`/api/admin/territories/${territoryId}/owner`, 'POST', {
+      operation_id: randomUUID(), owner_type: 'shared_area', owner_account_id: null,
+    }, adminSession)
+    expect(special.status).toBe(201)
+    expect(special.data.owner).toMatchObject({ type: 'shared_area', account_id: null, name: '共同建築エリア' })
+    expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, otherSession)).data.can_edit).toBe(false)
+    expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, adminSession)).data.can_edit).toBe(true)
   })
 
 
