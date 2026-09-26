@@ -138,7 +138,6 @@ export class TerritoryService {
       area: area(coordinates),
       centroid: centroid(coordinates),
       application_type: app.application_type,
-      reason: app.reason,
       approved_coordinates: row.approved_application?.coordinates ?? null,
       pending_coordinates: row.pending_application?.coordinates ?? null,
     }
@@ -215,7 +214,7 @@ export class TerritoryService {
     const canWithdraw = viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending'
     const canConcept = viewer.is_admin === true ||
       (row.owner_type === 'account' && viewer.account_id === row.owner_account_id)
-    const canNote = viewer.is_admin === true || viewer.account_id === row.latest_application?.submitted_by_account_id
+    const canNote = row.status !== 'approved' && (viewer.is_admin === true || viewer.account_id === row.latest_application?.submitted_by_account_id)
     return { ...value, can_edit: canEdit, can_edit_concept: canConcept, can_reapply: canReapply, can_withdraw: canWithdraw,
       ...(canNote ? { note: row.latest_application?.note ?? '' } : {}),
       nearby: await this.nearby(id, value.coordinates) }
@@ -275,7 +274,7 @@ export class TerritoryService {
     const id = uuid(idRaw), operationId = uuid(body?.operation_id)
     const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
     const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
-    const concept = optionalText(body?.development_concept, '開発構想')
+    const conceptRaw = body?.development_concept
     const note = optionalText(body?.note, '備考')
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
@@ -285,6 +284,7 @@ export class TerritoryService {
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can reapply')
       if (!['returned','withdrawn'].includes(String(locked[0].status))) throw new ConflictException('Territory is not available for reapplication')
+      const concept = optionalText(conceptRaw, '開発構想', String(locked[0].development_concept))
       await this.assertMinecraft(accountId, tx)
       await this.assertPendingArea(tx, accountId, area(coordinates))
       const previous = await tx`SELECT name,coordinates,image_id,note FROM territory_applications WHERE territory_id=${id}
@@ -340,7 +340,7 @@ export class TerritoryService {
       }
       if (!boundaryChanged) {
         // Metadata does not change the approved boundary or need a review.
-        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId},development_concept=${concept},status_changed_at=clock_timestamp() WHERE id=${id}`
+        await tx`UPDATE territories SET current_name=${name},current_image_id=${imageId},development_concept=${concept} WHERE id=${id}`
         await this.completeOperation(tx, operationId, id, 'edit', accountId)
         await tx`INSERT INTO territory_change_history(
           operation_id,territory_id,actor_account_id,kind,old_name,new_name,old_image_id,new_image_id)
