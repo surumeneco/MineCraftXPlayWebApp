@@ -280,6 +280,22 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(ownerRename.status).toBe(201)
     expect(ownerRename.data.status).toBe('approved')
     expect(events.filter(e => e.event_id === `${ownerRenameId}:renamed`)).toHaveLength(1)
+    const pendingByNewOwner = await request(`/api/territories/${territoryId}/edit`, 'POST', {
+      operation_id: randomUUID(), name: '新所有者の改名',
+      replacement: { start: 0, end: 1, intermediate: [{ x: 1005, z: 995 }] },
+    }, otherSession)
+    expect(pendingByNewOwner.status).toBe(201)
+    expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, otherSession)).data.can_withdraw).toBe(true)
+    expect((await request(`/api/territories/${territoryId}`, 'GET')).data.can_withdraw).toBe(false)
+    expect((await request(`/api/territories/${territoryId}/withdraw`, 'POST', {
+      operation_id: randomUUID(),
+    })).status).toBe(403)
+    const withdrawn = await request(`/api/territories/${territoryId}/withdraw`, 'POST', {
+      operation_id: randomUUID(),
+    }, otherSession)
+    expect(withdrawn.status).toBe(201)
+    expect(withdrawn.data.status).toBe('approved')
+    expect(withdrawn.data.name).toBe('新所有者の改名')
   })
 
 
