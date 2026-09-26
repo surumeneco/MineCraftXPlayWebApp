@@ -206,7 +206,11 @@ export class TerritoryService {
 
   async get(idRaw: unknown, viewer: { account_id?: string; is_admin?: boolean }) {
     const id = uuid(idRaw), row = (await this.rows()).find(value => value.id === id)
-    if (!row || (row.status === 'rejected' && !viewer.is_admin)) throw new NotFoundException('Territory not found')
+    if (!row || (row.status === 'rejected' && !viewer.is_admin
+      && viewer.account_id !== row.applicant_account_id
+      && viewer.account_id !== row.latest_application?.submitted_by_account_id)) {
+      throw new NotFoundException('Territory not found')
+    }
     const value = this.dto(row)
     const canEdit = row.status === 'approved' && (viewer.is_admin === true
       || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id))
