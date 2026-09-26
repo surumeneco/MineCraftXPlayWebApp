@@ -1,5 +1,5 @@
 <template><section><UiPageTitle :title="item?`領地審査 - ${item.name}`:'領地審査'" /><p v-if="loading">読み込んでいます…</p><p v-else-if="error" class="alert alert-danger">{{ error }}</p><template v-else-if="item">
-  <TerritoryInfoGrid :territory="item" show-applicant :show-dates="false" />
+  <TerritoryInfoGrid :territory="item" show-applicant />
   <TerritoryImage class="mb-3" :image-id="item.image_id" :name="item.name" />
   <div class="alert" :class="item.overlaps.approved.length||item.overlaps.pending.length?'alert-warning':'alert-success'"><strong>被り判定:</strong><div>承認済: {{ item.overlaps.approved.map(v=>v.name).join('、')||'なし' }}</div><div>申請中: {{ item.overlaps.pending.map(v=>v.name).join('、')||'なし' }}</div></div>
   <TerritoryBlueMapPreview class="mb-4" :coordinates="item.coordinates" />
