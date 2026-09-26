@@ -3,7 +3,7 @@
     <label :for="fieldId" class="form-label">領地画像（任意・1枚）</label>
     <div class="d-flex flex-wrap gap-3 align-items-start">
       <img v-if="source" :src="source" alt="選択中の領地画像" class="territory-image-preview border rounded" />
-      <img v-else src="/images/card-default.svg" alt="画像未設定時の既定画像" class="territory-image-preview border rounded" />
+      <div v-else class="territory-image-preview territory-image-empty border rounded text-body-secondary">画像が設定されていません</div>
       <div class="flex-grow-1">
         <input :id="fieldId" type="file" class="form-control" accept="image/png,image/jpeg,image/webp,image/svg+xml"
           :disabled="uploading" @change="uploadFile" />
@@ -73,4 +73,5 @@ onBeforeUnmount(() => { requestNumber++; release() })
 </script>
 <style scoped>
 .territory-image-preview { width: min(100%, 16rem); height: 10rem; object-fit: cover; }
+.territory-image-empty { display: flex; align-items: center; justify-content: center; padding: 1rem; text-align: center; }
 </style>
