@@ -52,8 +52,8 @@ BEGIN
     LEFT JOIN site_image_preset_items active ON active.resource_id=r.id AND active.preset_id=s.active_preset_id
     LEFT JOIN site_image_versions v ON v.id=CASE WHEN active.preset_id IS NOT NULL THEN active.version_id ELSE base.version_id END
     WHERE r.key=key_names[h] AND s.singleton AND p.is_default;
-    IF asset IS NOT NULL THEN
-      UPDATE home_layout SET data=jsonb_set(data,legacy_paths[h]::text[],asset) WHERE singleton;
+    IF FOUND THEN
+      UPDATE home_layout SET data=jsonb_set(data,legacy_paths[h]::text[],COALESCE(asset,'null'::jsonb)) WHERE singleton;
     END IF;
   END LOOP;
   FOR item IN SELECT entry.image AS key, entry.group_name FROM (VALUES
@@ -67,10 +67,10 @@ BEGIN
     LEFT JOIN site_image_preset_items active ON active.resource_id=r.id AND active.preset_id=s.active_preset_id
     LEFT JOIN site_image_versions v ON v.id=CASE WHEN active.preset_id IS NOT NULL THEN active.version_id ELSE base.version_id END
     WHERE r.key=item.key AND s.singleton AND p.is_default;
-    IF asset IS NOT NULL THEN
+    IF FOUND THEN
       FOR h IN 0..6 LOOP
         IF (SELECT data->'hubs'->h->>'key' FROM home_layout WHERE singleton) LIKE item.group_name||'.%' THEN
-          UPDATE home_layout SET data=jsonb_set(data,ARRAY['hubs',h::text,'image'],asset) WHERE singleton;
+          UPDATE home_layout SET data=jsonb_set(data,ARRAY['hubs',h::text,'image'],COALESCE(asset,'null'::jsonb)) WHERE singleton;
         END IF;
       END LOOP;
     END IF;
@@ -102,8 +102,8 @@ UPDATE operator_members o SET account_id=(
 );
 -- statement
 UPDATE operator_members o SET
-  image_id=COALESCE(v.image_id,o.image_id),
-  static_path=CASE WHEN v.image_id IS NOT NULL THEN NULL ELSE COALESCE(v.static_path,o.static_path) END
+  image_id=v.image_id,
+  static_path=v.static_path
 FROM site_image_resources r CROSS JOIN site_image_settings s CROSS JOIN site_image_presets p
 LEFT JOIN site_image_preset_items base ON base.resource_id=r.id AND base.preset_id=p.id
 LEFT JOIN site_image_preset_items active ON active.resource_id=r.id AND active.preset_id=s.active_preset_id
