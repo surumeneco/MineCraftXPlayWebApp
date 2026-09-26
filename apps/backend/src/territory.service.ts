@@ -238,8 +238,8 @@ export class TerritoryService {
       }
       await tx`UPDATE territories SET owner_type=${owner.type},owner_account_id=${owner.accountId},
         status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
-      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,status)
-        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},'pending')`
+      await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status)
+        VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending')`
       await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
       await this.completeOperation(tx, operationId, id, 'reapply', accountId)
       return this.getFromRows(await this.rows(tx), id)
