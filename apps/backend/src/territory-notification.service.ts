@@ -2,9 +2,10 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common'
 
 export type TerritoryNotificationEvent = {
   event_id: string
-  kind: 'application' | 'approved' | 'returned' | 'rejected' | 'withdrawn'
+  kind: 'application' | 'approved' | 'returned' | 'rejected' | 'withdrawn' | 'renamed'
   application_type: 'new' | 'edit'
   territory_name: string
+  previous_name?: string
   account_name: string
   discord_ids: string[]
   centroid?: { x: number; z: number }

@@ -15,6 +15,7 @@ type MarkerRow = {
   owner_type: 'account' | keyof typeof special
   owner_account_id: string | null
   owner_account_name: string | null
+  current_name: string | null
   approved_application: AppData
   pending_application: AppData
 }
@@ -29,7 +30,7 @@ export class TerritoryBlueMapService {
 
   async render(): Promise<string> {
     const rows = await this.database.sql`
-      SELECT t.id,t.owner_type,t.owner_account_id,oa.name AS owner_account_name,
+      SELECT t.id,t.owner_type,t.owner_account_id,t.current_name,oa.name AS owner_account_name,
         (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,'coordinates',a.coordinates)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
           ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1) AS approved_application,
@@ -48,12 +49,13 @@ export class TerritoryBlueMapService {
       const group = row.owner_type === 'shared_area' ? 'public-area'
         : row.owner_type === 'protected_area' ? 'Reserve'
         : row.owner_type === 'administration' ? 'Administration' : 'Personal'
-      if (row.approved_application) {
-        groups.get(group)!.push(this.marker(`${row.id}-approved`, owner.name, row.approved_application, owner.color, false))
+      const approved = row.approved_application ? { ...row.approved_application, name: row.current_name ?? row.approved_application.name } : null
+      if (approved) {
+        groups.get(group)!.push(this.marker(`${row.id}-approved`, owner.name, approved, owner.color, false))
       }
       if (row.pending_application) {
-        if (row.pending_application.application_type === 'edit' && row.approved_application) {
-          groups.get(group)!.push(...this.changedBoundaryMarkers(row.id, owner.name, row.approved_application, row.pending_application))
+        if (row.pending_application.application_type === 'edit' && approved) {
+          groups.get(group)!.push(...this.changedBoundaryMarkers(row.id, owner.name, approved, row.pending_application))
         } else {
           groups.get(group)!.push(this.marker(`${row.id}-pending`, owner.name, row.pending_application, { r: 0, g: 0, b: 0 }, true))
         }

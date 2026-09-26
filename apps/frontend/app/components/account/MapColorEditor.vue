@@ -12,16 +12,17 @@
         <div class="col-md-4"><label class="form-label" for="map-color-rgb">RGB</label><input id="map-color-rgb" v-model="rgbInput" class="form-control" placeholder="255, 0, 0" @change="applyRgbText" /></div>
         <div class="col-md-4"><label class="form-label" for="map-color-hsv">HSV</label><input id="map-color-hsv" v-model="hsvInput" class="form-control" placeholder="0, 100, 100" @change="applyHsvText" /></div>
       </div>
-      <div class="row g-3 mt-1">
-        <div v-for="key in rgbKeys" :key="key" class="col-md-4">
+      <div class="row g-4 mt-1"><div class="col-lg-6">
+        <div v-for="key in rgbKeys" :key="key" class="mb-2">
           <label class="form-label" :for="`rgb-${key}`">{{ key.toUpperCase() }}: {{ color[key] }}</label>
           <input :id="`rgb-${key}`" v-model.number="color[key]" type="range" min="0" max="255" class="form-range" @input="syncFromRgb" />
         </div>
       </div>
-      <div class="row g-3">
-        <div class="col-md-4"><label class="form-label" for="hue">H: {{ hsv.h }}</label><input id="hue" v-model.number="hsv.h" type="range" min="0" max="359" class="form-range" @input="syncFromHsv" /></div>
-        <div class="col-md-4"><label class="form-label" for="sat">S: {{ hsv.s }}%</label><input id="sat" v-model.number="hsv.s" type="range" min="0" max="100" class="form-range" @input="syncFromHsv" /></div>
-        <div class="col-md-4"><label class="form-label" for="val">V: {{ hsv.v }}%</label><input id="val" v-model.number="hsv.v" type="range" min="0" max="100" class="form-range" @input="syncFromHsv" /></div>
+      <div class="col-lg-6">
+        <div class="mb-2"><label class="form-label" for="hue">H: {{ hsv.h }}</label><input id="hue" v-model.number="hsv.h" type="range" min="0" max="359" class="form-range" @input="syncFromHsv" /></div>
+        <div class="mb-2"><label class="form-label" for="sat">S: {{ hsv.s }}%</label><input id="sat" v-model.number="hsv.s" type="range" min="0" max="100" class="form-range" @input="syncFromHsv" /></div>
+        <div class="mb-2"><label class="form-label" for="val">V: {{ hsv.v }}%</label><input id="val" v-model.number="hsv.v" type="range" min="0" max="100" class="form-range" @input="syncFromHsv" /></div>
+      </div>
       </div>
       <p v-if="error" class="text-danger small">{{ error }}</p>
       <button type="button" class="btn btn-primary" :disabled="busy" @click="save">保存</button>

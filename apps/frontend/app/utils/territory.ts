@@ -5,6 +5,9 @@ export type TerritoryOwnerType = 'account' | 'shared_area' | 'administration' | 
 export type TerritoryRecord = {
   id: string
   name: string
+  image_id?: string | null
+  approved_image_id?: string | null
+  pending_image_id?: string | null
   applicant: { id: string; name: string }
   owner: { type: TerritoryOwnerType; account_id: string | null; name: string }
   status: TerritoryStatus
@@ -22,6 +25,15 @@ export type TerritoryRecord = {
   can_reapply?: boolean
   can_withdraw?: boolean
   nearby?: Array<{ id: string; name: string }>
+}
+
+/** Parse BlueMap coordinate triples (X Y Z) or pairs (X Z); Y is ignored. */
+export function parseBlueMapCoordinates(raw: string): TerritoryPoint | null {
+  const parts = raw.trim().split(/\s+/)
+  if (parts.length !== 2 && parts.length !== 3) return null
+  const values = parts.map(part => /^-?\d+$/.test(part) ? Number(part) : NaN)
+  if (!values.every(Number.isSafeInteger)) return null
+  return { x: values[0]!, z: values[values.length - 1]! }
 }
 
 export const territoryStatusLabel: Record<TerritoryStatus,string> = {

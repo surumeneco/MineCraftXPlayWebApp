@@ -35,6 +35,20 @@ describe('territory coordinate editor', () => {
       { x: null, z: null },
     ])
   })
+  it('pastes BlueMap X Y Z into the Z field without corrupting other vertices', async () => {
+    const wrapper = await mountSuspended(CoordinatesEditor, {
+      props: { modelValue: [{ x: null, z: null }, { x: null, z: null }, { x: null, z: null }] },
+    })
+    const input = wrapper.findAll('input[type="number"]')[1]!
+    const event = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, 'clipboardData', { value: { getData: () => '-100 64 250' } })
+    input.element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual([
+      { x: -100, z: 250 }, { x: null, z: null }, { x: null, z: null },
+    ])
+  })
+
 })
 
 describe('territory incremental search', () => {

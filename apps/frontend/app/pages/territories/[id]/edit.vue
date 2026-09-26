@@ -5,12 +5,13 @@
   <form v-else-if="territory" @submit.prevent="submit">
     <p v-if="error" class="alert alert-danger">{{ error }}</p>
     <div class="mb-3"><label for="edit-territory-name" class="form-label">領地名 *</label><input id="edit-territory-name" v-model="name" maxlength="100" required class="form-control" /></div>
+    <TerritoryImageField v-model="imageId" @uploading="imageUploading=$event" />
     <fieldset class="mb-4">
       <legend class="h5">置き換える既存境界</legend>
       <p class="small text-body-secondary">最初の点を選択後は、選択済み範囲に隣接する点のみ追加できます。全頂点は選択できません。</p>
-      <div class="row g-2">
-        <div v-for="(point,index) in approved" :key="index" class="col-md-6">
-          <div class="form-check border rounded p-2 ps-5">
+      <div class="border rounded px-2">
+        <div v-for="(point,index) in approved" :key="index" class="py-2 border-bottom">
+          <div class="form-check ps-4">
             <input :id="`existing-${index}`" class="form-check-input" type="checkbox" :checked="selected.has(index)" :disabled="!canToggle(index)" @change="toggle(index)" />
             <label class="form-check-label" :for="`existing-${index}`">#{{ index + 1 }}: X {{ point.x }} / Z {{ point.z }}</label>
           </div>
@@ -21,25 +22,24 @@
       <section class="border rounded p-3 mb-3">
         <h2 class="h5">新しい境界</h2>
         <p class="small text-body-secondary">選択範囲の両端は固定です。その間に必要な頂点を追加してください。</p>
-        <div class="row g-2 mb-2">
-          <div class="col-md-6"><label class="form-label">始点</label><input class="form-control" :value="`X ${range.startPoint.x} / Z ${range.startPoint.z}`" readonly /></div>
-          <div class="col-md-6"><label class="form-label">終点</label><input class="form-control" :value="`X ${range.endPoint.x} / Z ${range.endPoint.z}`" readonly /></div>
-        </div>
+        <div class="mb-2"><label class="form-label">始点</label><input class="form-control" :value="`X ${range.startPoint.x} / Z ${range.startPoint.z}`" readonly /></div>
         <TerritoryCoordinatesEditor v-model="intermediate" :min-points="0" />
+        <div class="mt-2"><label class="form-label">終点</label><input class="form-control" :value="`X ${range.endPoint.x} / Z ${range.endPoint.z}`" readonly /></div>
       </section>
     </template>
     <div class="mb-3">
       <h2 class="h5">変更後の領地</h2>
-      <p v-if="range" class="small text-body-secondary">選択した境界の間に新しい座標を入力してください。名称のみの変更ならチェックを外してください。</p>
+      <p v-if="range" class="small text-body-secondary">選択した境界の間に新しい座標を入力してください。領地名・画像のみの変更ならチェックを外してください。</p>
       <p>面積: <strong>{{ area === null ? '—' : formatArea(area) }}</strong></p>
       <p v-if="validationError" class="text-danger small">{{ validationError }}</p>
-      <TerritoryBlueMapPreview :coordinates="proposed" />
+      <TerritoryBlueMapPreview :coordinates="approved" />
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <button type="submit" class="btn btn-primary" :disabled="busy || !name.trim() || !!validationError || unchanged">変更を申請</button>
+      <button type="submit" class="btn btn-primary" :disabled="busy || imageUploading || !name.trim() || !!validationError || unchanged">{{ boundaryChanged ? "変更を申請" : "保存" }}</button>
       <NuxtLink :to="`/territories/${territory.id}`" class="btn btn-outline-secondary">戻る</NuxtLink>
     </div>
   </form>
+  <TerritoryOwnerEditor v-if="territory && auth.isAdmin.value" :territory="territory" @updated="reloadOwner" />
 </section></template>
 
 <script setup lang="ts">
@@ -48,7 +48,7 @@ import { formatArea, territoryArea, territoryCoordinateError } from '../../../ut
 import { userFacingError } from '../../../utils/user-error'
 
 const route=useRoute(),auth=useAccountSession(),{get,mutate}=useAccountApi()
-const territory=ref<TerritoryRecord|null>(null),name=ref(''),intermediate=ref<TerritoryDraftPoint[]>([])
+const territory=ref<TerritoryRecord|null>(null),name=ref(''),imageId=ref<string|null>(null),imageUploading=ref(false),intermediate=ref<TerritoryDraftPoint[]>([])
 const breadcrumbNames=useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const selected=ref<Set<number>>(new Set()),loading=ref(true),busy=ref(false),error=ref(''),operationId=ref('')
 const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
@@ -98,12 +98,18 @@ const proposed=computed<TerritoryDraftPoint[]>(()=>{
   if(start<end)return[...source.slice(0,start+1),...intermediate.value.map(p=>({...p})),...source.slice(end)]
   return[...source.slice(end,start+1),...intermediate.value.map(p=>({...p}))]
 })
+const boundaryChanged=computed(()=>JSON.stringify(proposed.value)!==JSON.stringify(approved.value))
 const validationError=computed(()=>territoryCoordinateError(proposed.value))
 const area=computed(()=>validationError.value ? null : territoryArea(proposed.value as TerritoryPoint[]))
 const unchanged=computed(()=>{
   if(!territory.value)return true
-  return name.value.trim()===territory.value.name && JSON.stringify(proposed.value)===JSON.stringify(approved.value)
+  return name.value.trim()===territory.value.name && imageId.value===(territory.value.image_id??null) && JSON.stringify(proposed.value)===JSON.stringify(approved.value)
 })
+async function reloadOwner(){
+  if (!territory.value) return
+  try { territory.value = await get<TerritoryRecord>(`/territories/${territory.value.id}`) }
+  catch(e) { error.value = userFacingError(e) }
+}
 async function submit(){
   if(!territory.value||validationError.value||unchanged.value)return
   busy.value=true;error.value=''
@@ -111,6 +117,7 @@ async function submit(){
     const result=await mutate<TerritoryRecord>(`/territories/${territory.value.id}/edit`,'POST',{
       operation_id:operation(),
       name:name.value.trim(),
+      image_id:imageId.value,
       ...(range.value?{replacement:{start:range.value.start,end:range.value.end,intermediate:intermediate.value}}:{})
     })
     await navigateTo(`/territories/${result.id}`)
@@ -123,7 +130,7 @@ onMounted(async()=>{
     if(!loaded.can_edit)throw new Error(loaded.status !== 'approved'
       ? '承認済みの領地だけ編集できます。申請中の変更は承認結果を確認してください。'
       : 'この領地を編集する権限がありません。')
-    territory.value=loaded;name.value=loaded.name
+    territory.value=loaded;name.value=loaded.name;imageId.value=loaded.image_id??null
     breadcrumbNames.value = { ...breadcrumbNames.value, [loaded.id]: loaded.name }
   }catch(e){error.value=userFacingError(e)}finally{loading.value=false}
 })

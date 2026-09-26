@@ -4,8 +4,10 @@
   <template v-else-if="territory">
     <div class="d-flex gap-2 flex-wrap mb-3"><NuxtLink v-if="territory.can_edit" :to="`/territories/${territory.id}/edit`" class="btn btn-primary"><i class="bi bi-pencil-square" aria-hidden="true" /><span class="visually-hidden">編集</span></NuxtLink><NuxtLink v-if="territory.can_reapply" :to="`/territories/apply?source=${territory.id}`" class="btn btn-primary">再申請</NuxtLink><button v-if="territory.can_withdraw" class="btn btn-outline-danger" :disabled="busy" @click="withdraw">取下</button></div>
     <TerritoryInfoGrid :territory="territory" />
+    <TerritoryOwnerEditor v-if="auth.isAdmin.value && territory.status === 'approved'" :territory="territory" @updated="load" />
+    <TerritoryImage class="mb-3" :image-id="territory.image_id" :name="territory.name" />
     <TerritoryBlueMapPreview class="mb-4" :coordinates="territory.coordinates" />
-    <h2 class="h4">座標</h2><ol><li v-for="(point,i) in territory.coordinates" :key="i">X {{ point.x }} / Z {{ point.z }}</li></ol>
+    <h2 class="h4">座標</h2><TerritoryCoordinatesList :coordinates="territory.coordinates" />
     <template v-if="territory.nearby?.length"><h2 class="h4">近くの領地</h2><ul><li v-for="near in territory.nearby" :key="near.id"><NuxtLink :to="`/territories/${near.id}`">{{ near.name }}</NuxtLink></li></ul></template>
   </template>
 </section></template>

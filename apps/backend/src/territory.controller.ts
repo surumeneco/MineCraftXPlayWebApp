@@ -55,6 +55,18 @@ export class AdminTerritoryController {
     return this.territories.pendingForAdmin(query)
   }
 
+  @Get('owners')
+  async owners(@Req() req: any, @Query('name') name: string | undefined) {
+    await this.auth.requireAdmin(req)
+    return this.territories.searchOwners(name)
+  }
+
+  @Post(':id/owner')
+  async transferOwner(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    const actor = await this.auth.requireAdmin(req, true)
+    return this.territories.transferOwner(actor, id, body)
+  }
+
   @Get(':id')
   async detail(@Req() req: any, @Param('id') id: string) {
     await this.auth.requireAdmin(req)

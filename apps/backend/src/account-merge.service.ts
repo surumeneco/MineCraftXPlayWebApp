@@ -14,7 +14,7 @@ export class AccountMergeService {
     if (target === source) throw new BadRequestException('Choose two different accounts')
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
-      const records = await tx`SELECT id FROM accounts WHERE id IN (${target}, ${source}) FOR UPDATE`
+      const records = await tx`SELECT id FROM accounts WHERE id IN (${target}, ${source}) AND retired_at IS NULL FOR UPDATE`
       if (records.length !== 2) throw new NotFoundException('Both accounts must exist')
       const linked = await tx`SELECT id FROM account_merges WHERE restored_at IS NULL
         AND (source_account_id IN (${target},${source}) OR target_account_id IN (${target},${source}))`

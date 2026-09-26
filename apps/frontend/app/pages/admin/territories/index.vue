@@ -7,8 +7,8 @@
     <form class="row g-2 mb-4" @submit.prevent="load">
       <div class="col-md-3"><TerritorySearchField v-model="filters.name" :options="nameOptions" placeholder="領地名" label="領地名で検索" @selected="load" /></div>
       <div class="col-md-3"><TerritorySearchField v-model="filters.owner" :options="ownerOptions" placeholder="所有者名" label="所有者名で検索" @selected="load" /></div>
-      <div class="col-6 col-md-1"><input v-model="filters.x" type="number" step="1" class="form-control" placeholder="X" aria-label="X座標" /></div>
-      <div class="col-6 col-md-1"><input v-model="filters.z" type="number" step="1" class="form-control" placeholder="Z" aria-label="Z座標" /></div>
+      <div class="col-6 col-md-1"><input v-model="filters.x" type="number" step="1" class="form-control" placeholder="X" aria-label="X座標" @paste="pasteSearchCoordinates" /></div>
+      <div class="col-6 col-md-1"><input v-model="filters.z" type="number" step="1" class="form-control" placeholder="Z" aria-label="Z座標" @paste="pasteSearchCoordinates" /></div>
       <div class="col-md-2"><select v-model="filters.sort" class="form-select" aria-label="並べ替え"><option value="approved_at">承認日時順</option><option value="applied_at">申請日時順</option><option value="changed_at">変更日時順</option><option value="name">領地名順</option><option value="owner">所有者名順</option></select></div>
       <div class="col-md-2"><button class="btn btn-primary w-100" type="submit" :disabled="loading">検索・並べ替え</button></div>
     </form>
@@ -16,7 +16,8 @@
     <p v-else-if="error" class="alert alert-danger">{{ error }}</p>
     <div v-else class="row g-3">
       <div v-for="item in items" :key="item.id" class="col-md-6 col-xl-4">
-        <NuxtLink :to="`/admin/territories/${item.id}/review`" class="card h-100 text-decoration-none text-body">
+        <NuxtLink :to="`/admin/territories/${item.id}/review`" class="card h-100 text-decoration-none text-body overflow-hidden">
+          <TerritoryImage :image-id="item.image_id" :name="item.name" />
           <div class="card-body"><h2 class="h5">{{ item.name }}</h2><p class="mb-1">所有者: {{ item.owner.name }}</p><p class="mb-1">場所: {{ formatCentroid(item.centroid) }}</p><TerritoryStatusBadge :status="item.status" /></div>
         </NuxtLink>
       </div>
@@ -26,13 +27,20 @@
 </section></template>
 <script setup lang="ts">
 import type { TerritoryRecord } from '../../../utils/territory'
-import { formatCentroid, territoryStatusLabel } from '../../../utils/territory'
+import { formatCentroid, territoryStatusLabel, parseBlueMapCoordinates } from '../../../utils/territory'
 import { userFacingError } from '../../../utils/user-error'
 const auth=useAccountSession(),{get}=useAccountApi()
 const items=ref<TerritoryRecord[]>([]),source=ref<TerritoryRecord[]>([]),loading=ref(true),error=ref('')
 const nameOptions=computed(()=>source.value.map(item=>item.name))
 const ownerOptions=computed(()=>source.value.map(item=>item.owner.name))
 const filters=reactive({name:'',owner:'',x:'',z:'',sort:'approved_at'})
+function pasteSearchCoordinates(event: ClipboardEvent) {
+  const point = parseBlueMapCoordinates(event.clipboardData?.getData('text/plain') ?? '')
+  if (!point) return
+  event.preventDefault()
+  filters.x = String(point.x)
+  filters.z = String(point.z)
+}
 async function load(){
   loading.value=true;error.value=''
   try{
