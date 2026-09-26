@@ -27,6 +27,32 @@ describe('HeaderMenu', () => {
     expect(dropdown.get('button').attributes('aria-expanded')).toBe('false')
   })
 
+
+  it('renders the administrator application group with both real routes in desktop and mobile navigation', async () => {
+    const wrapper = await mountSuspended(HeaderMenu, {
+      props: {
+        items: [{
+          label: '申請管理',
+          children: [
+            { label: '申請管理トップ', to: '/admin/applications' },
+            { label: '領地申請', to: '/admin/territories' },
+          ],
+        }],
+      },
+    })
+    const desktopGroup = wrapper.get('#header-navigation .dropdown')
+    await desktopGroup.trigger('mouseenter')
+    expect(desktopGroup.findAll('.dropdown-item').map(item => item.attributes('href'))).toEqual([
+      '/admin/applications', '/admin/territories',
+    ])
+    await wrapper.get('button[aria-label="ナビゲーションメニュー"]').trigger('click')
+    const mobile = wrapper.get('#mobile-navigation')
+    expect(mobile.get('button.accordion-button').text()).toContain('申請管理')
+    expect(mobile.get('a[href="/admin/applications"]').text()).toBe('申請管理トップ')
+    expect(mobile.get('a[href="/admin/territories"]').text()).toBe('領地申請')
+    wrapper.unmount()
+  })
+
   it('keeps a custom logo slot inside the home link', async () => {
     const wrapper = await mountSuspended(HeaderMenu, {
       slots: { logo: '<strong>カスタムロゴ</strong>' },
