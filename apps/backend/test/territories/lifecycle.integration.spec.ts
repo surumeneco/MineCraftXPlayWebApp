@@ -308,6 +308,21 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(special.data.owner).toMatchObject({ type: 'shared_area', account_id: null, name: '共同建築エリア' })
     expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, otherSession)).data.can_edit).toBe(false)
     expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, adminSession)).data.can_edit).toBe(true)
+    const retired = await request(`/api/admin/accounts/${memberId}/retire`, 'POST', {}, adminSession)
+    expect(retired.status).toBe(201)
+    expect(retired.data).toMatchObject({ id: memberId, retired: true })
+    const accountRow = await sql`SELECT name,retired_at FROM accounts WHERE id=${memberId}`
+    expect(accountRow[0].name).toBe('退会済みユーザー')
+    expect(accountRow[0].retired_at).toBeTruthy()
+    expect(await sql`SELECT discord_id FROM account_discord_identities WHERE account_id=${memberId}`).toHaveLength(0)
+    expect(await sql`SELECT id FROM account_minecraft_identities WHERE account_id=${memberId}`).toHaveLength(0)
+    expect((await request(`/api/territories/${territoryId}`, 'GET')).data.applicant).toEqual({
+      id: memberId, name: '退会済みユーザー',
+    })
+    expect((await request('/api/accounts/me', 'GET')).status).toBe(401)
+    expect((await request('/api/admin/territories/owners?name=退会済みユーザー', 'GET', undefined, adminSession)).data).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: memberId })]),
+    )
   })
 
 
