@@ -27,13 +27,13 @@ import { territoryCoordinateError } from '../../utils/territory'
 const props = withDefaults(defineProps<{ modelValue: TerritoryDraftPoint[]; minPoints?: number }>(), { minPoints: 3 })
 const emit = defineEmits<{ 'update:modelValue': [TerritoryDraftPoint[]] }>()
 const id = useId()
-type TextPoint = { x: string; z: string }
+type TextPoint = { x: string | number; z: string | number }
 const textPoint = (value: TerritoryDraftPoint): TextPoint => ({
   x: value.x === null ? '' : String(value.x),
   z: value.z === null ? '' : String(value.z),
 })
-function integer(value: string): number | null {
-  const trimmed = value.trim()
+function integer(value: string | number): number | null {
+  const trimmed = String(value).trim()
   if (!/^-?\d+$/.test(trimmed)) return null
   const parsed = Number(trimmed)
   return Number.isSafeInteger(parsed) ? parsed : null
@@ -48,7 +48,7 @@ watch(() => props.modelValue, value => {
   }
 }, { deep: true })
 const error = computed(() => {
-  if (local.value.length < props.minPoints || local.value.some(p => !p.x.trim() || !p.z.trim())) return ''
+  if (local.value.length < props.minPoints || local.value.some(p => !String(p.x).trim() || !String(p.z).trim())) return ''
   return territoryCoordinateError(parsed(local.value), props.minPoints)
 })
 function emitValue() { emit('update:modelValue', parsed(local.value)) }
