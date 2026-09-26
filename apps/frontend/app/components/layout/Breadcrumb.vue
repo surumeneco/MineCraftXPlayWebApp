@@ -68,9 +68,10 @@ const items = computed<Crumb[]>(() => {
   if (/^\/territories\/[^/]+$/.test(path)) {
     return [home, lists, territories, { label: territoryName(id) }]
   }
-  if (path === '/admin/territories') return [home, applications, { label: '申請一覧' }]
+  if (path === '/admin/applications') return [home, { label: '申請管理' }]
+  if (path === '/admin/territories') return [home, adminApplications, { label: '領地申請一覧' }]
   if (/^\/admin\/territories\/[^/]+\/review$/.test(path)) {
-    return [home, applications, requests, { label: `領地審査：${territoryName(id)}` }]
+    return [home, adminApplications, requests, { label: `領地審査：${territoryName(id)}` }]
   }
   if (path === '/admin/notices') return [home, { label: 'お知らせ管理' }]
   if (path === '/admin/notices/new') return [home, notices, { label: '新規投稿' }]
