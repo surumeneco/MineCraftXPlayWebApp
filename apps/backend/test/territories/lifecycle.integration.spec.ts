@@ -268,6 +268,18 @@ suite('territory lifecycle (PostgreSQL)', () => {
     expect(audit[0].new_owner_account_id).toBe(otherId)
     expect(audit[0].actor_account_id).toBe(adminId)
     expect(audit[0].new_owner_name).toBe('Territory Recipient')
+    expect((await request(`/api/territories/${territoryId}`, 'GET')).data.can_edit).toBe(false)
+    expect((await request(`/api/territories/${territoryId}`, 'GET', undefined, otherSession)).data.can_edit).toBe(true)
+    expect((await request(`/api/territories/${territoryId}/edit`, 'POST', {
+      operation_id: randomUUID(), name: '権限なし',
+    })).status).toBe(403)
+    const ownerRenameId = randomUUID()
+    const ownerRename = await request(`/api/territories/${territoryId}/edit`, 'POST', {
+      operation_id: ownerRenameId, name: '新所有者の改名',
+    }, otherSession)
+    expect(ownerRename.status).toBe(201)
+    expect(ownerRename.data.status).toBe('approved')
+    expect(events.filter(e => e.event_id === `${ownerRenameId}:renamed`)).toHaveLength(1)
   })
 
 
