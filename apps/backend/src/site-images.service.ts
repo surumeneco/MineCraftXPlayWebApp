@@ -107,6 +107,7 @@ export class SiteImagesService {
     const note = text(data.note ?? '', 'メモ', 500, true)
     const rows = await this.database.sql`
       UPDATE site_image_versions SET name=${name}, note=${note} WHERE id=${uuid(id)}
+        AND resource_id IN (SELECT id FROM site_image_resources WHERE key NOT LIKE 'operator.%')
       RETURNING id, resource_id, version_number, name, note, created_at`
     if (!rows.length) throw new NotFoundException('画像バージョンが見つかりません。')
     return rows[0]
@@ -222,7 +223,7 @@ export class SiteImagesService {
       LEFT JOIN site_image_preset_items active ON active.preset_id=s.active_preset_id AND active.resource_id=r.id
       LEFT JOIN site_image_versions v ON v.id=CASE WHEN active.preset_id IS NOT NULL THEN active.version_id ELSE base.version_id END
       LEFT JOIN images i ON i.id=v.image_id
-      WHERE s.singleton AND p.is_default ${key === undefined ? this.database.sql`` : this.database.sql`AND r.key=${key}`}
+      WHERE s.singleton AND p.is_default AND r.key NOT LIKE 'operator.%' ${key === undefined ? this.database.sql`` : this.database.sql`AND r.key=${key}`}
       ORDER BY r.key`
   }
 
