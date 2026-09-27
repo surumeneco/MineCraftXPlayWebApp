@@ -67,7 +67,7 @@ test('tourist guide combines name and tag filters and switches between published
   await expect(cards.first()).toContainText('桜の丘')
   await page.getByRole('switch', { name: '更新日時順で表示' }).check()
   await expect(cards.first()).toContainText('桜の谷')
-  await page.getByRole('textbox', { name: '名前で検索' }).fill('桜')
+  await page.getByRole('searchbox', { name: '名前で検索' }).fill('桜')
   await expect(cards).toHaveCount(2)
   await page.getByRole('combobox', { name: 'タグで絞り込み' }).selectOption(sky)
   await expect(cards).toHaveCount(1)
