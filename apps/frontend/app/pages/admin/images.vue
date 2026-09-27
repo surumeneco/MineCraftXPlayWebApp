@@ -15,7 +15,7 @@
         <form class="row g-3" @submit.prevent="createResource">
           <div class="col-12 col-md-5">
             <label for="resource-key" class="form-label">管理キー（変更不可）</label>
-            <input id="resource-key" v-model.trim="newResource.key" class="form-control" maxlength="80" pattern="[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+" placeholder="card.event" required />
+            <input id="resource-key" v-model.trim="newResource.key" class="form-control" maxlength="80" pattern="[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+" placeholder="site.event" required />
           </div>
           <div class="col-12 col-md-7">
             <label for="resource-name" class="form-label">管理名</label>
@@ -27,7 +27,7 @@
           </div>
           <div class="col-12 text-end"><button type="submit" class="btn btn-primary" :disabled="busy">画像リソースを追加</button></div>
         </form>
-        <p class="small text-body-secondary mb-0 mt-2">管理キーを追加しただけではサイトに表示箇所は作成されません。</p>
+        <p class="small text-body-secondary mb-0 mt-2">管理キーを追加しただけではサイトに表示箇所は作成されません。ホームのカード画像はホームメンテで管理します。</p>
       </UiPanel>
 
       <UiPanel>
