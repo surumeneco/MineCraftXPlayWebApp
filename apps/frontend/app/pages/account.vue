@@ -17,8 +17,8 @@
         <div class="fw-semibold">{{ identity.display_name || identity.username || identity.discord_id }}</div>
         <div class="small text-body-secondary">ユーザー名：{{ identity.username || '未取得' }}</div>
         <div class="small text-body-secondary text-break">Discord ID：{{ identity.discord_id }}</div>
-        <button type="button" class="btn btn-sm btn-primary mt-2" :disabled="busy || !hasDiscordName(identity)"
-          @click="adoptName(identity.discord_id)">このDiscord名をアカウント名へ反映</button>
+        <div class="text-end"><button type="button" class="btn btn-sm btn-primary mt-2" :disabled="busy || !hasDiscordName(identity)"
+          @click="adoptName(identity.discord_id)">このDiscord名をアカウント名へ反映</button></div>
       </div>
       <a :href="`${apiBase}/auth/discord/refresh`" class="btn btn-secondary mt-2">ログイン中のDiscord名を再取得</a>
       <h2 class="h4 mt-4">Minecraftアカウント（自己申告）</h2>
@@ -40,11 +40,11 @@
       </form>
       <AccountMapColorEditor />
       <AccountOperatorPhotoEditor />
-      <div class="d-flex flex-wrap gap-2">
-        <NuxtLink to="/territories/apply" class="btn btn-outline-primary">領地申請</NuxtLink>
-        <NuxtLink v-if="isAdmin" to="/admin/notices" class="btn btn-outline-primary">お知らせ管理</NuxtLink>
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <button type="button" class="btn btn-outline-danger me-auto" :disabled="busy" @click="signOut">ログアウト</button>
         <NuxtLink v-if="isAdmin" to="/admin/accounts" class="btn btn-outline-secondary">アカウント管理</NuxtLink>
-        <button type="button" class="btn btn-outline-danger" :disabled="busy" @click="signOut">ログアウト</button>
+        <NuxtLink v-if="isAdmin" to="/admin/notices" class="btn btn-outline-primary">お知らせ管理</NuxtLink>
+        <NuxtLink to="/territories/apply" class="btn btn-primary">領地申請</NuxtLink>
       </div>
     </template>
     <template v-else><p>ログインしていません。</p><NuxtLink to="/login" class="btn btn-primary">ログインする</NuxtLink></template>
