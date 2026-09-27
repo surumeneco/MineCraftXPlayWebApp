@@ -21,7 +21,7 @@
           <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="request('unpublish')">公開取り消し</button>
           <button v-else-if="selected" type="button" class="btn btn-danger" :disabled="busy" @click="request('remove')">物理削除</button>
           <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
-          <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published' || !selectedTags.length" @click="request('publish')">公開する</button>
+          <button v-if="selected?.status !== 'published'" type="button" class="btn btn-success" :disabled="busy || !selectedTags.length" @click="request('publish')">公開する</button>
         </div>
       </form>
     </template>
