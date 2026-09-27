@@ -46,7 +46,7 @@
           @update:model-value="updateTags" />
       </div>
       <label class="form-label">説明文</label>
-      <ClientOnly><div ref="editor" class="mb-3" aria-label="スポットの説明文" /></ClientOnly>
+      <ClientOnly><div ref="editor" class="xplay-quill-editor mb-3" aria-label="スポットの説明文" /></ClientOnly>
       <p class="form-text">本文にはQuillのツールバーから画像を挿入できます。保存時に反映されます。</p>
       <div class="d-flex flex-wrap gap-2 justify-content-end">
         <NuxtLink :to="base" class="btn btn-outline-secondary">管理一覧へ戻る</NuxtLink>

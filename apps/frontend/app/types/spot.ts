@@ -21,6 +21,11 @@ export interface Spot {
   version: number
 }
 export const spotLabel = (kind: SpotKind) => kind === 'public' ? '公営スポット案内' : '観光情報'
+const dimensionLabels: Record<string, string> = {
+  'minecraft:overworld': 'オーバーワールド',
+  'minecraft:the_nether': 'ネザー',
+  'minecraft:the_end': 'エンド',
+}
 export const spotLocation = (item: Spot) => item.kind === 'public'
-  ? (item.dimension ?? '未設定') + ' / X:' + item.pos_x + ' Z:' + item.pos_z
+  ? (item.dimension ? dimensionLabels[item.dimension] ?? item.dimension : '未設定') + ' / X:' + item.pos_x + ' Z:' + item.pos_z
   : item.territory_name ?? '領地名未設定'

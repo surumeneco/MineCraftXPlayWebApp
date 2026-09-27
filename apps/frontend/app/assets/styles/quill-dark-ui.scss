@@ -65,3 +65,17 @@
     a.ql-remove { color: var(--xplay-text-toolbar); }
   }
 }
+
+/* The Snow toolbar is a sibling of its editor container; only the content scrolls. */
+.xplay-shell .xplay-quill-editor.ql-container.ql-snow {
+  height: clamp(16rem, 55dvh, 32rem);
+  max-width: 100%;
+  min-height: 0;
+}
+.xplay-shell .xplay-quill-editor.ql-container.ql-snow .ql-editor {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+}

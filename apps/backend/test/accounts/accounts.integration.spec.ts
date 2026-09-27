@@ -62,6 +62,31 @@ suite('account administration integration (PostgreSQL)', () => {
     expect((await request('/api/auth/session', 'GET', undefined, memberSession)).data.is_admin).toBe(false)
   })
 
+  it('strips Geyser leading dots before validation and storage for self and admin links', async () => {
+    const own = await request('/api/accounts/me/minecraft', 'POST',
+      { edition: 'be', username: ' ..Bedrock Name ' })
+    expect(own.status).toBe(201)
+    expect(own.data.minecraft_ids).toEqual(expect.arrayContaining([
+      expect.objectContaining({ edition: 'be', username: 'Bedrock Name' }),
+    ]))
+    const duplicate = await request(`/api/admin/accounts/${targetId}/minecraft`, 'POST',
+      { edition: 'be', username: '.Bedrock Name' })
+    expect(duplicate.status).toBe(409)
+    const empty = await request('/api/accounts/me/minecraft', 'POST',
+      { edition: 'be', username: ' ... ' })
+    expect(empty.status).toBe(400)
+    const java = await request(`/api/admin/accounts/${targetId}/minecraft`, 'POST',
+      { edition: 'je', username: '..ValidJE' })
+    expect(java.status).toBe(201)
+    expect(java.data.minecraft_ids).toEqual(expect.arrayContaining([
+      expect.objectContaining({ edition: 'je', username: 'ValidJE' }),
+    ]))
+    const stored = await sql`SELECT edition, username FROM account_minecraft_identities
+      WHERE account_id IN ${sql([adminId, targetId])} AND username IN ('Bedrock Name', 'ValidJE') ORDER BY edition`
+    expect(stored.map(({ edition, username }) => ({ edition, username })))
+      .toEqual([{ edition: 'be', username: 'Bedrock Name' }, { edition: 'je', username: 'ValidJE' }])
+  })
+
   it('reverses ownership and roles without losing source account or leaking sessions', async () => {
     const image = await sql`INSERT INTO images(purpose,data,mime_type,size,uploaded_by)
       VALUES ('notice',${Buffer.from([255,216,255])},'image/jpeg',3,${sourceId}) RETURNING id`

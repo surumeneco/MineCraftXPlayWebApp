@@ -21,11 +21,11 @@
           <dt class="col-sm-3">タグ</dt>
           <dd class="col-sm-9">{{ spot.tags.map(tag => tag.name).join('、') || 'なし' }}</dd>
         </template>
-        <dt class="col-sm-3">投稿日時</dt>
-        <dd class="col-sm-9">{{ noticeDate(spot.published_at) }}</dd>
-        <dt class="col-sm-3">更新日時</dt>
-        <dd class="col-sm-9">{{ noticeDate(spot.updated_at) }}</dd>
       </dl>
+      <UiDateMeta :items="[
+        { label: '投稿日時', icon: 'calendar', value: spot.published_at },
+        { label: '更新日時', icon: 'clock-history', value: spot.updated_at },
+      ]" />
       <UiSectionHeading as="h2">案内・説明</UiSectionHeading>
       <ClientOnly>
         <div ref="editor" class="xplay-notice-readonly" aria-label="スポットの説明文" />
@@ -39,7 +39,6 @@
 <script setup lang="ts">
 import type { Spot, SpotKind } from '../../types/spot'
 import { spotLocation } from '../../types/spot'
-import { noticeDate } from '../../utils/notice'
 const props = defineProps<{ kind: SpotKind; id: string }>()
 const breadcrumbNames = useSpotBreadcrumbNames()
 watch(() => [props.kind, props.id] as const, ([kind, id]) => breadcrumbNames.forget(kind, id), { immediate: true })
