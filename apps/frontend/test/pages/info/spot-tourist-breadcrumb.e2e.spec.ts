@@ -1,6 +1,6 @@
 import { expect, test } from '@nuxt/test-utils/playwright'
 
-test('tourist spot editor shows the saved name in breadcrumbs and refreshes it after renaming', async ({ page, goto }) => {
+test('spot guide tourist editor shows the saved name in breadcrumbs and refreshes it after renaming', async ({ page, goto }) => {
   const id = '91b613f9-f82c-4c76-aaec-ff0200000031'
   const territoryId = '91b613f9-f82c-4c76-aaec-ff0200000032'
   let savedName = '観光スポット旧名称'
