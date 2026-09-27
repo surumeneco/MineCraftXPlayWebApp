@@ -12,14 +12,17 @@
       </div>
     </div>
     <div v-if="showDates" class="territory-info__group">
-      <div class="territory-info__item">
-        <dt>申請日時</dt><dd>{{ date(territory.applied_at) }}</dd>
-      </div>
-      <div class="territory-info__item">
-        <dt>承認日時</dt><dd>{{ date(territory.approved_at) }}</dd>
-      </div>
-      <div class="territory-info__item">
-        <dt>変更日時</dt><dd>{{ date(territory.changed_at) }}</dd>
+      <div v-for="item in [
+        { label: '申請日時', icon: 'calendar-plus', value: territory.applied_at },
+        { label: '承認日時', icon: 'calendar-check', value: territory.approved_at },
+        { label: '変更日時', icon: 'clock-history', value: territory.changed_at },
+      ]" :key="item.label" class="territory-info__item">
+        <dt class="visually-hidden">{{ item.label }}</dt>
+        <dd class="territory-info__date">
+          <UiBootstrapIcon :name="item.icon" />
+          <time v-if="item.value" :datetime="item.value" :title="item.label">{{ noticeDate(item.value) }}</time>
+          <span v-else :title="item.label">—</span>
+        </dd>
       </div>
     </div>
     <div class="territory-info__group">
@@ -35,11 +38,11 @@
 <script setup lang="ts">
 import type { TerritoryRecord } from '../../utils/territory'
 import { formatArea, formatCentroid } from '../../utils/territory'
+import { noticeDate } from '../../utils/notice'
 withDefaults(defineProps<{ territory: TerritoryRecord; showApplicant?: boolean; showDates?: boolean }>(), {
   showApplicant: false,
   showDates: true,
 })
-const date = (value: string | null) => value ? new Date(value).toLocaleString('ja-JP') : '—'
 </script>
 <style scoped>
 .territory-info {
@@ -68,6 +71,7 @@ const date = (value: string | null) => value ? new Date(value).toLocaleString('j
   margin-bottom: .2rem;
 }
 .territory-info dd { margin: 0; overflow-wrap: anywhere; }
+.territory-info__date { display: inline-flex; align-items: baseline; gap: .35rem; }
 @media (max-width: 575.98px) {
   .territory-info__group { flex-wrap: wrap; }
 }
