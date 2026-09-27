@@ -14,6 +14,7 @@ export type CompanyRecord = {
   headquarters: { id: string | null; name: string | null }
   activities: string
   image_id: string | null
+  map_color: { r: number; g: number; b: number } | null
   introduction_delta: { ops: Array<{ insert: string; attributes?: Record<string,unknown> }> }
   applicant: CompanyAccount
   applied_at: string
