@@ -11,10 +11,12 @@
       <dt class="col-sm-3">名称</dt><dd class="col-sm-9">{{company.name}} <span v-if="company.is_public" class="badge text-bg-info ms-2">公営</span></dd>
       <dt class="col-sm-3">承認状況</dt><dd class="col-sm-9"><TerritoryStatusBadge :status="company.status" /><span v-if="company.pending_changes" class="small ms-2">変更申請中</span><span v-if="company.approved_at && ['returned','withdrawn'].includes(company.last_application_status??'')" class="small ms-2">直近の変更申請: {{company.last_application_status==='returned'?'差戻':'取下'}}</span></dd>
       <dt class="col-sm-3">タグ</dt><dd class="col-sm-9">{{company.tags.join('、')||'なし'}}</dd>
-      <dt class="col-sm-3">申請日時</dt><dd class="col-sm-9">{{companyDate(company.applied_at)}}</dd>
-      <dt class="col-sm-3">承認日時</dt><dd class="col-sm-9">{{companyDate(company.approved_at)}}</dd>
-      <dt class="col-sm-3">変更日時</dt><dd class="col-sm-9">{{companyDate(company.changed_at)}}</dd>
     </dl>
+    <UiDateMeta :items="[
+      { label: '申請日時', icon: 'calendar-plus', value: company.applied_at },
+      { label: '承認日時', icon: 'calendar-check', value: company.approved_at },
+      { label: '変更日時', icon: 'clock-history', value: company.changed_at },
+    ]" />
     <img v-if="company.image_id" :src="`${apiBase}/company-images/${company.image_id}`" :alt="`${company.name}のメイン画像`" class="company-detail-image border rounded mb-4" />
     <dl class="row mb-4">
       <dt class="col-sm-3">代表者</dt><dd class="col-sm-9">{{company.representative.name}}<span v-if="!company.representative.minecraft_ids.length" class="small text-body-secondary ms-2">Minecraft ID未登録</span><ul v-else class="list-inline mb-0"><li v-for="(mc,i) in company.representative.minecraft_ids" :key="i" class="list-inline-item"><span class="badge text-bg-secondary">{{mc.edition.toUpperCase()}}</span> {{mc.username}}</li></ul></dd>
@@ -29,7 +31,6 @@
 </section></template>
 <script setup lang="ts">
 import type {CompanyRecord} from '../../../types/company'
-import {companyDate} from '../../../types/company'
 import {userFacingError} from '../../../utils/user-error'
 const {public:{apiBase}}=useRuntimeConfig(),route=useRoute(),{get,mutate}=useAccountApi(),auth=useAccountSession()
 const company=ref<CompanyRecord|null>(null),loading=ref(true),error=ref(''),busy=ref(false)
