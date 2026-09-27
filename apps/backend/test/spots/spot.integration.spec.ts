@@ -52,7 +52,7 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
   })
 
   it('requires administrator and CSRF; only published public spots appear', async () => {
-    const payload = { name: '案内' + randomUUID(), dimension: 'minecraft:overworld', x: 10, y: 65, z: -20, body_delta: body }
+    const payload = { name: '案内' + randomUUID(), dimension: 'minecraft:overworld', x: 10, z: -20, body_delta: body }
     const anonymous = await request('/admin/spots/public', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     })
@@ -70,7 +70,15 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
     const publish = await write('/admin/spots/public/' + draft.data.id + '/publish', 'POST', { expected_version: 1 })
     expect(publish.response.status).toBe(201)
     expect(publish.data.status).toBe('published')
-    expect((await request('/spots/public/' + draft.data.id)).data.pos_x).toBe(10)
+    const saved = (await request('/spots/public/' + draft.data.id)).data
+    expect(saved.pos_x).toBe(10)
+    expect(saved.pos_y).toBeNull()
+    expect(saved.pos_z).toBe(-20)
+    const withLegacyY = await write('/admin/spots/public/' + draft.data.id, 'PATCH',
+      { expected_version: 2, y: 64, x: 12 })
+    expect(withLegacyY.response.status).toBe(200)
+    expect(withLegacyY.data.pos_x).toBe(12)
+    expect(withLegacyY.data.pos_y).toBeNull()
     const stale = await write('/admin/spots/public/' + draft.data.id, 'PATCH', { expected_version: 1, name: '競合' })
     expect(stale.response.status).toBe(409)
     const images = await request('/spot-images/' + randomUUID())
@@ -79,7 +87,7 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
 
   it('makes public order explicit and independently controlled', async () => {
     const post = await write('/admin/spots/public', 'POST',
-      { name: '２番目', dimension: 'world', x: 0, y: 64, z: 0, body_delta: body })
+      { name: '２番目', dimension: 'world', x: 0, z: 0, body_delta: body })
     expect(post.response.status).toBe(201)
     created.push(post.data.id)
     await write('/admin/spots/public/' + post.data.id + '/publish', 'POST', { expected_version: 1 })
@@ -129,7 +137,7 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
     expect(uploaded.response.status).toBe(201)
     expect((await request('/spot-images/' + uploaded.data.id)).response.status).toBe(401)
     const spot = await write('/admin/spots/public', 'POST', {
-      name: '画像付き', dimension: 'world', x: 0, y: 64, z: 0,
+      name: '画像付き', dimension: 'world', x: 0, z: 0,
       main_image_id: uploaded.data.id, body_delta: { ops: [{ insert: { image: uploaded.data.url } }, { insert: '\n' }] },
     })
     expect(spot.response.status).toBe(201)
