@@ -59,6 +59,7 @@
       <li>Multiverse NetherPortals：ネザー・エンドのポータル接続先を管理</li>
       <li>Multiverse Portals：ワールド間を移動するポータルを管理</li>
       <li>BlueMap：Webマップの生成</li>
+      <li>TerritoryMapSync：領地情報をBlueMapのマーカーへ同期</li>
       <li>DiscordSRV：MinecraftとDiscordの連携</li>
     </ul>
 
@@ -67,6 +68,7 @@
       <li>Block Locker：チェストやドアなどのロック・保護</li>
       <li>ClickMobs：Mobの運搬を補助</li>
       <li>GSit：座るなどのモーションを追加</li>
+      <li>What a Wonderful Chicken：騎乗・育成できる特殊なニワトリを追加</li>
     </ul>
 
     <h4>運営補助</h4>

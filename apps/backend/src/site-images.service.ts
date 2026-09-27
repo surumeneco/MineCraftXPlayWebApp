@@ -32,6 +32,10 @@ function imageHeaders(res: any, mime: string, version: string, isPublic: boolean
   if (mime === 'image/svg+xml') res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; base-uri 'none'; form-action 'none'")
 }
 
+// These resources were copied to independently managed home cards during migration 011.
+// Retain their stored versions and preset history, but no longer edit them here.
+const MOVED_CARD_RESOURCE_KEYS = new Set(['card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications'])
+
 @Injectable()
 export class SiteImagesService {
   constructor(private readonly database: Database) {}
@@ -48,7 +52,7 @@ export class SiteImagesService {
       FROM site_image_resources r
       LEFT JOIN site_image_versions v ON v.resource_id=r.id
       LEFT JOIN images i ON i.id=v.image_id
-      WHERE r.key NOT LIKE 'operator.%'
+      WHERE r.key NOT LIKE 'operator.%' AND r.key NOT IN ('card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications')
       GROUP BY r.id ORDER BY r.key`
   }
 
@@ -56,6 +60,7 @@ export class SiteImagesService {
     const data = payload(raw)
     const key = text(data.key, '管理キー', 80)
     if (!RESOURCE_KEY.test(key) || key.startsWith('operator.')) throw new BadRequestException('管理キーは英小文字で始まるドット区切りの識別子にしてください。')
+    if (MOVED_CARD_RESOURCE_KEYS.has(key)) throw new BadRequestException('移行済みカードの画像はホームメンテで管理してください。')
     const name = text(data.name, '画像リソース名', 100)
     const description = text(data.description ?? '', '説明', 500, true)
     try {
@@ -73,7 +78,7 @@ export class SiteImagesService {
     const description = text(data.description ?? '', '説明', 500, true)
     const rows = await this.database.sql`
       UPDATE site_image_resources SET name=${name}, description=${description}
-      WHERE id=${uuid(id)} AND key NOT LIKE 'operator.%' RETURNING id, key, name, description`
+      WHERE id=${uuid(id)} AND key NOT LIKE 'operator.%' AND key NOT IN ('card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications') RETURNING id, key, name, description`
     if (!rows.length) throw new NotFoundException('画像リソースが見つかりません。')
     return rows[0]
   }
@@ -87,7 +92,7 @@ export class SiteImagesService {
     catch (error) { throw new BadRequestException(error instanceof Error ? error.message : '画像が不正です。') }
     try {
       return await this.database.sql.begin(async tx => {
-        const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} AND key NOT LIKE 'operator.%' FOR UPDATE`
+        const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} AND key NOT LIKE 'operator.%' AND key NOT IN ('card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications') FOR UPDATE`
         if (!resources.length) throw new NotFoundException('画像リソースが見つかりません。')
         const count = await tx`SELECT COALESCE(MAX(version_number), 0) + 1 AS next FROM site_image_versions WHERE resource_id=${resourceId}`
         const blobs = await tx`INSERT INTO images(purpose, data, mime_type, size, uploaded_by)
@@ -107,7 +112,7 @@ export class SiteImagesService {
     const note = text(data.note ?? '', 'メモ', 500, true)
     const rows = await this.database.sql`
       UPDATE site_image_versions SET name=${name}, note=${note} WHERE id=${uuid(id)}
-        AND resource_id IN (SELECT id FROM site_image_resources WHERE key NOT LIKE 'operator.%')
+        AND resource_id IN (SELECT id FROM site_image_resources WHERE key NOT LIKE 'operator.%' AND key NOT IN ('card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications'))
       RETURNING id, resource_id, version_number, name, note, created_at`
     if (!rows.length) throw new NotFoundException('画像バージョンが見つかりません。')
     return rows[0]
@@ -156,7 +161,7 @@ export class SiteImagesService {
       const settings = await tx`SELECT active_preset_id FROM site_image_settings WHERE singleton=true FOR UPDATE`
       const presets = await tx`SELECT id, is_default FROM site_image_presets WHERE id=${uuid(presetId)}`
       if (!presets.length) throw new NotFoundException('プリセットが見つかりません。')
-      const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} AND key NOT LIKE 'operator.%'`
+      const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} AND key NOT LIKE 'operator.%' AND key NOT IN ('card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications')`
       if (!resources.length) throw new NotFoundException('画像リソースが見つかりません。')
       if (versionId) {
         const versions = await tx`SELECT id FROM site_image_versions WHERE id=${versionId} AND resource_id=${resourceId}`
