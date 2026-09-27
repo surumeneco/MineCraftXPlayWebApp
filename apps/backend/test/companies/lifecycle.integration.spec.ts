@@ -73,6 +73,7 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     introduction_delta:{ops:[{insert:'企業紹介\n'}]}})
   it('requires members, approved eligible HQ and nonadmin representative restrictions',async()=>{
     expect((await req('/api/companies','POST',{...createBody(randomUUID()),member_account_ids:[]})).status).toBe(400)
+    expect((await req('/api/companies','POST',{...createBody(randomUUID()),member_account_ids:[member]})).status).toBe(400)
     expect((await req('/api/companies','POST',{...createBody(randomUUID()),headquarters_territory_id:randomUUID()})).status).toBe(400)
     expect((await req('/api/companies','POST',{...createBody(randomUUID()),representative_account_id:other})).status).toBe(403)
     expect((await req('/api/companies','POST',{...createBody(randomUUID()),is_public:true})).status).toBe(403)
@@ -192,16 +193,79 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     })
     expect(attempt.status).toBe(403)
   })
-  it('requires changed data for reapplication and supports proposed representative HQ lookup',async()=>{
+  it('supports immediate member changes without review and prevents representative-only membership',async()=>{
+    const id=companyIds[0]
+    const selfOnly=await req(`/api/companies/${id}/edit`,'POST',{
+      operation_id:randomUUID(),member_account_ids:[member]})
+    expect(selfOnly.status).toBe(400)
+    expect((await req(`/api/companies/${id}/edit`,'POST',{
+      operation_id:randomUUID(),member_account_ids:[] })).status).toBe(400)
+    const changed=await req(`/api/companies/${id}/edit`,'POST',{
+      operation_id:randomUUID(),member_account_ids:[admin]})
+    expect(changed.status).toBe(201)
+    expect(changed.body).toMatchObject({status:'approved',members:[{id:admin,name:'企業テスト管理者'}]})
+    expect((await req(`/api/companies/${id}`,'GET',undefined,null)).body.members).toEqual([{id:admin,name:'企業テスト管理者'}])
+    expect((await req(`/api/companies/${id}/edit`,'POST',{
+      operation_id:randomUUID(),member_account_ids:[other] },session.other)).status).toBe(403)
+    const combined=await req(`/api/companies/${id}/edit`,'POST',{
+      operation_id:randomUUID(),name:'所属者と名称変更',member_account_ids:[other]})
+    expect(combined.status).toBe(201)
+    expect(combined.body).toMatchObject({status:'pending',members:[{id:other,name:'企業テスト所属者'}]})
+    expect((await req(`/api/companies/${id}`,'GET',undefined,null)).body).toMatchObject({
+      name:'承認後企業',members:[{id:other,name:'企業テスト所属者'}]})
+    expect((await req(`/api/admin/companies/${id}/review`,'POST',{
+      operation_id:randomUUID(),action:'return',reason:'名称を確認してください'},session.admin)).status).toBe(201)
+  })
+
+  it('allows resubmission of returned or withdrawn approved edit applications without exposing drafts',async()=>{
+    const id=companyIds[0]
+    const submitted=await req(`/api/companies/${id}/edit`,'POST',{
+      operation_id:randomUUID(),name:'承認済企業の変更下書き'})
+    expect(submitted.status).toBe(201)
+    expect((await req(`/api/admin/companies/${id}/review`,'POST',{
+      operation_id:randomUUID(),action:'return',reason:'変更を確認してください'},session.admin)).status).toBe(201)
+    const own=await req(`/api/companies/${id}`)
+    expect(own.body).toMatchObject({status:'approved',last_application_status:'returned',can_reapply:true,
+      reapply_draft:{name:'承認済企業の変更下書き'}})
+    const publicView=await req(`/api/companies/${id}`,'GET',undefined,null)
+    expect(publicView.body).toMatchObject({status:'approved',name:'承認後企業',can_reapply:false})
+    expect(publicView.body.reapply_draft).toBeNull()
+    expect(publicView.body.last_application_status).toBeNull()
+    const retry=await req(`/api/companies/${id}/reapply`,'POST',{
+      operation_id:randomUUID(),name:'承認済企業の変更下書き',tags:['回路'],activities:'回路建築',
+      headquarters_territory_id:sharedHQ,member_account_ids:[other]})
+    expect(retry.status).toBe(201)
+    expect(retry.body).toMatchObject({status:'pending',application_type:'edit'})
+    expect((await req(`/api/companies/${id}`,'GET',undefined,null)).body.name).toBe('承認後企業')
+    expect((await req(`/api/companies/${id}/withdraw`,'POST',{operation_id:randomUUID()})).status).toBe(201)
+    expect((await req(`/api/companies/${id}`)).body).toMatchObject({
+      status:'approved',last_application_status:'withdrawn',can_reapply:true})
+  })
+
+  it('lists withdrawn initial applications for their applicant and permits unchanged resubmission',async()=>{
+    const id=randomUUID();companyIds.push(id)
+    expect((await req('/api/companies','POST',createBody(id,'取下企業'))).status).toBe(201)
+    expect((await req(`/api/companies/${id}/withdraw`,'POST',{operation_id:randomUUID()})).status).toBe(201)
+    expect((await req('/api/companies')).body).toEqual(expect.arrayContaining([
+      expect.objectContaining({id,status:'withdrawn',can_reapply:true})]))
+    expect((await req('/api/companies','GET',undefined,null)).body).not.toEqual(expect.arrayContaining([expect.objectContaining({id})]))
+    expect((await req(`/api/companies/${id}/reapply`,'POST',createBody(randomUUID(),'取下企業'))).status).toBe(201)
+  })
+
+  it('supports new-company reapplication and proposed representative HQ lookup',async()=>{
     const id=randomUUID();companyIds.push(id)
     const created=await req('/api/companies','POST',createBody(id,'再申請企業'))
     expect(created.status).toBe(201)
     expect((await req(`/api/admin/companies/${id}/review`,'POST',{
       operation_id:randomUUID(),action:'return',reason:'内容を確認してください',
     },session.admin)).status).toBe(201)
+    expect((await req('/api/companies')).body).toEqual(expect.arrayContaining([expect.objectContaining({id,status:'returned',can_reapply:true})]))
+    expect((await req('/api/companies','GET',undefined,session.other)).body).not.toEqual(expect.arrayContaining([expect.objectContaining({id})]))
     const unchanged=await req(`/api/companies/${id}/reapply`,'POST',createBody(randomUUID(),'再申請企業'))
-    expect(unchanged.status).toBe(400)
-    expect(JSON.stringify(unchanged.body)).toContain('少なくとも1項目')
+    expect(unchanged.status).toBe(201)
+    expect((await req(`/api/admin/companies/${id}/review`,'POST',{
+      operation_id:randomUUID(),action:'return',reason:'再確認してください',
+    },session.admin)).status).toBe(201)
     const amended=await req(`/api/companies/${id}/reapply`,'POST',{
       ...createBody(randomUUID(),'再申請企業'),activities:'道路と港を整備します',
     })
