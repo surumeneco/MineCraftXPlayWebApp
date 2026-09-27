@@ -366,7 +366,7 @@ export class CompanyService {
         await this.notify(tx,operationId,id,'application','edit',name,actor)
       }
       await this.complete(tx,operationId,id,'edit',actor)
-      return this.dto((await this.rows(tx,id))[0],{account_id:actor,is_admin:admin})
+      return this.dto((await this.rows(tx,id))[0],{account_id:actor,is_admin:admin},review)
     })
   }
 
