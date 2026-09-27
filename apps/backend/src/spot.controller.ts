@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Req, Res } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { SpotService } from './spot.service.js'
 import { SpotImagesService } from './spot-images.service.js'
@@ -47,7 +47,7 @@ export class AdminSpotsController {
     await this.auth.requireAdmin(req, true)
     await this.spots.remove(kind, id, raw)
   }
-  @Put('public/order') async reorder(@Req() req: any, @Body() raw: unknown) {
+  @Post('public/order') async reorder(@Req() req: any, @Body() raw: unknown) {
     await this.auth.requireAdmin(req, true)
     return this.spots.reorder(raw)
   }
