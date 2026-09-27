@@ -52,12 +52,13 @@ function tagsOf(raw: unknown): string[] {
   if (new Set(raw).size !== raw.length) throw new BadRequestException('タグが重複しています。')
   return COMPANY_TAGS.filter(tag => raw.includes(tag))
 }
-function membersOf(raw: unknown): string[] {
+function membersOf(raw: unknown, representative?: string): string[] {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > 100) {
     throw new BadRequestException('所属者は1～100アカウント指定してください。')
   }
   const result = raw.map(uuid)
   if (new Set(result).size !== result.length) throw new BadRequestException('所属者が重複しています。')
+  if (representative && result.includes(representative)) throw new BadRequestException('代表者は所属者に含めず、別のアカウントを1人以上指定してください。')
   return result
 }
 function introductionOf(raw: unknown): Delta {
@@ -83,7 +84,8 @@ export class CompanyService {
     return await sql`SELECT c.*, applicant.name AS applicant_name, representative.name AS representative_name,
       headquarters.current_name AS headquarters_name,
       COALESCE((SELECT json_agg(json_build_object('id',m.account_id,'name',a.name) ORDER BY a.name,a.id)
-        FROM company_members m JOIN accounts a ON a.id=m.account_id WHERE m.company_id=c.id),'[]'::json) AS members,
+        FROM company_members m JOIN accounts a ON a.id=m.account_id
+        WHERE m.company_id=c.id AND m.account_id<>c.representative_account_id),'[]'::json) AS members,
       COALESCE((SELECT json_agg(json_build_object('edition',mi.edition,'username',mi.username)
         ORDER BY mi.edition,mi.username)
         FROM account_minecraft_identities mi WHERE mi.account_id=c.representative_account_id),'[]'::json) AS representative_minecraft_ids,
@@ -119,6 +121,10 @@ export class CompanyService {
     const canManage = viewer.is_admin === true || viewer.account_id === row.representative_account_id
     const canSeePending = viewer.is_admin === true || viewer.account_id === row.applicant_account_id
       || viewer.account_id === row.pending_application?.submitted_by_account_id || canManage
+    const latest = row.latest_application
+    const canReapplyEdit = !!row.approved_at && row.status === 'approved'
+      && latest?.application_type === 'edit' && ['returned','withdrawn'].includes(String(latest.status))
+      && viewer.account_id === latest.submitted_by_account_id && canManage
     return {
       id: row.id, name, is_public: row.is_public,
       status: row.approved_at && row.status === 'pending' && !canSeePending ? 'approved' : row.status,
@@ -131,7 +137,10 @@ export class CompanyService {
       application_type: app?.application_type ?? row.pending_application?.application_type ?? 'new',
       pending_changes: canSeePending && !!row.pending_application && !!row.approved_at,
       can_edit: canManage && row.status === 'approved',
-      can_reapply: viewer.account_id === row.applicant_account_id && !row.approved_at && ['returned','withdrawn'].includes(row.status),
+      can_reapply: (viewer.account_id === row.applicant_account_id && !row.approved_at && ['returned','withdrawn'].includes(row.status)) || canReapplyEdit,
+      last_application_status: canSeePending ? latest?.status ?? null : null,
+      reapply_draft: canReapplyEdit ? {name:latest.name,tags:latest.tags,activities:latest.activities,
+        representative:{id:String(latest.representative_account_id),name:''}} : null,
       can_withdraw: viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending',
       ...(canSeePending && row.latest_application?.reason ? { reason: row.latest_application.reason } : {}),
     }
@@ -139,7 +148,7 @@ export class CompanyService {
 
   async list(viewer: Viewer, query: Record<string, unknown> = {}) {
     let values = (await this.rows()).filter(row => !!row.approved_at ||
-      (row.status === 'pending' && row.applicant_account_id === viewer.account_id && !row.approved_at))
+      (['pending','returned','withdrawn'].includes(row.status) && row.applicant_account_id === viewer.account_id && !row.approved_at))
       .map(row => this.dto(row,viewer))
     const match = (candidate: string | null | undefined, raw: unknown) => {
       if (typeof raw !== 'string' || !raw.trim()) return true
@@ -165,7 +174,16 @@ export class CompanyService {
     if (!row || (!row.approved_at && !viewer.is_admin && viewer.account_id !== row.applicant_account_id)) {
       throw new NotFoundException('企業が見つかりません。')
     }
-    return this.dto(row,viewer)
+    const detail = this.dto(row,viewer)
+    if (detail.reapply_draft) {
+      const rep = detail.reapply_draft.representative
+      if (rep.id === row.representative_account_id) rep.name = row.representative_name
+      else {
+        const matches = await this.database.sql`SELECT name FROM accounts WHERE id=${rep.id}`
+        rep.name = String(matches[0]?.name ?? '')
+      }
+    }
+    return detail
   }
 
   private async activeAccount(tx: any, raw: unknown) {
@@ -261,7 +279,7 @@ export class CompanyService {
       throw new ForbiddenException('代表者は自分のみ指定できます。')
     }
     if (!admin && body?.is_public !== undefined) throw new ForbiddenException('公営区分は管理者のみ設定できます。')
-    const members = membersOf(body?.member_account_ids)
+    const members = membersOf(body?.member_account_ids,rep)
     const intro = introductionOf(body?.introduction_delta)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
@@ -295,8 +313,42 @@ export class CompanyService {
       if (!locked.length) throw new NotFoundException('企業が見つかりません。')
       const company = locked[0]
       if (String(company.applicant_account_id) !== actor) throw new ForbiddenException('申請者本人のみ再申請できます。')
-      if (company.approved_at || !['returned','withdrawn'].includes(String(company.status))) throw new ConflictException('再申請できない状態です。')
       const last = await tx`SELECT * FROM company_applications WHERE company_id=${id} ORDER BY submitted_at DESC,id DESC LIMIT 1`
+      if (company.approved_at) {
+        const previousApp = last[0]
+        if (company.status !== 'approved' || previousApp?.application_type !== 'edit'
+          || !['returned','withdrawn'].includes(String(previousApp?.status))
+          || String(previousApp.submitted_by_account_id) !== actor
+          || (!admin && String(company.representative_account_id) !== actor)) {
+          throw new ConflictException('再申請できない状態です。')
+        }
+        const name = nameOf(body?.name ?? previousApp.name)
+        const tags = tagsOf(body?.tags ?? previousApp.tags)
+        const activities = activityOf(body?.activities ?? previousApp.activities)
+        const rep = body?.representative_account_id === undefined
+          ? String(previousApp.representative_account_id) : await this.activeAccount(tx,body.representative_account_id)
+        await this.activeAccount(tx,rep)
+        if (company.representative_merge_origin && rep !== String(company.representative_account_id)) {
+          throw new ConflictException('アカウント統合を分離してから代表者を変更してください。')
+        }
+        const head = await this.checkHeadquarters(tx,body?.headquarters_territory_id ?? company.headquarters_territory_id,
+          actor,rep,id,admin,'edit')
+        if (!admin && body?.is_public !== undefined) throw new ForbiddenException('公営区分は管理者のみ設定できます。')
+        const publicFlag = admin && body?.is_public !== undefined ? body.is_public === true : company.is_public
+        const intro = introductionOf(body?.introduction_delta ?? company.introduction_delta)
+        const image = body?.image_id === undefined ? company.current_image_id : await this.images.attach(tx,body.image_id,id,actor)
+        await this.syncMembers(tx,id,rep,body?.member_account_ids)
+        await tx`UPDATE companies SET headquarters_territory_id=${head},current_image_id=${image},
+          introduction_delta=${tx.json(intro as any)},is_public=${publicFlag},
+          status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
+        await tx`INSERT INTO company_applications(company_id,application_type,submitted_by_account_id,
+          name,tags,representative_account_id,activities,status)
+          VALUES (${id},'edit',${actor},${name},${tx.array(tags)},${rep},${activities},'pending')`
+        await this.notify(tx,operationId,id,'application','edit',name,actor)
+        await this.complete(tx,operationId,id,'reapply',actor)
+        return this.dto((await this.rows(tx,id))[0],{account_id:actor,is_admin:admin},true)
+      }
+      if (!['returned','withdrawn'].includes(String(company.status))) throw new ConflictException('再申請できない状態です。')
       const name = nameOf(body?.name ?? last[0]?.name)
       const tags = tagsOf(body?.tags ?? last[0]?.tags ?? [])
       const activities = activityOf(body?.activities ?? last[0]?.activities)
@@ -311,19 +363,11 @@ export class CompanyService {
       const image = body?.image_id === undefined ? company.current_image_id : await this.images.attach(tx,body.image_id,id,actor)
       const savedMembers = await tx`SELECT account_id FROM company_members WHERE company_id=${id}`
       const previousMembers = savedMembers.map((row: any) => String(row.account_id)).sort()
-      const nextMembers = body?.member_account_ids === undefined ? previousMembers : membersOf(body.member_account_ids)
+      const nextMembers = membersOf(body?.member_account_ids === undefined ? previousMembers : body.member_account_ids,rep)
       if (body?.member_account_ids !== undefined) {
         const mergedMember = await tx`SELECT 1 FROM company_members WHERE company_id=${id} AND merge_origin IS NOT NULL LIMIT 1`
         if (mergedMember.length) throw new ConflictException('アカウント統合中の所属者がいるため、分離後に所属者を変更してください。')
         for (const member of nextMembers) await this.activeAccount(tx,member)
-      }
-      if (name === last[0]?.name && compare(tags,last[0]?.tags) &&
-        activities === last[0]?.activities && rep === String(last[0]?.representative_account_id) &&
-        head === String(company.headquarters_territory_id) &&
-        publicFlag === company.is_public && String(image ?? '') === String(company.current_image_id ?? '') &&
-        compare(intro,company.introduction_delta) &&
-        compare([...nextMembers].sort(),previousMembers)) {
-        throw new BadRequestException('前回の申請から少なくとも1項目を変更してください。')
       }
       if (body?.member_account_ids !== undefined) {
         await tx`DELETE FROM company_members WHERE company_id=${id}`
@@ -339,6 +383,19 @@ export class CompanyService {
       await this.complete(tx,operationId,id,'reapply',actor)
       return this.dto((await this.rows(tx,id))[0],{account_id:actor,is_admin:admin})
     })
+  }
+
+  private async syncMembers(tx: any, companyId: string, representative: string, raw: unknown) {
+    const saved = await tx`SELECT account_id FROM company_members WHERE company_id=${companyId} ORDER BY account_id`
+    const previous = saved.map((row: any) => String(row.account_id))
+    const next = membersOf(raw === undefined ? previous : raw,representative)
+    if (compare([...next].sort(),[...previous].sort())) return false
+    const merging = await tx`SELECT 1 FROM company_members WHERE company_id=${companyId} AND merge_origin IS NOT NULL LIMIT 1`
+    if (merging.length) throw new ConflictException('アカウント統合中の所属者がいるため、分離後に所属者を変更してください。')
+    for (const member of next) await this.activeAccount(tx,member)
+    await tx`DELETE FROM company_members WHERE company_id=${companyId}`
+    for (const member of next) await tx`INSERT INTO company_members(company_id,account_id) VALUES (${companyId},${member})`
+    return true
   }
 
   async edit(actor: string, admin: boolean, rawId: unknown, body: any) {
@@ -365,10 +422,12 @@ export class CompanyService {
       const publicFlag = admin && body?.is_public !== undefined ? body.is_public === true : c.is_public
       const intro = introductionOf(body?.introduction_delta ?? c.introduction_delta)
       const image = body?.image_id === undefined ? c.current_image_id : await this.images.attach(tx,body.image_id,id,actor)
+      const membershipChanged = await this.syncMembers(tx,id,rep,body?.member_account_ids)
       const review = name !== c.current_name || !compare(tags,c.current_tags) || rep !== String(c.representative_account_id)
         || activities !== c.current_activities
       const immediate = head !== String(c.headquarters_territory_id) || publicFlag !== c.is_public
         || !compare(intro,c.introduction_delta) || String(image ?? '') !== String(c.current_image_id ?? '')
+        || membershipChanged
       if (!review && !immediate) throw new BadRequestException('変更内容がありません。')
       await tx`UPDATE companies SET headquarters_territory_id=${head},current_image_id=${image},
         introduction_delta=${tx.json(intro as any)},is_public=${publicFlag},
@@ -441,6 +500,15 @@ export class CompanyService {
           throw new ConflictException('代表者のアカウント統合を分離してから承認してください。')
         }
         await this.activeAccount(tx,app.representative_account_id)
+        const otherMembers = await tx`SELECT count(*)::int AS count FROM company_members
+          WHERE company_id=${id} AND account_id<>${app.representative_account_id}`
+        if (Number(otherMembers[0]?.count) < 1) throw new ConflictException('代表者以外の所属者を1人以上登録してください。')
+        if (String(app.representative_account_id) !== String(company[0].representative_account_id)) {
+          const merging = await tx`SELECT 1 FROM company_members WHERE company_id=${id}
+            AND account_id=${app.representative_account_id} AND merge_origin IS NOT NULL`
+          if (merging.length) throw new ConflictException('所属者のアカウント統合を分離してから代表者を変更してください。')
+          await tx`DELETE FROM company_members WHERE company_id=${id} AND account_id=${app.representative_account_id}`
+        }
         await this.checkHeadquarters(tx,company[0].headquarters_territory_id,String(company[0].applicant_account_id),
           String(app.representative_account_id),id,true,app.application_type === 'new'?'apply':'edit')
         await tx`UPDATE company_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${app.id}`
