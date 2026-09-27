@@ -41,6 +41,14 @@ export class AccountRetirementService {
         WHERE submitted_by_account_id=${id} AND status='pending' LIMIT 1`
       if (pending.length) throw new ConflictException('未承認の領地申請を先に取り下げてください。')
 
+      const represented = await tx`SELECT 1 FROM companies WHERE representative_account_id=${id} LIMIT 1`
+      if (represented.length) throw new ConflictException('企業の代表者を変更してから退会処理してください。')
+      const memberships = await tx`SELECT 1 FROM company_members WHERE account_id=${id} LIMIT 1`
+      if (memberships.length) throw new ConflictException('企業の所属者を整理してから退会処理してください。')
+      const companyPending = await tx`SELECT 1 FROM company_applications
+        WHERE submitted_by_account_id=${id} AND status='pending' LIMIT 1`
+      if (companyPending.length) throw new ConflictException('企業の申請を取り下げてから退会処理してください。')
+
       await tx`DELETE FROM account_sessions WHERE account_id=${id}`
       await tx`DELETE FROM account_roles WHERE account_id=${id}`
       await tx`DELETE FROM account_discord_identities WHERE account_id=${id}`
