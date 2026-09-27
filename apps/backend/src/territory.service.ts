@@ -225,9 +225,11 @@ export class TerritoryService {
       || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id)
       || (row.owner_type === 'company' && viewer.account_id === row.company_representative_account_id))
     const canReapply = ['returned','withdrawn'].includes(row.status) && (viewer.account_id === row.applicant_account_id ||
-      (row.owner_type === 'company' && (viewer.is_admin === true || viewer.account_id === row.company_representative_account_id)))
+      (row.owner_type === 'company' && (viewer.is_admin === true ||
+        (!row.company_is_public && viewer.account_id === row.company_representative_account_id))))
     const canWithdraw = row.status === 'pending' && (viewer.account_id === row.pending_application?.submitted_by_account_id ||
-      (row.owner_type === 'company' && (viewer.is_admin === true || viewer.account_id === row.company_representative_account_id)))
+      (row.owner_type === 'company' && (viewer.is_admin === true ||
+        (!row.company_is_public && viewer.account_id === row.company_representative_account_id))))
     const canConcept = viewer.is_admin === true ||
       (row.owner_type === 'account' && viewer.account_id === row.owner_account_id) ||
       (row.owner_type === 'company' && viewer.account_id === row.company_representative_account_id)
@@ -312,7 +314,8 @@ export class TerritoryService {
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (String(locked[0].applicant_account_id) !== accountId &&
         !(locked[0].owner_type === 'company' && (isAdmin ||
-          (await tx`SELECT 1 FROM companies WHERE id=${locked[0].owner_company_id} AND representative_account_id=${accountId}`).length))) {
+          (await tx`SELECT 1 FROM companies WHERE id=${locked[0].owner_company_id}
+            AND representative_account_id=${accountId} AND NOT is_public`).length))) {
         throw new ForbiddenException('Only the applicant or current enterprise representative can reapply')
       }
       if (!['returned','withdrawn'].includes(String(locked[0].status))) throw new ConflictException('Territory is not available for reapplication')
@@ -503,7 +506,8 @@ export class TerritoryService {
       const app = apps[0]
       if (String(app.submitted_by_account_id) !== accountId &&
         !(locked[0].owner_type === 'company' && (isAdmin ||
-          (await tx`SELECT 1 FROM companies WHERE id=${locked[0].owner_company_id} AND representative_account_id=${accountId}`).length))) {
+          (await tx`SELECT 1 FROM companies WHERE id=${locked[0].owner_company_id}
+            AND representative_account_id=${accountId} AND NOT is_public`).length))) {
         throw new ForbiddenException('Only the pending submitter or current enterprise representative can withdraw')
       }
       const previousApproved = await tx`SELECT 1 FROM territory_applications WHERE territory_id=${id} AND status='approved' LIMIT 1`
