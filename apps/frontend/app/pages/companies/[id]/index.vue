@@ -11,6 +11,7 @@
       <dt class="col-sm-3">名称</dt><dd class="col-sm-9">{{company.name}} <span v-if="company.is_public" class="badge text-bg-info ms-2">公営</span></dd>
       <dt class="col-sm-3">承認状況</dt><dd class="col-sm-9"><TerritoryStatusBadge :status="company.status" /><span v-if="company.pending_changes" class="small ms-2">変更申請中</span><span v-if="company.approved_at && ['returned','withdrawn'].includes(company.last_application_status??'')" class="small ms-2">直近の変更申請: {{company.last_application_status==='returned'?'差戻':'取下'}}</span></dd>
       <dt class="col-sm-3">タグ</dt><dd class="col-sm-9">{{company.tags.join('、')||'なし'}}</dd>
+      <dt class="col-sm-3">BlueMap表示色</dt><dd class="col-sm-9"><span v-if="colorHex" class="d-inline-flex align-items-center gap-2"><span class="company-color-preview border rounded" :style="{ backgroundColor: colorHex }" aria-hidden="true" /><code>{{colorHex}}</code></span><span v-else>未設定</span></dd>
     </dl>
     <UiDateMeta :items="[
       { label: '申請日時', icon: 'calendar-plus', value: company.applied_at },
@@ -35,8 +36,9 @@ import {userFacingError} from '../../../utils/user-error'
 const {public:{apiBase}}=useRuntimeConfig(),route=useRoute(),{get,mutate}=useAccountApi(),auth=useAccountSession()
 const company=ref<CompanyRecord|null>(null),loading=ref(true),error=ref(''),busy=ref(false)
 const breadcrumbs=useState<Record<string,string>>('xplay-company-breadcrumb-names',()=>({}))
+const colorHex=computed(()=>company.value?.map_color ? `#${[company.value.map_color.r,company.value.map_color.g,company.value.map_color.b].map(v=>v.toString(16).padStart(2,'0')).join('')}` : null)
 async function load(){const data=await get<CompanyRecord>(`/companies/${route.params.id}`);company.value=data;breadcrumbs.value={...breadcrumbs.value,[data.id]:data.name}}
 async function withdraw(){if(!company.value)return;busy.value=true;error.value='';try{await mutate(`/companies/${company.value.id}/withdraw`,'POST',{operation_id:crypto.randomUUID()});await load()}catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
 onMounted(async()=>{try{await auth.refresh();await load()}catch(e){error.value=userFacingError(e)}finally{loading.value=false}})
 </script>
-<style scoped>.company-detail-image{display:block;max-width:100%;max-height:30rem;object-fit:contain}.company-wrap{white-space:pre-wrap;overflow-wrap:anywhere}</style>
+<style scoped>.company-detail-image{display:block;max-width:100%;max-height:30rem;object-fit:contain}.company-wrap{white-space:pre-wrap;overflow-wrap:anywhere}.company-color-preview{width:1.75rem;height:1.75rem;display:inline-block}</style>
