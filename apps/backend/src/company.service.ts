@@ -233,13 +233,13 @@ export class CompanyService {
     await tx`INSERT INTO company_operations(operation_id,company_id,actor_account_id,operation_kind)
       VALUES (${operationId},${companyId},${actor},${kind})`
   }
-  private async completed(tx: any, operationId: string, companyId: string, kind: Operation, actor: string) {
+  private async completed(tx: any, operationId: string, companyId: string, kind: Operation, actor: string, admin = false) {
     const records = await tx`SELECT company_id,actor_account_id,operation_kind FROM company_operations WHERE operation_id=${operationId}`
     if (!records.length) return null
     if (String(records[0].company_id) !== companyId || String(records[0].actor_account_id) !== actor || records[0].operation_kind !== kind) {
       throw new ConflictException('この操作IDは別の操作に使用されています。')
     }
-    return this.dto((await this.rows(tx,companyId))[0],{account_id:actor,is_admin:true})
+    return this.dto((await this.rows(tx,companyId))[0],{account_id:actor,is_admin:admin})
   }
   private async notify(tx: any, operationId: string, rowId: string,
     kind: CompanyNotificationEvent['kind'], applicationType: ApplicationType, name: string, actor: string, reason?: string) {
@@ -265,7 +265,7 @@ export class CompanyService {
     const intro = introductionOf(body?.introduction_delta)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const previous = await this.completed(tx,id,id,'create',actor)
+      const previous = await this.completed(tx,id,id,'create',actor,admin)
       if (previous) return previous
       await this.activeAccount(tx,rep)
       for (const member of members) await this.activeAccount(tx,member)
@@ -289,7 +289,7 @@ export class CompanyService {
     const id = uuid(rawId), operationId = uuid(body?.operation_id)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const previous = await this.completed(tx,operationId,id,'reapply',actor)
+      const previous = await this.completed(tx,operationId,id,'reapply',actor,admin)
       if (previous) return previous
       const locked = await tx`SELECT * FROM companies WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('企業が見つかりません。')
@@ -345,7 +345,7 @@ export class CompanyService {
     const id = uuid(rawId), operationId = uuid(body?.operation_id)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const previous = await this.completed(tx,operationId,id,'edit',actor)
+      const previous = await this.completed(tx,operationId,id,'edit',actor,admin)
       if (previous) return previous
       const locked = await tx`SELECT * FROM companies WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('企業が見つかりません。')
@@ -428,7 +428,7 @@ export class CompanyService {
     const reason = action === 'approve' ? undefined : reasonOf(reasonRaw)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
-      const previous = await this.completed(tx,operationId,id,action,admin)
+      const previous = await this.completed(tx,operationId,id,action,admin,true)
       if (previous) return previous
       const company = await tx`SELECT * FROM companies WHERE id=${id} FOR UPDATE`
       if (!company.length || company[0].status !== 'pending') throw new ConflictException('審査対象が見つかりません。')
