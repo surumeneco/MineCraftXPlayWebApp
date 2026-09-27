@@ -80,3 +80,13 @@ UPDATE home_layout SET
     '[{"key":"lists.companies","note":"","image":null},{"key":"applications.companies","note":"","image":null}]'::jsonb),
   revision=revision+1,updated_at=clock_timestamp()
 WHERE singleton AND NOT data->'hubs' @> '[{"key":"lists.companies"}]'::jsonb;
+
+-- statement
+-- Reversible account merging follows the existing account/territory provenance contract.
+ALTER TABLE companies ADD COLUMN applicant_merge_origin UUID REFERENCES accounts(id) ON DELETE RESTRICT;
+-- statement
+ALTER TABLE companies ADD COLUMN representative_merge_origin UUID REFERENCES accounts(id) ON DELETE RESTRICT;
+-- statement
+ALTER TABLE company_members ADD COLUMN merge_origin UUID REFERENCES accounts(id) ON DELETE RESTRICT;
+-- statement
+ALTER TABLE company_applications ADD COLUMN representative_merge_origin UUID REFERENCES accounts(id) ON DELETE RESTRICT;
