@@ -93,7 +93,7 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     expect((await req('/api/companies','GET',undefined,session.other)).body).not.toEqual(expect.arrayContaining([expect.objectContaining({id})]))
     expect((await req('/api/companies')).body).toEqual(expect.arrayContaining([expect.objectContaining({id})]))
     expect((await req(`/api/companies/${id}`,'GET',undefined,session.other)).status).toBe(404)
-    expect((await req(`/api/admin/companies/${id}/review`,'GET',undefined,session.other)).status).toBe(403)
+    expect((await req(`/api/admin/companies/${id}`,'GET',undefined,session.other)).status).toBe(403)
     expect((await req('/api/admin/companies','GET',undefined,session.admin)).body).toEqual(expect.arrayContaining([expect.objectContaining({id})]))
     const approved=await req(`/api/admin/companies/${id}/review`,'POST',{operation_id:randomUUID(),action:'approve'},session.admin)
     expect(approved.status).toBe(201)
