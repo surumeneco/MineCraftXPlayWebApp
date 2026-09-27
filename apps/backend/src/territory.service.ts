@@ -423,20 +423,27 @@ export class TerritoryService {
     const id = uuid(idRaw), operationId = uuid(body?.operation_id)
     const type = ownerType(body?.owner_type)
     const nextId = type === 'account' ? uuid(body?.owner_account_id) : null
+    const nextCompanyId = type === 'company' ? uuid(body?.owner_company_id) : null
     if (type !== 'account' && body?.owner_account_id != null) {
-      throw new BadRequestException('特殊所有者にアカウントIDは指定できません。')
+      throw new BadRequestException('個人以外にアカウントIDは指定できません。')
+    }
+    if (type !== 'company' && body?.owner_company_id != null) {
+      throw new BadRequestException('企業以外に企業IDは指定できません。')
     }
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'transfer', actorId)
       if (completed) return completed
-      const locked = await tx`SELECT t.status,t.owner_type,t.owner_account_id,o.name AS owner_name
+      const locked = await tx`SELECT t.status,t.owner_type,t.owner_account_id,t.owner_company_id,
+        o.name AS owner_name,co.current_name AS owner_company_name
         FROM territories t LEFT JOIN accounts o ON o.id=t.owner_account_id
+        LEFT JOIN companies co ON co.id=t.owner_company_id
         WHERE t.id=${id} FOR UPDATE OF t`
       if (!locked.length) throw new NotFoundException('領地が見つかりません。')
       const previous = locked[0]
       if (previous.status !== 'approved') throw new ConflictException('申請中の所有者は変更できません。')
-      if (String(previous.owner_type) === type && String(previous.owner_account_id ?? '') === String(nextId ?? '')) {
+      if (String(previous.owner_type) === type && String(previous.owner_account_id ?? '') === String(nextId ?? '')
+        && String(previous.owner_company_id ?? '') === String(nextCompanyId ?? '')) {
         throw new BadRequestException('所有者が変更されていません。')
       }
       let nextName: string
@@ -448,19 +455,25 @@ export class TerritoryService {
             WHERE m.source_account_id=a.id AND m.restored_at IS NULL)`
         if (!accounts.length) throw new BadRequestException('有効な参加者アカウントを指定してください。')
         nextName = String(accounts[0].name)
+      } else if (nextCompanyId) {
+        const companies = await tx`SELECT current_name FROM companies WHERE id=${nextCompanyId} AND approved_at IS NOT NULL`
+        if (!companies.length) throw new BadRequestException('承認済みの企業を指定してください。')
+        nextName = String(companies[0].current_name)
       } else {
-        nextName = specialOwnerNames[type as Exclude<OwnerType, 'account'>]
+        nextName = specialOwnerNames[type as Exclude<OwnerType, 'account' | 'company'>]
       }
       const previousName = previous.owner_type === 'account'
-        ? String(previous.owner_name) : specialOwnerNames[previous.owner_type as Exclude<OwnerType, 'account'>]
-      await tx`UPDATE territories SET owner_type=${type},owner_account_id=${nextId},owner_merge_origin=NULL,
-        status_changed_at=clock_timestamp() WHERE id=${id}`
+        ? String(previous.owner_name) : previous.owner_type === 'company'
+          ? String(previous.owner_company_name) : specialOwnerNames[previous.owner_type as Exclude<OwnerType, 'account' | 'company'>]
+      await tx`UPDATE territories SET owner_type=${type},owner_account_id=${nextId},
+        owner_company_id=${nextCompanyId},owner_merge_origin=NULL,status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.completeOperation(tx, operationId, id, 'transfer', actorId)
       await tx`INSERT INTO territory_change_history(
         operation_id,territory_id,actor_account_id,kind,old_owner_type,new_owner_type,
-        old_owner_account_id,new_owner_account_id,old_owner_name,new_owner_name)
+        old_owner_account_id,new_owner_account_id,old_owner_company_id,new_owner_company_id,
+        old_owner_name,new_owner_name)
         VALUES (${operationId},${id},${actorId},'owner',${previous.owner_type},${type},
-          ${previous.owner_account_id},${nextId},${previousName},${nextName})`
+          ${previous.owner_account_id},${nextId},${previous.owner_company_id},${nextCompanyId},${previousName},${nextName})`
       return this.getFromRows(await this.rows(tx), id)
     })
   }
