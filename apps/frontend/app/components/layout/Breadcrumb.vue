@@ -20,6 +20,7 @@
 type Crumb = { label: string; to?: string }
 const route = useRoute()
 const router = useRouter()
+const { getName: spotName } = useSpotBreadcrumbNames()
 const territoryNames = useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const territoryName = (id: string) => territoryNames.value[id] || '領地詳細'
 const home: Crumb = { label: 'ホーム', to: '/' }
@@ -50,8 +51,8 @@ const items = computed<Crumb[]>(() => {
   }
   if (path === '/info/public-spots') return [home, info, { label: '公営スポット案内' }]
   if (path === '/info/tourist-spots') return [home, info, { label: '観光情報' }]
-  if (/^\/info\/public-spots\/[^/]+$/.test(path)) return [home, info, publicSpots, { label: 'スポット詳細' }]
-  if (/^\/info\/tourist-spots\/[^/]+$/.test(path)) return [home, info, touristSpots, { label: 'スポット詳細' }]
+  if (/^\/info\/public-spots\/[^/]+$/.test(path)) return [home, info, publicSpots, { label: spotName('public', id) || 'スポット詳細' }]
+  if (/^\/info\/tourist-spots\/[^/]+$/.test(path)) return [home, info, touristSpots, { label: spotName('tourist', id) || 'スポット詳細' }]
   if (path.startsWith('/info/') && infoPages[path.slice('/info/'.length)]) {
     return [home, info, { label: infoPages[path.slice('/info/'.length)] }]
   }
@@ -89,7 +90,8 @@ const items = computed<Crumb[]>(() => {
     if (path === list) return [home, { label: label + '管理' }]
     if (path === list + '/new') return [home, { label: label + '管理', to: list }, { label: '新規投稿' }]
     if (path.startsWith(list + '/') && path.endsWith('/edit')) {
-      return [home, { label: label + '管理', to: list }, { label: 'スポット編集' }]
+      const name = spotName(kind as 'public' | 'tourist', id)
+      return [home, { label: label + '管理', to: list }, { label: name ? name + '（編集）' : 'スポット編集' }]
     }
   }
   if (path === '/admin/master') return [home, { label: 'マスタメンテ' }]
