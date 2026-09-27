@@ -274,6 +274,8 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     },session.other)
     expect(amended.status).toBe(201)
     expect(amended.body.owner).toMatchObject({type:'company',company_id:companyId})
+    expect(sent.at(-1)?.body.account_name).toBe('企業テスト所属者')
+    expect(sent.at(-1)?.body.discord_ids).toContain(discord[2])
     await sql`UPDATE companies SET representative_account_id=${member} WHERE id=${companyId}`
     const current=await req(`/api/territories/${territoryId}`,'GET',undefined,session.member)
     expect(current.body.can_withdraw).toBe(true)
