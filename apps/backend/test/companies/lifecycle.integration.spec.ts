@@ -247,7 +247,8 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     expect((await served.arrayBuffer()).byteLength).toBe(bytes.length)
     const foreign=await req('/api/companies','POST',{
       ...createBody(randomUUID(),'他者画像を指定した企業'),image_id:imageId,
-    },session.other)
+      headquarters_territory_id:sharedHQ,representative_account_id:admin,
+    },session.admin)
     expect(foreign.status).toBe(403)
   })
   it('authorizes the current company representative independently of the original territory applicant',async()=>{
