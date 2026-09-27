@@ -68,7 +68,8 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     const result = await response.json() as any
     expect(result.data.categories.map((category:any) => category.title)).toEqual(['クイックリンク','サイト案内'])
     expect(result.data.categories.flatMap((category:any) => category.cards)).toHaveLength(5)
-    expect(result.data.hubs).toHaveLength(7)
+    expect(result.data.hubs).toHaveLength(9)
+    expect(result.data.hubs.slice(0, 3).map((hub: any) => hub.key)).toEqual(['info.notice','info.public-spots','info.tourist-spots'])
     expect(result.links.map((link:any) => link.url)).toContain('/territories/apply')
     const master = await request('/admin/site-images',{headers:auth(adminSession)})
     expect((await master.json() as any[]).some(image => image.key.startsWith('operator.'))).toBe(false)
