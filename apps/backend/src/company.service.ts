@@ -270,7 +270,7 @@ export class CompanyService {
       const headquarters = await this.checkHeadquarters(tx,body?.headquarters_territory_id,actor,rep,null,admin,'apply')
       await tx`INSERT INTO companies(id,applicant_account_id,representative_account_id,is_public,status,
         headquarters_territory_id,introduction_delta)
-        VALUES (${id},${actor},${rep},${admin && body?.is_public === true},'pending',${headquarters},${tx.json(intro)})`
+        VALUES (${id},${actor},${rep},${admin && body?.is_public === true},'pending',${headquarters},${tx.json(intro as any)})`
       const image = body?.image_id === undefined ? null : await this.images.attach(tx,body.image_id,id,actor)
       if (image) await tx`UPDATE companies SET current_image_id=${image} WHERE id=${id}`
       for (const member of members) await tx`INSERT INTO company_members(company_id,account_id) VALUES (${id},${member})`
@@ -316,7 +316,7 @@ export class CompanyService {
         for (const member of members) await tx`INSERT INTO company_members(company_id,account_id) VALUES (${id},${member})`
       }
       await tx`UPDATE companies SET representative_account_id=${rep},is_public=${publicFlag},
-        headquarters_territory_id=${head},introduction_delta=${tx.json(intro)},current_image_id=${image},
+        headquarters_territory_id=${head},introduction_delta=${tx.json(intro as any)},current_image_id=${image},
         status='pending',status_changed_at=clock_timestamp() WHERE id=${id}`
       await tx`INSERT INTO company_applications(company_id,application_type,submitted_by_account_id,
         name,tags,representative_account_id,activities,status)
@@ -357,7 +357,7 @@ export class CompanyService {
         || !compare(intro,c.introduction_delta) || String(image ?? '') !== String(c.current_image_id ?? '')
       if (!review && !immediate) throw new BadRequestException('変更内容がありません。')
       await tx`UPDATE companies SET headquarters_territory_id=${head},current_image_id=${image},
-        introduction_delta=${tx.json(intro)},is_public=${publicFlag},
+        introduction_delta=${tx.json(intro as any)},is_public=${publicFlag},
         status=${review?'pending':'approved'},status_changed_at=clock_timestamp() WHERE id=${id}`
       if (review) {
         await tx`INSERT INTO company_applications(company_id,application_type,submitted_by_account_id,
@@ -436,7 +436,7 @@ export class CompanyService {
           status_changed_at=clock_timestamp() WHERE id=${id}`
       } else {
         await tx`UPDATE company_applications SET status=${action==='return'?'returned':'rejected'},
-          reason=${reason},decided_at=clock_timestamp() WHERE id=${app.id}`
+          reason=${reason ?? ''},decided_at=clock_timestamp() WHERE id=${app.id}`
         await tx`UPDATE companies SET status=${company[0].approved_at?'approved':action==='return'?'returned':'rejected'},
           status_changed_at=clock_timestamp() WHERE id=${id}`
       }
