@@ -30,6 +30,8 @@ const territories: Crumb = { label: '領地一覧', to: '/territories' }
 const adminApplications: Crumb = { label: '申請管理', to: '/admin/applications' }
 const requests: Crumb = { label: '領地承認', to: '/admin/territories' }
 const notices: Crumb = { label: 'お知らせ管理', to: '/admin/notices' }
+const publicSpots: Crumb = { label: '公営スポット案内', to: '/info/public-spots' }
+const touristSpots: Crumb = { label: '観光情報', to: '/info/tourist-spots' }
 const master: Crumb = { label: 'マスタメンテ', to: '/admin/master' }
 
 const infoPages: Record<string,string> = {
@@ -46,6 +48,10 @@ const items = computed<Crumb[]>(() => {
     const title = String(route.params.title ?? 'お知らせ詳細')
     return [home, info, { label: 'お知らせ', to: '/info/notice' }, { label: title }]
   }
+  if (path === '/info/public-spots') return [home, info, { label: '公営スポット案内' }]
+  if (path === '/info/tourist-spots') return [home, info, { label: '観光情報' }]
+  if (/^\/info\/public-spots\/[^/]+$/.test(path)) return [home, info, publicSpots, { label: 'スポット詳細' }]
+  if (/^\/info\/tourist-spots\/[^/]+$/.test(path)) return [home, info, touristSpots, { label: 'スポット詳細' }]
   if (path.startsWith('/info/') && infoPages[path.slice('/info/'.length)]) {
     return [home, info, { label: infoPages[path.slice('/info/'.length)] }]
   }
@@ -77,6 +83,51 @@ const items = computed<Crumb[]>(() => {
   if (path === '/admin/notices/new') return [home, notices, { label: '新規投稿' }]
   if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) {
     return [home, notices, { label: '記事編集' }]
+  }
+  for (const [kind, label] of [['public', '公営スポット'], ['tourist', '観光スポット']]) {
+    const list = '/admin/spots/' + kind
+    if (path === list) return [home, { label: label + '管理' }]
+    if (path === list + '/new') return [home, { label: label + '管理', to: list }, { label: '新規投稿' }]
+    if (new RegExp('^' + list + '/[^/]+/edit
+  const masterPages: Record<string,string> = {
+    '/admin/accounts': 'アカウント管理',
+    '/admin/images': '画像管理',
+    '/admin/image-presets': '画像プリセット管理',
+  }
+  if (masterPages[path]) return [home, master, { label: masterPages[path] }]
+  if (/^\/admin\/accounts\/[^/]+\/edit$/.test(path)) {
+    return [home, master, { label: 'アカウント管理', to: '/admin/accounts' }, { label: 'アカウント編集' }]
+  }
+  if (path === '/account') return [home, { label: 'アカウント' }]
+  if (path === '/login') return [home, { label: 'ログイン' }]
+  if (path === '/request') return [home, { label: '要望を送る' }]
+  // Unknown routes never create links to nonexistent ancestor pages.
+  return [home, { label: '現在のページ' }]
+})
+function goBack() {
+  const state = window.history.state as { back?: string | null } | null
+  if (typeof state?.back === 'string' && state.back.startsWith('/')) router.back()
+  else void navigateTo(items.value.at(-2)?.to ?? '/')
+}
+</script>
+
+<style scoped>
+.xplay-breadcrumb { display: flex; align-items: center; gap: .85rem; padding: .8rem 1rem;
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg); border-radius: .5rem; box-shadow: 0 .15rem .45rem rgba(0,0,0,.12); }
+.xplay-breadcrumb__back { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  padding: .35rem; border: 0; background: transparent; color: var(--bs-body-color); border-radius: .3rem; cursor: pointer; }
+.xplay-breadcrumb__back:hover { color: var(--xplay-main-soft); background: var(--xplay-panel-soft); }
+.xplay-breadcrumb__divider { flex: 0 0 1px; align-self: stretch; min-height: 1.4rem; background: var(--bs-border-color); }
+.breadcrumb { align-items: center; min-width: 0; }
+.breadcrumb-item { display: inline-flex; align-items: center; gap: .5rem; overflow-wrap: anywhere; }
+.breadcrumb-item + .breadcrumb-item::before { content: none; }
+.breadcrumb-item :deep(.bi::before) { font-size: .75rem; }
+.breadcrumb-item a { color: var(--bs-link-color); }
+.breadcrumb-item.active { color: var(--bs-body-color); font-weight: 600; }
+@media (max-width: 575.98px) { .xplay-breadcrumb { padding: .65rem; gap: .5rem; } }
+</style>
+).test(path)) return [home, { label: label + '管理', to: list }, { label: 'スポット編集' }]
   }
   if (path === '/admin/master') return [home, { label: 'マスタメンテ' }]
   const masterPages: Record<string,string> = {
