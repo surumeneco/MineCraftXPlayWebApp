@@ -68,7 +68,8 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     const result = await response.json() as any
     expect(result.data.categories.map((category:any) => category.title)).toEqual(['クイックリンク','サイト案内'])
     expect(result.data.categories.flatMap((category:any) => category.cards)).toHaveLength(5)
-    expect(result.data.hubs).toHaveLength(9)
+    expect(result.data.hubs).toHaveLength(11)
+    expect(result.data.hubs.map((hub:any)=>hub.key)).toEqual(expect.arrayContaining(['lists.companies','applications.companies']))
     expect(result.data.hubs.slice(0, 3).map((hub: any) => hub.key)).toEqual(['info.notice','info.public-spots','info.tourist-spots'])
     expect(result.links.map((link:any) => link.url)).toContain('/territories/apply')
     const master = await request('/admin/site-images',{headers:auth(adminSession)})
@@ -124,7 +125,7 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     const result = await updated.json() as any
     expect(result.data.categories[0].title).toBe('サイト案内')
     expect(result.data.categories[0].cards.at(-1)).toEqual({id:'new-hub',type:'hub',hub_key:'info.rules'})
-    expect(result.data.hubs[0].key).toBe('applications.territories')
+    expect(result.data.hubs[0].key).toBe('applications.companies')
     expect((await json('/admin/home-layout','PUT',{revision:original.revision,...proposed})).status).toBe(409)
   })
   it('stores card images independently of image presets', async () => {
