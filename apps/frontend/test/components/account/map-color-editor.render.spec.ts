@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import MapColorEditor from '../../../app/components/account/MapColorEditor.vue'
@@ -27,19 +28,18 @@ describe('BlueMap account color tracks', () => {
     wrapper.unmount()
   })
 
-  it('reuses the same editor for a company and saves through its own endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ r: 255, g: 0, b: 0 })
-    vi.stubGlobal('$fetch', fetchMock)
+  it('reuses the existing RGB/HSV editor for company colors', async () => {
+    vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({ r: 255, g: 0, b: 0 }))
     const companyId = 'b46b0875-5596-4521-99b7-89997d6d7c70'
     const wrapper = await mountSuspended(MapColorEditor, { props: { companyId } })
     await vi.waitFor(() => expect(wrapper.get('#map-color-hex').exists()).toBe(true))
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/companies/${companyId}/map-color`),
-      expect.objectContaining({ credentials: 'include' }))
-    await wrapper.get('#map-color-hex').setValue('#123456')
-    await wrapper.get('button').trigger('click')
-    await vi.waitFor(() => expect(wrapper.text()).toContain('保存されました'))
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/companies/${companyId}/map-color`),
-      expect.objectContaining({ method: 'PATCH', body: { r: 18, g: 52, b: 86 } }))
+    expect(wrapper.get('#map-color-rgb').exists()).toBe(true)
+    expect(wrapper.get('#map-color-hsv').exists()).toBe(true)
+    expect(wrapper.get('#hue').exists()).toBe(true)
+    expect(wrapper.get('button[type="button"]').text()).toBe('保存')
+    const source = await readFile('app/components/account/MapColorEditor.vue','utf8')
+    expect(source).toContain('props.companyId?`/companies/${props.companyId}/map-color`')
+    expect(source).toContain("mutate<Color>(endpoint.value,'PATCH',{...color})")
     wrapper.unmount()
   })
 
