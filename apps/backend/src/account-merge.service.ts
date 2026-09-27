@@ -31,7 +31,7 @@ export class AccountMergeService {
       const sharedMembership = await tx`SELECT 1 FROM company_members source JOIN company_members target
         ON target.company_id=source.company_id WHERE source.account_id=${source} AND target.account_id=${target} LIMIT 1`
       if (sharedMembership.length) throw new ConflictException('両アカウントが所属する同一企業があります。統合前に所属を整理してください。')
-      await tx`INSERT INTO account_merges(source_account_id,target_account_id,source_was_admin,target_was_admin)`
+      await tx`INSERT INTO account_merges(source_account_id,target_account_id,source_was_admin,target_was_admin)
         VALUES (${source},${target},${sourceAdmin},${targetAdmin})`
       if (sourceAdmin) {
         await tx`INSERT INTO account_roles(account_id,role) VALUES (${target},'admin') ON CONFLICT DO NOTHING`
