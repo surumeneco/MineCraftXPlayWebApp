@@ -214,6 +214,42 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     expect(candidates.body).not.toEqual(expect.arrayContaining([expect.objectContaining({id:ownHQ})]))
   })
 
+  it('validates company image uploads and keeps pending images private until approval',async()=>{
+    const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4//8/AwAI/AL+XWGhxwAAAABJRU5ErkJggg==','base64')
+    const upload=async(mime:string,token=session.member)=>{
+      const response=await fetch(root+'/api/company-images/file',{
+        method:'POST',headers:{
+          Cookie:`xplay_session=${token}; xplay_csrf=${csrf}`,
+          Origin:origin,'X-XPlay-CSRF':csrf,'Content-Type':'application/octet-stream',
+          'X-XPlay-Image-Mime':mime,
+        },body:new Uint8Array(bytes),
+      })
+      return {status:response.status,body:await response.json() as any}
+    }
+    expect((await upload('image/jpeg')).status).toBe(400)
+    const image=await upload('image/png')
+    expect(image.status).toBe(201)
+    const imageId=image.body.image_id
+    expect((await fetch(root+'/api/company-images/'+imageId)).status).toBe(403)
+    const id=randomUUID();companyIds.push(id)
+    const created=await req('/api/companies','POST',{
+      ...createBody(id,'画像付き企業'),image_id:imageId,
+    })
+    expect(created.status).toBe(201)
+    expect(created.body.image_id).toBe(imageId)
+    expect((await fetch(root+'/api/company-images/'+imageId)).status).toBe(403)
+    expect((await req(`/api/admin/companies/${id}/review`,'POST',{
+      operation_id:randomUUID(),action:'approve',
+    },session.admin)).status).toBe(201)
+    const served=await fetch(root+'/api/company-images/'+imageId)
+    expect(served.status).toBe(200)
+    expect(served.headers.get('content-type')).toBe('image/png')
+    expect((await served.arrayBuffer()).byteLength).toBe(bytes.length)
+    const foreign=await req('/api/companies','POST',{
+      ...createBody(randomUUID(),'他者画像を指定した企業'),image_id:imageId,
+    },session.other)
+    expect(foreign.status).toBe(403)
+  })
   it('authorizes the current company representative independently of the original territory applicant',async()=>{
     await sql`INSERT INTO account_minecraft_identities(account_id,edition,username)
       VALUES (${other},'je',${'comp_'+other.slice(0,7)})`
