@@ -214,4 +214,34 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     expect(candidates.body).not.toEqual(expect.arrayContaining([expect.objectContaining({id:ownHQ})]))
   })
 
+  it('authorizes the current company representative independently of the original territory applicant',async()=>{
+    await sql`INSERT INTO account_minecraft_identities(account_id,edition,username)
+      VALUES (${other},'je',${'comp_'+other.slice(0,7)})`
+    const companyId=randomUUID();companyIds.push(companyId)
+    expect((await req('/api/companies','POST',createBody(companyId,'代表変更テスト企業'))).status).toBe(201)
+    expect((await req(`/api/admin/companies/${companyId}/review`,'POST',
+      {operation_id:randomUUID(),action:'approve'},session.admin)).status).toBe(201)
+    const territoryId=randomUUID();territoryIds.push(territoryId)
+    const initial={owner_type:'company',owner_company_id:companyId,
+      coordinates:[{x:70000,z:70000},{x:70100,z:70000},{x:70100,z:70060}]}
+    expect((await req('/api/territories','POST',{...initial,
+      operation_id:territoryId,name:'代表変更前の領地'})).status).toBe(201)
+    expect((await req(`/api/admin/territories/${territoryId}/review`,'POST',{
+      operation_id:randomUUID(),action:'return',reason:'申請を修正してください',
+    },session.admin)).status).toBe(201)
+    await sql`UPDATE companies SET representative_account_id=${other} WHERE id=${companyId}`
+    const viewed=await req(`/api/territories/${territoryId}`,'GET',undefined,session.other)
+    expect(viewed.body.can_reapply).toBe(true)
+    const amended=await req(`/api/territories/${territoryId}/reapply`,'POST',{
+      ...initial,operation_id:randomUUID(),name:'代表変更後の領地',
+    },session.other)
+    expect(amended.status).toBe(201)
+    expect(amended.body.owner).toMatchObject({type:'company',company_id:companyId})
+    await sql`UPDATE companies SET representative_account_id=${member} WHERE id=${companyId}`
+    const current=await req(`/api/territories/${territoryId}`,'GET',undefined,session.member)
+    expect(current.body.can_withdraw).toBe(true)
+    expect((await req(`/api/territories/${territoryId}/withdraw`,'POST',
+      {operation_id:randomUUID()},session.member)).status).toBe(201)
+  })
+
 })
