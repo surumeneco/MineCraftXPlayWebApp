@@ -1,7 +1,7 @@
 export type TerritoryPoint = { x: number; z: number }
 export type TerritoryDraftPoint = { x: number | null; z: number | null }
 export type TerritoryStatus = 'pending' | 'approved' | 'returned' | 'withdrawn' | 'rejected'
-export type TerritoryOwnerType = 'account' | 'shared_area' | 'administration' | 'protected_area'
+export type TerritoryOwnerType = 'account' | 'company' | 'shared_area' | 'administration' | 'protected_area'
 export type TerritoryRecord = {
   id: string
   name: string
@@ -12,7 +12,7 @@ export type TerritoryRecord = {
   approved_image_id?: string | null
   pending_image_id?: string | null
   applicant: { id: string | null; name: string }
-  owner: { type: TerritoryOwnerType; account_id: string | null; name: string }
+  owner: { type: TerritoryOwnerType; account_id: string | null; company_id?: string | null; name: string }
   status: TerritoryStatus
   applied_at: string
   approved_at: string | null

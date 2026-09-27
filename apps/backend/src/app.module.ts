@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common'
+import { CompanyService } from './company.service.js'
+import { CompanyImagesService } from './company-images.service.js'
+import { CompanyNotificationService } from './company-notification.service.js'
+import { CompanyController, AdminCompanyController, CompanyImagesController } from './company.controller.js'
 import { SpotService } from './spot.service.js'
 import { SpotImagesService } from './spot-images.service.js'
 import { PublicSpotsController, AdminSpotsController, PublicSpotImagesController, AdminSpotImagesController } from './spot.controller.js'
@@ -35,8 +39,9 @@ import { PublicOperatorPhotosController, SelfOperatorPhotosController } from './
     PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController,
     SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController, TerritoryImagesController,
     PublicHomeLayoutController, AdminHomeLayoutController, PublicOperatorPhotosController, SelfOperatorPhotosController,
-    PublicSpotsController, AdminSpotsController, PublicSpotImagesController, AdminSpotImagesController],
+    PublicSpotsController, AdminSpotsController, PublicSpotImagesController, AdminSpotImagesController,
+    CompanyController, AdminCompanyController, CompanyImagesController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, AccountRetirementService, NoticeService, NoticeNotificationService,
-    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService, SpotService, SpotImagesService],
+    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService, SpotService, SpotImagesService, CompanyService, CompanyImagesService, CompanyNotificationService],
 })
 export class AppModule {}

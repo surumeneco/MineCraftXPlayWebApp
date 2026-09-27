@@ -14,6 +14,7 @@ export class AccountMergeService {
     if (target === source) throw new BadRequestException('Choose two different accounts')
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
+      await tx`SELECT pg_advisory_xact_lock(79412503)`
       const records = await tx`SELECT id FROM accounts WHERE id IN (${target}, ${source}) AND retired_at IS NULL FOR UPDATE`
       if (records.length !== 2) throw new NotFoundException('Both accounts must exist')
       const linked = await tx`SELECT id FROM account_merges WHERE restored_at IS NULL
@@ -27,6 +28,9 @@ export class AccountMergeService {
       const roles = await tx`SELECT account_id FROM account_roles WHERE account_id IN (${target},${source}) AND role='admin'`
       const sourceAdmin = roles.some(role => String(role.account_id) === source)
       const targetAdmin = roles.some(role => String(role.account_id) === target)
+      const sharedMembership = await tx`SELECT 1 FROM company_members source JOIN company_members target
+        ON target.company_id=source.company_id WHERE source.account_id=${source} AND target.account_id=${target} LIMIT 1`
+      if (sharedMembership.length) throw new ConflictException('両アカウントが所属する同一企業があります。統合前に所属を整理してください。')
       await tx`INSERT INTO account_merges(source_account_id,target_account_id,source_was_admin,target_was_admin)
         VALUES (${source},${target},${sourceAdmin},${targetAdmin})`
       if (sourceAdmin) {
@@ -39,6 +43,11 @@ export class AccountMergeService {
       await tx`UPDATE operator_members SET account_id=${target}, merge_origin=${source} WHERE account_id=${source}`
       await tx`UPDATE territories SET applicant_account_id=${target}, applicant_merge_origin=${source} WHERE applicant_account_id=${source}`
       await tx`UPDATE territories SET owner_account_id=${target}, owner_merge_origin=${source} WHERE owner_type='account' AND owner_account_id=${source}`
+      await tx`UPDATE companies SET applicant_account_id=${target},applicant_merge_origin=${source} WHERE applicant_account_id=${source}`
+      await tx`UPDATE companies SET representative_account_id=${target},representative_merge_origin=${source} WHERE representative_account_id=${source}`
+      await tx`UPDATE company_members SET account_id=${target},merge_origin=${source} WHERE account_id=${source}`
+      await tx`UPDATE company_applications SET representative_account_id=${target},representative_merge_origin=${source}
+        WHERE representative_account_id=${source} AND status='pending'`
       await tx`DELETE FROM account_sessions WHERE account_id=${source}`
     })
   }
@@ -47,6 +56,7 @@ export class AccountMergeService {
     const source = uuid(sourceRaw)
     await this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412502)`
+      await tx`SELECT pg_advisory_xact_lock(79412503)`
       const matches = await tx`SELECT id, target_account_id, source_was_admin, target_was_admin
         FROM account_merges WHERE source_account_id=${source} AND restored_at IS NULL FOR UPDATE`
       if (matches.length !== 1) throw new NotFoundException('No active merge for the source account')
@@ -62,7 +72,14 @@ export class AccountMergeService {
       const territoryDisplaced = await tx`SELECT id FROM territories WHERE
         (applicant_merge_origin=${source} AND applicant_account_id<>${target}) OR
         (owner_merge_origin=${source} AND owner_account_id<>${target})`
-      if (displaced.length || minecraftDisplaced.length || imagesDisplaced.length || operatorDisplaced.length || territoryDisplaced.length) {
+      const companyDisplaced=await tx`SELECT id FROM companies WHERE
+        (applicant_merge_origin=${source} AND applicant_account_id<>${target}) OR
+        (representative_merge_origin=${source} AND representative_account_id<>${target})`
+      const membershipDisplaced=await tx`SELECT company_id FROM company_members WHERE merge_origin=${source} AND account_id<>${target}`
+      const applicationDisplaced=await tx`SELECT id FROM company_applications WHERE representative_merge_origin=${source}
+        AND representative_account_id<>${target}`
+      if (displaced.length || minecraftDisplaced.length || imagesDisplaced.length || operatorDisplaced.length || territoryDisplaced.length
+        || companyDisplaced.length || membershipDisplaced.length || applicationDisplaced.length) {
         throw new ConflictException('Merged ownership changed; manual reconciliation is required')
       }
       const identities = await tx`SELECT discord_id FROM account_discord_identities WHERE merge_origin=${source} AND account_id=${target}`
@@ -78,6 +95,14 @@ export class AccountMergeService {
         WHERE applicant_account_id=${target} AND applicant_merge_origin=${source}`
       await tx`UPDATE territories SET owner_account_id=${source}, owner_merge_origin=NULL
         WHERE owner_type='account' AND owner_account_id=${target} AND owner_merge_origin=${source}`
+      await tx`UPDATE companies SET applicant_account_id=${source},applicant_merge_origin=NULL
+        WHERE applicant_account_id=${target} AND applicant_merge_origin=${source}`
+      await tx`UPDATE companies SET representative_account_id=${source},representative_merge_origin=NULL
+        WHERE representative_account_id=${target} AND representative_merge_origin=${source}`
+      await tx`UPDATE company_members SET account_id=${source},merge_origin=NULL
+        WHERE account_id=${target} AND merge_origin=${source}`
+      await tx`UPDATE company_applications SET representative_account_id=${source},representative_merge_origin=NULL
+        WHERE representative_account_id=${target} AND representative_merge_origin=${source}`
       if (record.source_was_admin) {
         await tx`INSERT INTO account_roles(account_id,role) VALUES (${source},'admin') ON CONFLICT DO NOTHING`
         if (!record.target_was_admin) await tx`DELETE FROM account_roles WHERE account_id=${target} AND role='admin'`

@@ -5,7 +5,7 @@
         <dt>申請者</dt><dd>{{ territory.applicant.name }}</dd>
       </div>
       <div class="territory-info__item">
-        <dt>所有者</dt><dd>{{ territory.owner.name }}</dd>
+        <dt>所有者</dt><dd><NuxtLink v-if="territory.owner.type==='company'&&territory.owner.company_id" :to="`/companies/${territory.owner.company_id}`">{{territory.owner.name}}</NuxtLink><template v-else>{{ territory.owner.name }}</template></dd>
       </div>
       <div class="territory-info__item">
         <dt>承認状況</dt><dd><TerritoryStatusBadge :status="territory.status" /></dd>
