@@ -21,13 +21,18 @@ import { TerritoryService } from './territory.service.js'
 import { TerritoryNotificationService } from './territory-notification.service.js'
 import { TerritoryBlueMapService } from './territory-bluemap.service.js'
 import { AdminTerritoryController, InternalTerritoryController, TerritoryController } from './territory.controller.js'
+import { HomeLayoutService } from './home-layout.service.js'
+import { PublicHomeLayoutController, AdminHomeLayoutController } from './home-layout.controller.js'
+import { OperatorPhotosService } from './operator-photos.service.js'
+import { PublicOperatorPhotosController, SelfOperatorPhotosController } from './operator-photos.controller.js'
 
 @Module({
   controllers: [AppController, PublicNoticesController, PublicTagsController, PublicImagesController,
     AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
     PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController,
-    SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController, TerritoryImagesController],
+    SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController, TerritoryImagesController,
+    PublicHomeLayoutController, AdminHomeLayoutController, PublicOperatorPhotosController, SelfOperatorPhotosController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, AccountRetirementService, NoticeService, NoticeNotificationService,
-    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService],
+    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService],
 })
 export class AppModule {}

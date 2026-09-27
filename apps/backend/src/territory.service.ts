@@ -11,7 +11,7 @@ type ApplicationType = 'new' | 'edit'
 type OperationKind = 'create' | 'reapply' | 'edit' | 'withdraw' | 'approve' | 'return' | 'reject' | 'transfer'
 type ApplicationData = {
   id: string
-  submitted_by_account_id: string
+  submitted_by_account_id: string | null
   application_type: ApplicationType
   name: string
   image_id: string | null
@@ -24,7 +24,7 @@ type ApplicationData = {
 }
 type TerritoryRow = {
   id: string
-  applicant_account_id: string
+  applicant_account_id: string | null
   applicant_name: string
   owner_type: OwnerType
   owner_account_id: string | null
@@ -87,7 +87,7 @@ export class TerritoryService {
 
   private async rows(sql: any = this.database.sql): Promise<TerritoryRow[]> {
     return await sql`
-      SELECT t.id,t.applicant_account_id,applicant.name AS applicant_name,t.owner_type,t.owner_account_id,t.current_name,t.current_image_id,t.development_concept,
+      SELECT t.id,t.applicant_account_id,COALESCE(applicant.name, '運営') AS applicant_name,t.owner_type,t.owner_account_id,t.current_name,t.current_image_id,t.development_concept,
         owner.name AS owner_account_name,t.status,t.first_applied_at,t.approved_at,t.status_changed_at,
         (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
           'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason,'note',a.note)
@@ -102,7 +102,7 @@ export class TerritoryService {
           FROM territory_applications a WHERE a.territory_id=t.id
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS latest_application
       FROM territories t
-      JOIN accounts applicant ON applicant.id=t.applicant_account_id
+      LEFT JOIN accounts applicant ON applicant.id=t.applicant_account_id
       LEFT JOIN accounts owner ON owner.id=t.owner_account_id
       ORDER BY t.first_applied_at,t.id` as unknown as TerritoryRow[]
   }

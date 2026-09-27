@@ -11,7 +11,7 @@ export type TerritoryRecord = {
   can_edit_concept?: boolean
   approved_image_id?: string | null
   pending_image_id?: string | null
-  applicant: { id: string; name: string }
+  applicant: { id: string | null; name: string }
   owner: { type: TerritoryOwnerType; account_id: string | null; name: string }
   status: TerritoryStatus
   applied_at: string

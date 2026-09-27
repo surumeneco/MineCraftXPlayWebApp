@@ -9,7 +9,7 @@
     <div class="col-6 col-md-2"><input v-model="filters.area_max" type="number" min="0" step="any" class="form-control" placeholder="面積以下" aria-label="面積の上限" /></div>
     <div class="col-md-2"><select v-model="filters.status" class="form-select" aria-label="承認状況"><option value="">全状態</option><option v-for="(label,key) in visibleStatuses" :key="key" :value="key">{{ label }}</option></select></div>
     <div class="col-md-2"><select v-model="filters.sort" class="form-select" aria-label="並べ替え"><option value="approved_at">承認日時順</option><option value="applied_at">申請日時順</option><option value="changed_at">変更日時順</option><option value="name">領地名順</option><option value="owner">所有者名順</option></select></div>
-    <div class="col-12"><button class="btn btn-primary" type="submit">検索・並べ替え</button></div>
+    <div class="col-12 text-end"><button class="btn btn-primary" type="submit">検索・並べ替え</button></div>
   </form>
   <p v-if="loading">読み込んでいます…</p>
   <p v-else-if="error" class="alert alert-danger">{{ error }}</p>

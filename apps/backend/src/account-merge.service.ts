@@ -36,6 +36,7 @@ export class AccountMergeService {
       await tx`UPDATE account_discord_identities SET account_id=${target}, merge_origin=${source} WHERE account_id=${source}`
       await tx`UPDATE account_minecraft_identities SET account_id=${target}, merge_origin=${source} WHERE account_id=${source}`
       await tx`UPDATE images SET uploaded_by=${target}, merge_origin=${source} WHERE uploaded_by=${source}`
+      await tx`UPDATE operator_members SET account_id=${target}, merge_origin=${source} WHERE account_id=${source}`
       await tx`UPDATE territories SET applicant_account_id=${target}, applicant_merge_origin=${source} WHERE applicant_account_id=${source}`
       await tx`UPDATE territories SET owner_account_id=${target}, owner_merge_origin=${source} WHERE owner_type='account' AND owner_account_id=${source}`
       await tx`DELETE FROM account_sessions WHERE account_id=${source}`
@@ -57,10 +58,11 @@ export class AccountMergeService {
       const minecraftDisplaced = await tx`SELECT id FROM account_minecraft_identities
         WHERE merge_origin=${source} AND account_id<>${target}`
       const imagesDisplaced = await tx`SELECT id FROM images WHERE merge_origin=${source} AND uploaded_by<>${target}`
+      const operatorDisplaced = await tx`SELECT member_key FROM operator_members WHERE merge_origin=${source} AND account_id<>${target}`
       const territoryDisplaced = await tx`SELECT id FROM territories WHERE
         (applicant_merge_origin=${source} AND applicant_account_id<>${target}) OR
         (owner_merge_origin=${source} AND owner_account_id<>${target})`
-      if (displaced.length || minecraftDisplaced.length || imagesDisplaced.length || territoryDisplaced.length) {
+      if (displaced.length || minecraftDisplaced.length || imagesDisplaced.length || operatorDisplaced.length || territoryDisplaced.length) {
         throw new ConflictException('Merged ownership changed; manual reconciliation is required')
       }
       const identities = await tx`SELECT discord_id FROM account_discord_identities WHERE merge_origin=${source} AND account_id=${target}`
@@ -71,6 +73,7 @@ export class AccountMergeService {
         WHERE account_id=${target} AND merge_origin=${source}`
       await tx`UPDATE images SET uploaded_by=${source}, merge_origin=NULL
         WHERE uploaded_by=${target} AND merge_origin=${source}`
+      await tx`UPDATE operator_members SET account_id=${source},merge_origin=NULL WHERE account_id=${target} AND merge_origin=${source}`
       await tx`UPDATE territories SET applicant_account_id=${source}, applicant_merge_origin=NULL
         WHERE applicant_account_id=${target} AND applicant_merge_origin=${source}`
       await tx`UPDATE territories SET owner_account_id=${source}, owner_merge_origin=NULL

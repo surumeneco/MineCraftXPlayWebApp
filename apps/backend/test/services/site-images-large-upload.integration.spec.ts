@@ -14,7 +14,7 @@ suite('large site images and operator images (PostgreSQL and HTTP)', () => {
   let root = '', resourceId = ''
   const accountId = randomUUID(), session = randomUUID(), csrf = randomUUID()
   const discordId = `site-large-${randomUUID()}`
-  const key = `operator.test_${randomUUID().replaceAll('-', '').slice(0, 16)}`
+  const key = `card.test_${randomUUID().replaceAll('-', '').slice(0, 16)}`
   const hash = (value: string) => createHash('sha256').update(value).digest('hex')
   const cookie = `xplay_session=${session}; xplay_csrf=${csrf}`
   const headers = { Cookie: cookie, Origin: 'http://localhost:3000', 'X-XPlay-CSRF': csrf }

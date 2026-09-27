@@ -46,6 +46,7 @@ export class AccountRetirementService {
       await tx`DELETE FROM account_discord_identities WHERE account_id=${id}`
       await tx`DELETE FROM account_minecraft_identities WHERE account_id=${id}`
       await tx`DELETE FROM account_bluemap_colors WHERE account_id=${id}`
+      await tx`UPDATE operator_members SET account_id=NULL,merge_origin=NULL WHERE account_id=${id}`
       await tx`UPDATE accounts SET name='退会済みユーザー',retired_at=clock_timestamp() WHERE id=${id}`
     })
     return { id, retired: true }

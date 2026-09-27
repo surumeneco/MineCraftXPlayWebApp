@@ -15,13 +15,13 @@
         <label class="form-label mt-3">本文</label>
         <ClientOnly><div ref="editor" class="mb-3" aria-label="お知らせ本文" /></ClientOnly>
         <p class="form-text">本文中の任意位置に画像を挿入できます。画像の変更は保存時に確定します。</p>
-        <div class="d-flex flex-wrap gap-2">
-          <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
-          <button type="button" class="btn btn-success" :disabled="busy || selected?.status === 'published' || !selectedTags.length" @click="request('publish')">公開する</button>
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="backToList">一覧に戻る</button>
+          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('discard')">変更を破棄</button>
           <button v-if="selected?.status === 'published'" type="button" class="btn btn-warning" :disabled="busy" @click="request('unpublish')">公開取り消し</button>
           <button v-else-if="selected" type="button" class="btn btn-danger" :disabled="busy" @click="request('remove')">物理削除</button>
-          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="request('discard')">変更を破棄</button>
-          <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="backToList">一覧に戻る</button>
+          <button type="submit" class="btn btn-primary" :disabled="busy">保存</button>
+          <button v-if="selected?.status !== 'published'" type="button" class="btn btn-success" :disabled="busy || !selectedTags.length" @click="request('publish')">公開する</button>
         </div>
       </form>
     </template>
@@ -30,8 +30,8 @@
       @confirm="executeDecision" @cancel="cancelDecision" />
     <UiDialog :open="leavePrompt" kind="confirmation" title="未保存の変更があります"
       message="保存していない内容は破棄されます。移動しますか？" :buttons="[
-        { value: 'stay', label: '編集を続ける', color: 'outline-secondary' },
         { value: 'leave', label: '破棄して移動', color: 'danger' },
+        { value: 'stay', label: '編集を続ける', color: 'outline-secondary' },
       ]" :busy="busy" @action="handleLeaveAction" @close="cancelLeave" />
   </section>
 </template>

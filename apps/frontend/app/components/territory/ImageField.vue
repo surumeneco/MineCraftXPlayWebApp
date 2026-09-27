@@ -8,8 +8,8 @@
         <input :id="fieldId" type="file" class="form-control" accept="image/png,image/jpeg,image/webp,image/svg+xml"
           :disabled="uploading" @change="uploadFile" />
         <p class="small text-body-secondary mt-1 mb-2">JPEG / PNG / WebP / 静的SVG。画像を選ばなくても申請できます。</p>
-        <button v-if="modelValue" type="button" class="btn btn-outline-secondary btn-sm"
-          :disabled="uploading" @click="clear">画像を解除</button>
+        <div v-if="modelValue" class="text-end"><button type="button" class="btn btn-outline-secondary btn-sm"
+          :disabled="uploading" @click="clear">画像を解除</button></div>
         <p v-if="uploading" role="status" class="mt-2 mb-0">画像を登録しています…</p>
         <p v-if="error" class="text-danger small mt-2 mb-0" role="alert">{{ error }}</p>
       </div>

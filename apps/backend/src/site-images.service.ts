@@ -48,13 +48,14 @@ export class SiteImagesService {
       FROM site_image_resources r
       LEFT JOIN site_image_versions v ON v.resource_id=r.id
       LEFT JOIN images i ON i.id=v.image_id
+      WHERE r.key NOT LIKE 'operator.%'
       GROUP BY r.id ORDER BY r.key`
   }
 
   async createResource(raw: unknown, admin: string) {
     const data = payload(raw)
     const key = text(data.key, '管理キー', 80)
-    if (!RESOURCE_KEY.test(key)) throw new BadRequestException('管理キーは英小文字で始まるドット区切りの識別子にしてください。')
+    if (!RESOURCE_KEY.test(key) || key.startsWith('operator.')) throw new BadRequestException('管理キーは英小文字で始まるドット区切りの識別子にしてください。')
     const name = text(data.name, '画像リソース名', 100)
     const description = text(data.description ?? '', '説明', 500, true)
     try {
@@ -72,7 +73,7 @@ export class SiteImagesService {
     const description = text(data.description ?? '', '説明', 500, true)
     const rows = await this.database.sql`
       UPDATE site_image_resources SET name=${name}, description=${description}
-      WHERE id=${uuid(id)} RETURNING id, key, name, description`
+      WHERE id=${uuid(id)} AND key NOT LIKE 'operator.%' RETURNING id, key, name, description`
     if (!rows.length) throw new NotFoundException('画像リソースが見つかりません。')
     return rows[0]
   }
@@ -86,7 +87,7 @@ export class SiteImagesService {
     catch (error) { throw new BadRequestException(error instanceof Error ? error.message : '画像が不正です。') }
     try {
       return await this.database.sql.begin(async tx => {
-        const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} FOR UPDATE`
+        const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} AND key NOT LIKE 'operator.%' FOR UPDATE`
         if (!resources.length) throw new NotFoundException('画像リソースが見つかりません。')
         const count = await tx`SELECT COALESCE(MAX(version_number), 0) + 1 AS next FROM site_image_versions WHERE resource_id=${resourceId}`
         const blobs = await tx`INSERT INTO images(purpose, data, mime_type, size, uploaded_by)
@@ -106,6 +107,7 @@ export class SiteImagesService {
     const note = text(data.note ?? '', 'メモ', 500, true)
     const rows = await this.database.sql`
       UPDATE site_image_versions SET name=${name}, note=${note} WHERE id=${uuid(id)}
+        AND resource_id IN (SELECT id FROM site_image_resources WHERE key NOT LIKE 'operator.%')
       RETURNING id, resource_id, version_number, name, note, created_at`
     if (!rows.length) throw new NotFoundException('画像バージョンが見つかりません。')
     return rows[0]
@@ -154,7 +156,7 @@ export class SiteImagesService {
       const settings = await tx`SELECT active_preset_id FROM site_image_settings WHERE singleton=true FOR UPDATE`
       const presets = await tx`SELECT id, is_default FROM site_image_presets WHERE id=${uuid(presetId)}`
       if (!presets.length) throw new NotFoundException('プリセットが見つかりません。')
-      const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)}`
+      const resources = await tx`SELECT id FROM site_image_resources WHERE id=${uuid(resourceId)} AND key NOT LIKE 'operator.%'`
       if (!resources.length) throw new NotFoundException('画像リソースが見つかりません。')
       if (versionId) {
         const versions = await tx`SELECT id FROM site_image_versions WHERE id=${versionId} AND resource_id=${resourceId}`
@@ -211,7 +213,7 @@ export class SiteImagesService {
         LEFT JOIN site_image_preset_items active ON active.preset_id=s.active_preset_id AND active.resource_id=r.id
         LEFT JOIN site_image_versions v ON v.id=CASE WHEN active.preset_id IS NOT NULL THEN active.version_id ELSE base.version_id END
         LEFT JOIN images i ON i.id=v.image_id
-        WHERE s.singleton AND p.is_default AND r.key=${key}`
+        WHERE s.singleton AND p.is_default AND r.key=${key} AND r.key NOT LIKE 'operator.%'`
     }
     return this.database.sql`
       SELECT r.key, v.id AS version_id, v.static_path, i.mime_type
@@ -221,7 +223,7 @@ export class SiteImagesService {
       LEFT JOIN site_image_preset_items active ON active.preset_id=s.active_preset_id AND active.resource_id=r.id
       LEFT JOIN site_image_versions v ON v.id=CASE WHEN active.preset_id IS NOT NULL THEN active.version_id ELSE base.version_id END
       LEFT JOIN images i ON i.id=v.image_id
-      WHERE s.singleton AND p.is_default ${key === undefined ? this.database.sql`` : this.database.sql`AND r.key=${key}`}
+      WHERE s.singleton AND p.is_default AND r.key NOT LIKE 'operator.%' ${key === undefined ? this.database.sql`` : this.database.sql`AND r.key=${key}`}
       ORDER BY r.key`
   }
 

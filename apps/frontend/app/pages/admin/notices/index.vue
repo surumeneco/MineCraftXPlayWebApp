@@ -6,10 +6,10 @@
       お知らせ管理には管理者権限が必要です。<NuxtLink to="/login">ログイン</NuxtLink>
     </div>
     <template v-else>
-      <div class="d-flex flex-wrap gap-2 mb-3">
-        <NuxtLink to="/admin/notices/new" class="btn btn-primary">新規投稿</NuxtLink>
-        <button type="button" class="btn btn-primary d-inline-flex align-items-center justify-content-center" :disabled="busy"
+      <div class="d-flex flex-wrap gap-2 justify-content-end mb-3">
+        <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" :disabled="busy"
           aria-label="お知らせ一覧を更新" title="一覧更新" @click="reload"><UiBootstrapIcon name="arrow-clockwise" /></button>
+        <NuxtLink to="/admin/notices/new" class="btn btn-primary">新規投稿</NuxtLink>
       </div>
       <div v-if="errorMessage" class="alert alert-danger" role="alert">{{ errorMessage }}</div>
       <p v-if="!notices.length" role="status">記事はありません。</p>
