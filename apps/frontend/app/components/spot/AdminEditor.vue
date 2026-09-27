@@ -25,7 +25,7 @@
         <label for="spot-dimension" class="form-label">ディメンション</label>
         <input id="spot-dimension" v-model="dimension" class="form-control" maxlength="100" placeholder="例：minecraft:overworld" required @input="dirty = true" />
         <div class="row g-2 mt-1">
-          <div v-for="axis in axisFields" :key="axis.key" class="col-4">
+          <div v-for="axis in axisFields" :key="axis.key" class="col-6">
             <label class="form-label" :for="'spot-' + axis.key">{{ axis.label }}座標</label>
             <input :id="'spot-' + axis.key" v-model="coordinates[axis.key]" class="form-control"
               type="number" step="1" required @input="dirty = true" />
@@ -91,8 +91,8 @@ let unregisterRouteGuard: (() => void) | undefined
 const selected = ref<Spot | null>(null)
 const name = ref(''), dimension = ref(''), territoryId = ref('')
 const mainImageId = ref<string | null>(null), localPreview = ref('')
-const coordinates = reactive<{ x: string; y: string; z: string }>({ x: '', y: '', z: '' })
-const axisFields = [{ key: 'x' as const, label: 'X' }, { key: 'y' as const, label: 'Y' }, { key: 'z' as const, label: 'Z' }]
+const coordinates = reactive<{ x: string; z: string }>({ x: '', z: '' })
+const axisFields = [{ key: 'x' as const, label: 'X' }, { key: 'z' as const, label: 'Z' }]
 const allTags = ref<NoticeTag[]>([]), selectedTags = ref<string[]>([])
 const territories = ref<{ id: string; name: string; status: string }[]>([])
 const editor = ref<HTMLDivElement | null>(null)
@@ -109,7 +109,6 @@ function reset(item: Spot | null) {
   mainImageId.value = item?.main_image_id ?? null
   dimension.value = item?.dimension ?? ''
   coordinates.x = item?.pos_x == null ? '' : String(item.pos_x)
-  coordinates.y = item?.pos_y == null ? '' : String(item.pos_y)
   coordinates.z = item?.pos_z == null ? '' : String(item.pos_z)
   territoryId.value = item?.territory_id ?? ''
   selectedTags.value = item?.tags.map(tag => tag.name) ?? []
@@ -200,7 +199,7 @@ function payload() {
     if (!dimension.value.trim() || Object.values(coordinates).some(value => value.trim() === '')) {
       throw new Error('ディメンションと座標を入力してください。')
     }
-    return { ...common, dimension: dimension.value, x: Number(coordinates.x), y: Number(coordinates.y), z: Number(coordinates.z) }
+    return { ...common, dimension: dimension.value, x: Number(coordinates.x), z: Number(coordinates.z) }
   }
   if (!territoryId.value) throw new Error('領地を選択してください。')
   return { ...common, territory_id: territoryId.value, tags: selectedTags.value }
