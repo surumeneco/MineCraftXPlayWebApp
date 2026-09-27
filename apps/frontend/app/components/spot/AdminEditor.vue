@@ -81,6 +81,10 @@ import { spotLabel } from '../../types/spot'
 import { noticeToolbarOptions } from '../notice/toolbar-options'
 import { userFacingError } from '../../utils/user-error'
 const props = defineProps<{ kind: SpotKind; spotId?: string }>()
+const breadcrumbNames = useSpotBreadcrumbNames()
+watch(() => [props.kind, props.spotId] as const, ([kind, id]) => {
+  if (id) breadcrumbNames.forget(kind, id)
+}, { immediate: true })
 const { public: { apiBase } } = useRuntimeConfig()
 const router = useRouter()
 const auth = useAccountSession(), api = useAccountApi()
@@ -116,6 +120,7 @@ function clearPreview() {
 }
 function reset(item: Spot | null) {
   selected.value = item
+  if (item) breadcrumbNames.remember(item.kind, item.id, item.name)
   name.value = item?.name ?? ''
   mainImageId.value = item?.main_image_id ?? null
   dimension.value = item?.dimension ?? ''
@@ -262,6 +267,7 @@ async function confirmDecision() {
       showSuccess('公開を取り消しました。')
     } else {
       await api.mutate(base.value + '/' + item.id, 'DELETE', { expected_version: item.version })
+      breadcrumbNames.forget(item.kind, item.id)
       dirty.value = false
       showSuccess('削除されました。')
       await navigateTo(base.value)
@@ -289,7 +295,11 @@ onMounted(async () => {
       allTags.value = tags
       reset(items)
     }
-  } catch (cause) { error.value = userFacingError(cause); showError(cause) }
+  } catch (cause) {
+    if (props.spotId) breadcrumbNames.forget(props.kind, props.spotId)
+    error.value = userFacingError(cause)
+    showError(cause)
+  }
   finally { loading.value = false; await nextTick(); await ensureQuill() }
 })
 onBeforeUnmount(() => {

@@ -41,11 +41,19 @@ import type { Spot, SpotKind } from '../../types/spot'
 import { spotLocation } from '../../types/spot'
 import { noticeDate } from '../../utils/notice'
 const props = defineProps<{ kind: SpotKind; id: string }>()
+const breadcrumbNames = useSpotBreadcrumbNames()
+watch(() => [props.kind, props.id] as const, ([kind, id]) => breadcrumbNames.forget(kind, id), { immediate: true })
 const { public: { apiBase } } = useRuntimeConfig()
 const { data: spot, status, error, refresh } = useFetch<Spot>(
   () => apiBase + '/spots/' + props.kind + '/' + encodeURIComponent(props.id),
   { server: false, lazy: true },
 )
+watch(spot, item => {
+  if (item && item.kind === props.kind && item.id === props.id) {
+    breadcrumbNames.remember(item.kind, item.id, item.name)
+  }
+}, { immediate: true })
+watch(error, issue => { if (issue) breadcrumbNames.forget(props.kind, props.id) })
 const editor = ref<HTMLDivElement | null>(null)
 const { $loadQuill } = useNuxtApp()
 let viewer: InstanceType<Awaited<ReturnType<typeof $loadQuill>>> | null = null
