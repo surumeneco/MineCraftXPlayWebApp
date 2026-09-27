@@ -20,7 +20,7 @@
         <div class="text-end"><button type="button" class="btn btn-sm btn-primary mt-2" :disabled="busy || !hasDiscordName(identity)"
           @click="adoptName(identity.discord_id)">このDiscord名をアカウント名へ反映</button></div>
       </div>
-      <a :href="`${apiBase}/auth/discord/refresh`" class="btn btn-secondary mt-2">ログイン中のDiscord名を再取得</a>
+      <div class="text-end"><a :href="`${apiBase}/auth/discord/refresh`" class="btn btn-outline-secondary mt-2">ログイン中のDiscord名を再取得</a></div>
       <h2 class="h4 mt-4">Minecraftアカウント（自己申告）</h2>
       <p class="small text-body-secondary">Minecraftでの本人確認は行っていません。JE・BEとも複数登録できます。</p>
       <ul v-if="profile.minecraft_ids.length" class="list-group mb-3">
