@@ -295,7 +295,7 @@ export class TerritoryService {
       const id = String(territories[0].id)
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
-      await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
+      await this.notify(tx, operationId, id, 'application', 'new', coordinates, name, undefined, undefined, accountId)
       await this.completeOperation(tx, operationId, id, 'create', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
@@ -337,7 +337,7 @@ export class TerritoryService {
         status='pending',development_concept=${concept},status_changed_at=clock_timestamp() WHERE id=${id}`
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
-      await this.notify(tx, operationId, id, 'application', 'new', coordinates, name)
+      await this.notify(tx, operationId, id, 'application', 'new', coordinates, name, undefined, undefined, accountId)
       await this.completeOperation(tx, operationId, id, 'reapply', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
@@ -389,13 +389,13 @@ export class TerritoryService {
           operation_id,territory_id,actor_account_id,kind,old_name,new_name,old_image_id,new_image_id)
           VALUES (${operationId},${id},${accountId},'metadata',${approvedName},${name},
             ${row.current_image_id},${imageId})`
-        if (nameChanged) await this.notify(tx, operationId, id, 'renamed', 'edit', approvedCoordinates, name, undefined, approvedName)
+        if (nameChanged) await this.notify(tx, operationId, id, 'renamed', 'edit', approvedCoordinates, name, undefined, approvedName, accountId)
         return this.getFromRows(await this.rows(tx), id)
       }
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
         VALUES (${id},'edit',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
       await tx`UPDATE territories SET status='pending',development_concept=${concept},status_changed_at=clock_timestamp() WHERE id=${id}`
-      await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name)
+      await this.notify(tx, operationId, id, 'application', 'edit', coordinates, name, undefined, undefined, accountId)
       await this.completeOperation(tx, operationId, id, 'edit', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
@@ -515,7 +515,7 @@ export class TerritoryService {
       const nextStatus = previousApproved.length ? 'approved' : 'withdrawn'
       await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
       await this.notify(tx, operationId, id, 'withdrawn', app.application_type as ApplicationType,
-        app.coordinates as Point[], String(app.name))
+        app.coordinates as Point[], String(app.name), undefined, undefined, accountId)
       await this.completeOperation(tx, operationId, id, 'withdraw', accountId)
       return this.getFromRows(await this.rows(tx), id)
     })
@@ -533,7 +533,7 @@ export class TerritoryService {
       const locked = await tx`SELECT status,current_name FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (locked[0].status !== 'pending') throw new ConflictException('Territory is not pending')
-      const apps = await tx`SELECT id,application_type,name,coordinates,image_id FROM territory_applications
+      const apps = await tx`SELECT id,application_type,name,coordinates,image_id,submitted_by_account_id FROM territory_applications
         WHERE territory_id=${id} AND status='pending' ORDER BY submitted_at DESC,id DESC LIMIT 1 FOR UPDATE`
       if (!apps.length) throw new ConflictException('Pending application not found')
       const app = apps[0], appId = String(app.id), applicationType = app.application_type as ApplicationType
@@ -541,15 +541,15 @@ export class TerritoryService {
       if (action === 'approve') {
         await tx`UPDATE territory_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL,note='' WHERE id=${appId}`
         await tx`UPDATE territories SET status='approved',current_name=${app.name},current_image_id=${app.image_id},approved_at=clock_timestamp(),status_changed_at=clock_timestamp() WHERE id=${id}`
-        await this.notify(tx, operationId, id, 'approved', applicationType, app.coordinates as Point[], String(app.name))
-        if (locked[0].current_name && locked[0].current_name !== app.name) await this.notify(tx, operationId, id, 'renamed', applicationType, app.coordinates as Point[], String(app.name), undefined, String(locked[0].current_name))
+        await this.notify(tx, operationId, id, 'approved', applicationType, app.coordinates as Point[], String(app.name), undefined, undefined, String(app.submitted_by_account_id))
+        if (locked[0].current_name && locked[0].current_name !== app.name) await this.notify(tx, operationId, id, 'renamed', applicationType, app.coordinates as Point[], String(app.name), undefined, String(locked[0].current_name), String(app.submitted_by_account_id))
       } else {
         const status = action === 'return' ? 'returned' : 'rejected'
         await tx`UPDATE territory_applications SET status=${status},decided_at=clock_timestamp(),reason=${reviewReason},note=${reviewReason} WHERE id=${appId}`
         const previousApproved = await tx`SELECT 1 FROM territory_applications WHERE territory_id=${id} AND status='approved' LIMIT 1`
         const nextStatus = previousApproved.length ? 'approved' : status
         await tx`UPDATE territories SET status=${nextStatus},status_changed_at=clock_timestamp() WHERE id=${id}`
-        await this.notify(tx, operationId, id, status, applicationType, app.coordinates as Point[], String(app.name), reviewReason ?? undefined)
+        await this.notify(tx, operationId, id, status, applicationType, app.coordinates as Point[], String(app.name), reviewReason ?? undefined, undefined, String(app.submitted_by_account_id))
       }
       await this.completeOperation(tx, operationId, id, action, reviewerAccountId)
       return { ...this.getFromRows(await this.rows(tx), id), overlaps_at_review: overlapsAtReview }
@@ -602,15 +602,17 @@ export class TerritoryService {
 
   private async notify(sql: any, operationId: string, territoryId: string,
     kind: TerritoryNotificationEvent['kind'], applicationType: ApplicationType,
-    coordinates: Point[], name: string, reviewReason?: string, previousName?: string) {
+    coordinates: Point[], name: string, reviewReason?: string, previousName?: string, actorAccountId?: string) {
     const territory = (await this.rows(sql)).find(row => row.id === territoryId)
     if (!territory) throw new NotFoundException('Territory not found')
-    const discord = await sql`SELECT discord_id FROM account_discord_identities WHERE account_id=${territory.applicant_account_id} ORDER BY discord_id`
+    const notifiedAccountId = actorAccountId ?? territory.applicant_account_id
+    const discord = await sql`SELECT discord_id FROM account_discord_identities WHERE account_id=${notifiedAccountId} ORDER BY discord_id`
+    const account = notifiedAccountId ? await sql`SELECT name FROM accounts WHERE id=${notifiedAccountId}` : []
     const event: TerritoryNotificationEvent = {
       event_id: `${operationId}:${kind}`,
       kind, application_type: applicationType, territory_name: name,
       ...(previousName ? { previous_name: previousName } : {}),
-      account_name: territory.applicant_name,
+      account_name: String(account[0]?.name ?? territory.applicant_name),
       discord_ids: discord.map((entry: any) => String(entry.discord_id)),
       territory_id: territoryId,
       ...(kind === 'application' || kind === 'approved'
