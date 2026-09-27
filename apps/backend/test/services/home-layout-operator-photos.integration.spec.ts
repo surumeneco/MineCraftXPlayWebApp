@@ -96,7 +96,7 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     expect((await json(`/admin/site-image-presets/${normal.id}/items/${legacy.id}`, 'PUT',
       { mode: 'none' })).status).toBe(404)
     expect((await request(`/admin/site-images/versions/${version.id}/file`,
-      { headers: auth(adminSession) })).status).toBe(302)
+      { headers: auth(adminSession), redirect: 'manual' })).status).toBe(302)
   })
   it('rejects unauthenticated, non-admin and CSRF-free layout edits', async () => {
     expect((await request('/admin/home-layout')).status).toBe(401)
