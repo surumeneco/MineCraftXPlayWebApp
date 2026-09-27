@@ -18,7 +18,7 @@
       </div>
     </div>
     </div>
-    <button type="button" class="btn btn-outline-secondary btn-sm" @click="add">座標を追加</button>
+    <div class="text-end"><button type="button" class="btn btn-outline-secondary btn-sm" @click="add">座標を追加</button></div>
     <p v-if="error" class="text-danger small mt-2 mb-0">{{ error }}</p>
   </div>
 </template>
