@@ -20,12 +20,17 @@
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--xplay-text-base);
   background: linear-gradient(180deg, var(--xplay-background-page-base), var(--xplay-background-page-end)) fixed;
 }
 
 // Override Bootstrap via CSS variables instead of hard-coded per-theme colors.
+/* Clip unintended horizontal scroll without creating a scroll container for the sticky header. */
 .xplay-shell {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
   color: var(--xplay-text-base);
   --bs-body-color: var(--xplay-text-base);
   --bs-body-color-rgb: var(--xplay-text-base-rgb);
@@ -77,6 +82,12 @@ body {
     --bs-alert-border-color: var(--xplay-feedback-info-border);
   }
 }
+
+/* Bootstrap's 100vh minimum can exceed the visible height on mobile browsers. */
+.xplay-shell.min-vh-100 {
+  min-height: 100dvh !important;
+}
+.xplay-shell main { min-width: 0; }
 
 .xplay-panel {
   min-width: 0;
