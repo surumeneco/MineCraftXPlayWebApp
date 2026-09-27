@@ -9,7 +9,6 @@ export interface Spot {
   main_image_id: string | null
   dimension: string | null
   pos_x: number | null
-  pos_y: number | null
   pos_z: number | null
   territory_id: string | null
   territory_name: string | null
@@ -23,5 +22,5 @@ export interface Spot {
 }
 export const spotLabel = (kind: SpotKind) => kind === 'public' ? '公営スポット案内' : '観光情報'
 export const spotLocation = (item: Spot) => item.kind === 'public'
-  ? (item.dimension ?? '未設定') + ' / X:' + item.pos_x + ' Y:' + item.pos_y + ' Z:' + item.pos_z
+  ? (item.dimension ?? '未設定') + ' / X:' + item.pos_x + ' Z:' + item.pos_z
   : item.territory_name ?? '領地名未設定'
