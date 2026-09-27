@@ -6,7 +6,7 @@ import { TerritoryImagesService } from './territory-images.service.js'
 import { TerritoryNotificationService, type TerritoryNotificationEvent } from './territory-notification.service.js'
 
 export type TerritoryStatus = 'pending' | 'approved' | 'returned' | 'withdrawn' | 'rejected'
-export type OwnerType = 'account' | 'shared_area' | 'administration' | 'protected_area'
+export type OwnerType = 'account' | 'company' | 'shared_area' | 'administration' | 'protected_area'
 type ApplicationType = 'new' | 'edit'
 type OperationKind = 'create' | 'reapply' | 'edit' | 'withdraw' | 'approve' | 'return' | 'reject' | 'transfer'
 type ApplicationData = {
@@ -28,7 +28,11 @@ type TerritoryRow = {
   applicant_name: string
   owner_type: OwnerType
   owner_account_id: string | null
+  owner_company_id: string | null
   owner_account_name: string | null
+  owner_company_name: string | null
+  company_representative_account_id: string | null
+  company_is_public: boolean | null
   current_name: string | null
   current_image_id: string | null
   development_concept: string
@@ -41,7 +45,7 @@ type TerritoryRow = {
   latest_application: ApplicationData | null
 }
 
-const specialOwnerNames: Record<Exclude<OwnerType, 'account'>, string> = {
+const specialOwnerNames: Record<Exclude<OwnerType, 'account' | 'company'>, string> = {
   shared_area: '共同建築エリア',
   administration: '運営',
   protected_area: '保護区',
@@ -55,7 +59,7 @@ function territoryName(value: unknown): string {
   return name
 }
 function ownerType(value: unknown): OwnerType {
-  if (!['account','shared_area','administration','protected_area'].includes(String(value))) throw new BadRequestException('Invalid territory owner')
+  if (!['account','company','shared_area','administration','protected_area'].includes(String(value))) throw new BadRequestException('Invalid territory owner')
   return value as OwnerType
 }
 function reason(value: unknown): string {
@@ -87,8 +91,9 @@ export class TerritoryService {
 
   private async rows(sql: any = this.database.sql): Promise<TerritoryRow[]> {
     return await sql`
-      SELECT t.id,t.applicant_account_id,COALESCE(applicant.name, '運営') AS applicant_name,t.owner_type,t.owner_account_id,t.current_name,t.current_image_id,t.development_concept,
-        owner.name AS owner_account_name,t.status,t.first_applied_at,t.approved_at,t.status_changed_at,
+      SELECT t.id,t.applicant_account_id,COALESCE(applicant.name, '運営') AS applicant_name,t.owner_type,t.owner_account_id,t.owner_company_id,t.current_name,t.current_image_id,t.development_concept,
+        owner.name AS owner_account_name,co.current_name AS owner_company_name,
+        co.representative_account_id AS company_representative_account_id,co.is_public AS company_is_public,t.status,t.first_applied_at,t.approved_at,t.status_changed_at,
         (SELECT json_build_object('id',a.id,'submitted_by_account_id',a.submitted_by_account_id,'application_type',a.application_type,'name',a.name,
           'coordinates',a.coordinates,'image_id',a.image_id,'status',a.status,'submitted_at',a.submitted_at,'decided_at',a.decided_at,'reason',a.reason,'note',a.note)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
@@ -104,6 +109,7 @@ export class TerritoryService {
       FROM territories t
       LEFT JOIN accounts applicant ON applicant.id=t.applicant_account_id
       LEFT JOIN accounts owner ON owner.id=t.owner_account_id
+      LEFT JOIN companies co ON co.id=t.owner_company_id
       ORDER BY t.first_applied_at,t.id` as unknown as TerritoryRow[]
   }
 
@@ -114,7 +120,8 @@ export class TerritoryService {
   }
 
   private ownerName(row: TerritoryRow): string {
-    return row.owner_type === 'account' ? row.owner_account_name ?? '不明' : specialOwnerNames[row.owner_type]
+    return row.owner_type === 'account' ? row.owner_account_name ?? '不明'
+      : row.owner_type === 'company' ? row.owner_company_name ?? '不明な企業' : specialOwnerNames[row.owner_type]
   }
 
   private dto(row: TerritoryRow) {
@@ -129,7 +136,7 @@ export class TerritoryService {
       approved_image_id: row.approved_application ? row.current_image_id : null,
       pending_image_id: row.pending_application?.image_id ?? null,
       applicant: { id: row.applicant_account_id, name: row.applicant_name },
-      owner: { type: row.owner_type, account_id: row.owner_account_id, name: this.ownerName(row) },
+      owner: { type: row.owner_type, account_id: row.owner_account_id, company_id: row.owner_company_id, name: this.ownerName(row) },
       status: row.status,
       applied_at: row.first_applied_at,
       approved_at: row.approved_at,
@@ -197,7 +204,9 @@ export class TerritoryService {
 
   private async assertPendingArea(sql: any, accountId: string, requested: number) {
     const rows = await this.rows(sql)
-    const pending = rows.reduce((sum, row) => row.pending_application?.submitted_by_account_id === accountId
+    const pending = rows.reduce((sum, row) => row.pending_application && (row.owner_type === 'company'
+      ? !row.company_is_public && row.company_representative_account_id === accountId
+      : row.pending_application.submitted_by_account_id === accountId)
       ? sum + applicationArea(row) : sum, 0)
     if (pending + requested > 100000) {
       throw new BadRequestException(`申請中の領地面積が上限の100,000を超えています（現在 ${pending.toLocaleString('ja-JP')}、今回 ${requested.toLocaleString('ja-JP')}）。`)
@@ -213,11 +222,13 @@ export class TerritoryService {
     }
     const value = this.dto(row)
     const canEdit = row.status === 'approved' && (viewer.is_admin === true
-      || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id))
+      || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id)
+      || (row.owner_type === 'company' && viewer.account_id === row.company_representative_account_id))
     const canReapply = viewer.account_id === row.applicant_account_id && ['returned','withdrawn'].includes(row.status)
     const canWithdraw = viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending'
     const canConcept = viewer.is_admin === true ||
-      (row.owner_type === 'account' && viewer.account_id === row.owner_account_id)
+      (row.owner_type === 'account' && viewer.account_id === row.owner_account_id) ||
+      (row.owner_type === 'company' && viewer.account_id === row.company_representative_account_id)
     const canNote = row.status !== 'approved' && (viewer.is_admin === true || viewer.account_id === row.latest_application?.submitted_by_account_id)
     return { ...value, can_edit: canEdit, can_edit_concept: canConcept, can_reapply: canReapply, can_withdraw: canWithdraw,
       ...(canNote ? { note: row.latest_application?.note ?? '' } : {}),
@@ -229,10 +240,21 @@ export class TerritoryService {
     if (!rows.length) throw new ConflictException('Link a Minecraft ID before applying for territory')
   }
 
-  private resolveOwner(typeRaw: unknown, applicant: string, isAdmin: boolean) {
+  private async resolveOwner(sql: any, typeRaw: unknown, companyRaw: unknown, applicant: string, isAdmin: boolean) {
     const type = ownerType(typeRaw ?? 'account')
-    if (type !== 'account' && !isAdmin) throw new ForbiddenException('Only administrators can choose special territory owners')
-    return { type, accountId: type === 'account' ? applicant : null }
+    if (type === 'company') {
+      const companyId = uuid(companyRaw)
+      const companies = await sql`SELECT id,is_public,representative_account_id FROM companies
+        WHERE id=${companyId} AND approved_at IS NOT NULL`
+      if (!companies.length) throw new BadRequestException('承認済みの企業を選択してください。')
+      if (String(companies[0].representative_account_id) !== applicant && !(isAdmin && companies[0].is_public)) {
+        throw new ForbiddenException('代表者でない企業名義では申請できません。')
+      }
+      return { type, accountId: null, companyId, isPublic: companies[0].is_public === true }
+    }
+    if (companyRaw !== undefined && companyRaw !== null) throw new BadRequestException('企業以外の所有者に企業IDは指定できません。')
+    if (type !== 'account' && !isAdmin) throw new ForbiddenException('特殊な領地所有者は管理者のみ指定できます。')
+    return { type, accountId: type === 'account' ? applicant : null, companyId: null, isPublic: false }
   }
 
   private async completedOperation(tx: any, operationId: string, territoryId: string, kind: OperationKind, actorAccountId: string) {
