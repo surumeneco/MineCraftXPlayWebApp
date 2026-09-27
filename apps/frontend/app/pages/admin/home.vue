@@ -17,20 +17,22 @@
               <input :id="`category-${category.id}`" v-model="category.title" maxlength="100" required class="form-control" />
             </div>
             <div class="col-12 col-lg-auto d-flex gap-2 justify-content-end flex-wrap">
+              <button type="button" class="btn btn-outline-danger" :disabled="busy" @click="draft.categories.splice(categoryIndex,1)">カテゴリ削除</button>
               <button type="button" class="btn btn-outline-secondary" :disabled="busy || categoryIndex === 0"
                 :aria-label="`${category.title}を上へ`" @click="move(draft.categories,categoryIndex,-1)">上へ</button>
               <button type="button" class="btn btn-outline-secondary" :disabled="busy || categoryIndex === draft.categories.length-1"
                 :aria-label="`${category.title}を下へ`" @click="move(draft.categories,categoryIndex,1)">下へ</button>
-              <button type="button" class="btn btn-outline-danger" :disabled="busy" @click="draft.categories.splice(categoryIndex,1)">カテゴリ削除</button>
+              
             </div>
           </div>
           <div v-for="(card, cardIndex) in category.cards" :key="card.id" class="border-bottom py-3">
             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
               <strong>{{ card.type === 'hub' ? 'トップカード参照' : 'カスタムカード' }} {{ cardIndex + 1 }}</strong>
               <div class="d-flex gap-2 justify-content-end">
-                <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy || cardIndex === 0" @click="move(category.cards,cardIndex,-1)">上へ</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy || cardIndex === category.cards.length-1" @click="move(category.cards,cardIndex,1)">下へ</button>
                 <button type="button" class="btn btn-sm btn-outline-danger" :disabled="busy" @click="category.cards.splice(cardIndex,1)">削除</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy || cardIndex === 0" @click="move(category.cards,cardIndex,-1)">上へ</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy || cardIndex === category.cards.length-1" @click="move(category.cards,cardIndex,1)">下へ</button>
+                
               </div>
             </div>
             <template v-if="card.type === 'hub'">
