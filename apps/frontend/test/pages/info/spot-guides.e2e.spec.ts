@@ -11,7 +11,7 @@ function spot(id: string, kind: 'public' | 'tourist', name: string,
   return {
     id, kind, name, body_delta: { ops: [{ insert: name + 'についての案内\n' }] },
     main_image_id: null, dimension: kind === 'public' ? 'minecraft:overworld' : null,
-    pos_x: kind === 'public' ? 30 : null, pos_y: null,
+    pos_x: kind === 'public' ? 30 : null, pos_y: kind === 'public' ? 64 : null,
     pos_z: kind === 'public' ? -20 : null, territory_id: kind === 'tourist' ? gamma : null,
     territory_name: kind === 'tourist' ? '第一共同建築エリア' : null,
     sort_order: 0, status: 'published', created_at: published,
