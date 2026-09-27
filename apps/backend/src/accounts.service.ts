@@ -82,7 +82,7 @@ export class AccountsService {
     const id = uuid(accountRaw)
     if (editionRaw !== 'je' && editionRaw !== 'be') throw new BadRequestException('Edition must be je or be')
     if (typeof usernameRaw !== 'string') throw new BadRequestException('Invalid Minecraft name')
-    const username = usernameRaw.trim()
+    const username = usernameRaw.trim().replace(/^\.+/, '').trim()
     if (!username || username.length > 32 || /[\u0000-\u001f\u007f]/.test(username) ||
         (editionRaw === 'je' && !/^[A-Za-z0-9_]{3,16}$/.test(username))) {
       throw new BadRequestException('Invalid Minecraft name')
