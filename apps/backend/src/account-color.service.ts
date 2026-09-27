@@ -5,14 +5,14 @@ import { uuid } from './notice-validation.js'
 
 export type MapColor = { r: number; g: number; b: number }
 
-function channel(value: unknown, name: string): number {
+export function channel(value: unknown, name: string): number {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 255) {
     throw new BadRequestException(`${name} must be an integer from 0 to 255`)
   }
   return value
 }
 
-function randomVividColor(): MapColor {
+export function randomVividColor(): MapColor {
   const hue = randomInt(360)
   const c = 1
   const x = 1 - Math.abs((hue / 60) % 2 - 1)
