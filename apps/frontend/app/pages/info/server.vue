@@ -5,6 +5,7 @@
     <h3>基本情報</h3>
     <p>Minecraft 26.2 paperサーバー</p>
     <p>最大同時接続数設定：20</p>
+    <p>自動再起動時刻：深夜3:00頃</p>
 
     <h4>接続情報</h4>
     <h5>Java版</h5>
@@ -59,6 +60,7 @@
       <li>Multiverse NetherPortals：ネザー・エンドのポータル接続先を管理</li>
       <li>Multiverse Portals：ワールド間を移動するポータルを管理</li>
       <li>BlueMap：Webマップの生成</li>
+      <li>TerritoryMapSync：領地情報をBlueMapのマーカーへ同期</li>
       <li>DiscordSRV：MinecraftとDiscordの連携</li>
     </ul>
 
@@ -67,6 +69,7 @@
       <li>Block Locker：チェストやドアなどのロック・保護</li>
       <li>ClickMobs：Mobの運搬を補助</li>
       <li>GSit：座るなどのモーションを追加</li>
+      <li>What a Wonderful Chicken：騎乗・育成できる特殊なニワトリを追加</li>
     </ul>
 
     <h4>運営補助</h4>

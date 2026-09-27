@@ -3,11 +3,7 @@
     <UiPageTitle id="notice-heading" title="お知らせ" />
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
       <div>
-        <div class="form-label mb-1">並び替え</div>
-        <div class="btn-group" role="group" aria-label="お知らせの並び替え">
-          <UiButton :variant="sortBy === 'published_at' ? 'primary' : 'outline-primary'" :pressed="sortBy === 'published_at'" @click="sortBy = 'published_at'">投稿日時順</UiButton>
-          <UiButton :variant="sortBy === 'updated_at' ? 'primary' : 'outline-primary'" :pressed="sortBy === 'updated_at'" @click="sortBy = 'updated_at'">更新日時順</UiButton>
-        </div>
+        <UiSortSwitch v-model="sortBy" />
       </div>
       <div class="flex-grow-1" style="max-width: 20rem">
         <UiSelect v-model="tagId" label="タグで絞り込み" :options="tagOptions" />

@@ -68,10 +68,36 @@ suite('home layout and member photo management (PostgreSQL and HTTP)', () => {
     const result = await response.json() as any
     expect(result.data.categories.map((category:any) => category.title)).toEqual(['クイックリンク','サイト案内'])
     expect(result.data.categories.flatMap((category:any) => category.cards)).toHaveLength(5)
-    expect(result.data.hubs).toHaveLength(7)
+    expect(result.data.hubs).toHaveLength(9)
+    expect(result.data.hubs.slice(0, 3).map((hub: any) => hub.key)).toEqual(['info.notice','info.public-spots','info.tourist-spots'])
     expect(result.links.map((link:any) => link.url)).toContain('/territories/apply')
     const master = await request('/admin/site-images',{headers:auth(adminSession)})
     expect((await master.json() as any[]).some(image => image.key.startsWith('operator.'))).toBe(false)
+  })
+  it('keeps migrated card image history without exposing those resources for editing', async () => {
+    const movedKeys = ['card.ofuse', 'card.bluemap', 'card.info', 'card.lists', 'card.applications']
+    const master = await request('/admin/site-images', { headers: auth(adminSession) })
+    expect(master.status).toBe(200)
+    const managedKeys = (await master.json() as Array<{ key: string }>).map(resource => resource.key)
+    expect(managedKeys).toContain('card.discord')
+    for (const key of movedKeys) {
+      expect(managedKeys).not.toContain(key)
+      const rows = await sql`SELECT r.id, v.id AS version_id FROM site_image_resources r
+        LEFT JOIN site_image_versions v ON v.resource_id=r.id WHERE r.key=${key}`
+      expect(rows.length).toBeGreaterThan(0)
+    }
+
+    const legacy = (await sql`SELECT id FROM site_image_resources WHERE key='card.ofuse'`)[0]
+    const version = (await sql`SELECT id FROM site_image_versions WHERE resource_id=${legacy.id} ORDER BY version_number LIMIT 1`)[0]
+    const normal = (await sql`SELECT id FROM site_image_presets WHERE is_default`)[0]
+    expect((await json(`/admin/site-images/resources/${legacy.id}`, 'PATCH',
+      { name: '旧支援カード', description: '' })).status).toBe(404)
+    expect((await json(`/admin/site-images/versions/${version.id}`, 'PATCH',
+      { name: '旧画像', note: '' })).status).toBe(404)
+    expect((await json(`/admin/site-image-presets/${normal.id}/items/${legacy.id}`, 'PUT',
+      { mode: 'none' })).status).toBe(404)
+    expect((await request(`/admin/site-images/versions/${version.id}/file`,
+      { headers: auth(adminSession), redirect: 'manual' })).status).toBe(302)
   })
   it('rejects unauthenticated, non-admin and CSRF-free layout edits', async () => {
     expect((await request('/admin/home-layout')).status).toBe(401)

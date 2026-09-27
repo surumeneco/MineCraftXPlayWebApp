@@ -20,6 +20,7 @@
 type Crumb = { label: string; to?: string }
 const route = useRoute()
 const router = useRouter()
+const { getName: spotName } = useSpotBreadcrumbNames()
 const territoryNames = useState<Record<string,string>>('xplay-territory-breadcrumb-names', () => ({}))
 const territoryName = (id: string) => territoryNames.value[id] || '領地詳細'
 const home: Crumb = { label: 'ホーム', to: '/' }
@@ -30,6 +31,8 @@ const territories: Crumb = { label: '領地一覧', to: '/territories' }
 const adminApplications: Crumb = { label: '申請管理', to: '/admin/applications' }
 const requests: Crumb = { label: '領地承認', to: '/admin/territories' }
 const notices: Crumb = { label: 'お知らせ管理', to: '/admin/notices' }
+const publicSpots: Crumb = { label: '公営スポット案内', to: '/info/public-spots' }
+const touristSpots: Crumb = { label: '観光情報', to: '/info/tourist-spots' }
 const master: Crumb = { label: 'マスタメンテ', to: '/admin/master' }
 
 const infoPages: Record<string,string> = {
@@ -46,6 +49,10 @@ const items = computed<Crumb[]>(() => {
     const title = String(route.params.title ?? 'お知らせ詳細')
     return [home, info, { label: 'お知らせ', to: '/info/notice' }, { label: title }]
   }
+  if (path === '/info/public-spots') return [home, info, { label: '公営スポット案内' }]
+  if (path === '/info/tourist-spots') return [home, info, { label: '観光情報' }]
+  if (/^\/info\/public-spots\/[^/]+$/.test(path)) return [home, info, publicSpots, { label: spotName('public', id) || 'スポット詳細' }]
+  if (/^\/info\/tourist-spots\/[^/]+$/.test(path)) return [home, info, touristSpots, { label: spotName('tourist', id) || 'スポット詳細' }]
   if (path.startsWith('/info/') && infoPages[path.slice('/info/'.length)]) {
     return [home, info, { label: infoPages[path.slice('/info/'.length)] }]
   }
@@ -77,6 +84,15 @@ const items = computed<Crumb[]>(() => {
   if (path === '/admin/notices/new') return [home, notices, { label: '新規投稿' }]
   if (/^\/admin\/notices\/[^/]+\/edit$/.test(path)) {
     return [home, notices, { label: '記事編集' }]
+  }
+  for (const [kind, label] of [['public', '公営スポット'], ['tourist', '観光スポット']]) {
+    const list = '/admin/spots/' + kind
+    if (path === list) return [home, { label: label + '管理' }]
+    if (path === list + '/new') return [home, { label: label + '管理', to: list }, { label: '新規投稿' }]
+    if (path.startsWith(list + '/') && path.endsWith('/edit')) {
+      const name = spotName(kind as 'public' | 'tourist', id)
+      return [home, { label: label + '管理', to: list }, { label: name ? name + '（編集）' : 'スポット編集' }]
+    }
   }
   if (path === '/admin/master') return [home, { label: 'マスタメンテ' }]
   const masterPages: Record<string,string> = {

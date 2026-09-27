@@ -52,6 +52,8 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
     children: [
       { label: "情報トップ", to: "/info" },
       { label: "お知らせ", to: "/info/notice" },
+      { label: "公営スポット案内", to: "/info/public-spots" },
+      { label: "観光情報", to: "/info/tourist-spots" },
       { label: "コミュニティ概要", to: "/info/about" },
       { label: "運営メンバー紹介", to: "/info/operators" },
       { label: "サーバー情報", to: "/info/server" },
@@ -87,6 +89,13 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
           children: [
             { label: "お知らせ一覧", to: "/admin/notices" },
             { label: "新規投稿", to: "/admin/notices/new" },
+          ],
+        },
+        {
+          label: "スポット管理",
+          children: [
+            { label: "公営スポット管理", to: "/admin/spots/public" },
+            { label: "観光スポット管理", to: "/admin/spots/tourist" },
           ],
         },
         {
