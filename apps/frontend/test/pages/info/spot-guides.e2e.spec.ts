@@ -62,6 +62,11 @@ test('spot guide public cards navigate to Quill detail with the location', async
   await breadcrumb.locator('a[href="/info/public-spots"]').click()
   await cards.nth(1).click()
   await expect(breadcrumb.locator('li').last()).toHaveText('案内二')
+  await page.setViewportSize({ width: 375, height: 667 })
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  await expect(page.getByRole('button', { name: 'ナビゲーションメニュー' })).toBeVisible()
+  await page.getByRole('button', { name: 'ナビゲーションメニュー' }).click()
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
 })
 
 test('tourist guide combines name and tag filters and switches between published and updated dates', async ({ page, goto }) => {
