@@ -29,10 +29,10 @@
             <small class="d-block text-body-secondary">ユーザー名：{{ identity.username || '未取得' }} / ID：{{ identity.discord_id }}</small>
           </span>
           <span class="d-flex gap-2 flex-wrap">
-            <button type="button" class="btn btn-sm btn-primary" :disabled="busy || !hasDiscordName(identity)"
-              @click="adoptName(identity.discord_id)">アカウント名へ反映</button>
             <button type="button" class="btn btn-sm btn-outline-danger" :disabled="busy || account.discord_profiles.length <= 1 || account.merged_sources.length > 0 || protectedDiscord(identity.discord_id)"
               @click="ask('discord', identity.discord_id, `Discord ID ${identity.discord_id} の紐付けを解除しますか？`)">解除</button>
+            <button type="button" class="btn btn-sm btn-primary" :disabled="busy || !hasDiscordName(identity)"
+              @click="adoptName(identity.discord_id)">アカウント名へ反映</button>
           </span>
         </li>
       </ul>
