@@ -59,6 +59,12 @@
       :message="decision === 'remove' ? 'スポットと画像を完全に削除します。よろしいですか？' : 'スポットの公開を取り消しますか？'"
       :confirm-label="decision === 'remove' ? '削除する' : '公開を取り消す'"
       :danger="true" :busy="busy" @cancel="decision = null" @confirm="confirmDecision" />
+    <UiDialog :open="leavePrompt" kind="confirmation" title="未保存の変更があります"
+      message="保存していない内容は破棄されます。移動しますか？"
+      :buttons="[
+        { value: 'leave', label: '破棄して移動', color: 'danger' },
+        { value: 'stay', label: '編集を続ける', color: 'outline-secondary' },
+      ]" :busy="busy" @action="handleLeaveAction" @close="cancelLeave" />
   </section>
 </template>
 
@@ -77,6 +83,9 @@ const isAdmin = auth.isAdmin
 const base = computed(() => '/admin/spots/' + props.kind)
 const loading = ref(true), busy = ref(false), uploading = ref(false), dirty = ref(false), quillReady = ref(false)
 const error = ref(''), decision = ref<'remove' | 'unpublish' | null>(null)
+const leavePrompt = ref(false), pendingRoute = ref<string | null>(null)
+let allowLeaving = false
+let unregisterRouteGuard: (() => void) | undefined
 const selected = ref<Spot | null>(null)
 const name = ref(''), dimension = ref(''), territoryId = ref('')
 const mainImageId = ref<string | null>(null), localPreview = ref('')
@@ -117,6 +126,26 @@ async function ensureQuill() {
   reset(selected.value)
 }
 watch(editor, () => void ensureQuill(), { flush: 'post' })
+function cancelLeave() {
+  if (!busy.value) { pendingRoute.value = null; leavePrompt.value = false }
+}
+function handleLeaveAction(value: string) {
+  if (value === 'leave') void confirmLeave()
+  else cancelLeave()
+}
+async function confirmLeave() {
+  if (busy.value) return
+  const destination = pendingRoute.value
+  if (!destination) { cancelLeave(); return }
+  allowLeaving = true
+  dirty.value = false
+  leavePrompt.value = false
+  pendingRoute.value = null
+  await navigateTo(destination)
+}
+function preventUnload(event: BeforeUnloadEvent) {
+  if (dirty.value) { event.preventDefault(); event.returnValue = '' }
+}
 function updateTags(value: string[]) { selectedTags.value = value; dirty.value = true }
 function clearMain() { mainImageId.value = null; clearPreview(); dirty.value = true }
 async function sendImage(file: File) {
@@ -226,6 +255,13 @@ async function confirmDecision() {
   finally { busy.value = false; decision.value = null }
 }
 onMounted(async () => {
+  window.addEventListener('beforeunload', preventUnload)
+  unregisterRouteGuard = router.beforeEach(to => {
+    if (!dirty.value || allowLeaving) return true
+    pendingRoute.value = to.fullPath
+    leavePrompt.value = true
+    return false
+  })
   try {
     await auth.refresh()
     if (isAdmin.value) {
@@ -241,7 +277,11 @@ onMounted(async () => {
   } catch (cause) { error.value = userFacingError(cause); showError(cause) }
   finally { loading.value = false; await nextTick(); await ensureQuill() }
 })
-onBeforeUnmount(() => { clearPreview() })
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', preventUnload)
+  unregisterRouteGuard?.()
+  clearPreview()
+})
 </script>
 
 <style scoped>
