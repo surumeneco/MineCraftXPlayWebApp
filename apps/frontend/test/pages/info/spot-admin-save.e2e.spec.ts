@@ -3,19 +3,21 @@ import { expect, test } from '@nuxt/test-utils/playwright'
 test('spot guide editor sends the X/Z form after numeric input', async ({ page, goto }) => {
   let submitted: Record<string, unknown> | null = null
   const id = '91b613f9-f82c-4c76-aaec-ff0200000021'
-  const headers = {
-    'access-control-allow-origin': 'http://localhost:3000',
+  const headers = (origin: string) => ({
+    'access-control-allow-origin': origin,
     'access-control-allow-credentials': 'true',
     'access-control-allow-headers': 'Content-Type,X-XPlay-CSRF',
     'access-control-allow-methods': 'GET,POST,OPTIONS',
-  }
+  })
   await page.route('**/api/auth/session', route => route.fulfill({
-    status: 200, contentType: 'application/json', headers,
+    status: 200, contentType: 'application/json',
+    headers: headers(new URL(route.request().headers()['origin'] ?? 'http://localhost:3000').origin),
     body: JSON.stringify({ authenticated: true, is_admin: true, csrf_token: 'testing', account_id: id }),
   }))
   await page.route('**/api/admin/spots/public**', route => {
     const request = route.request()
-    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers })
+    const responseHeaders = headers(new URL(request.headers()['origin'] ?? 'http://localhost:3000').origin)
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: responseHeaders })
     if (request.method() === 'POST') submitted = request.postDataJSON()
     const spot = {
       id, kind: 'public', name: '案内テスト', body_delta: { ops: [{ insert: '説明文\\n' }] },
@@ -25,10 +27,13 @@ test('spot guide editor sends the X/Z form after numeric input', async ({ page, 
     }
     return route.fulfill({
       status: request.method() === 'POST' ? 201 : 200,
-      contentType: 'application/json', headers, body: JSON.stringify(spot),
+      contentType: 'application/json', headers: responseHeaders, body: JSON.stringify(spot),
     })
   })
   await goto('/admin/spots/public/new', { waitUntil: 'hydration' })
+  await expect(page.locator('#spot-name')).toBeVisible({ timeout: 15000 }).catch(async () => {
+    throw new Error('Spot editor unavailable: ' + await page.locator('main').innerText())
+  })
   await page.getByLabel('名前', { exact: true }).fill('案内テスト')
   await page.getByLabel('ディメンション').fill('minecraft:overworld')
   await page.getByLabel('X座標').fill('30')
