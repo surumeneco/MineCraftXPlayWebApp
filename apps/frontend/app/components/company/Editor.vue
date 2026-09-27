@@ -71,7 +71,20 @@ watch(repSearch,value=>{void searchAccounts(value)})
 watch(memberSearch,value=>{void searchAccounts(value)})
 function addMember(member:CompanyAccount){if(!members.value.some(m=>m.id===member.id))members.value=[...members.value,member];memberSearch.value=''}
 function removeMember(id:string){members.value=members.value.filter(m=>m.id!==id)}
-async function loadHeadquarters(){const path=editing.value?`/companies/headquarters?mode=edit&company_id=${encodeURIComponent(companyId.value)}`:'/companies/headquarters?mode=apply';headquarters.value=await get<Array<{id:string;name:string}>>(path)}
+let headquartersVersion=0
+async function loadHeadquarters(){
+  const version=++headquartersVersion
+  const path=editing.value
+    ? `/companies/headquarters?mode=edit&company_id=${encodeURIComponent(companyId.value)}&representative_account_id=${encodeURIComponent(representativeId.value)}`
+    : '/companies/headquarters?mode=apply'
+  const loaded=await get<Array<{id:string;name:string}>>(path)
+  if(version!==headquartersVersion)return
+  headquarters.value=loaded
+  if(headquartersId.value && !loaded.some(item=>item.id===headquartersId.value))headquartersId.value=''
+}
+watch(representativeId,()=>{
+  if(editing.value && ready.value)void loadHeadquarters().catch(e=>{error.value=userFacingError(e)})
+})
 async function submit(){if(!profile.value||!quill||!headquartersId.value||(!editing.value&&!members.value.length))return;busy.value=true;error.value='';try{
   const body={operation_id:crypto.randomUUID(),name:name.value.trim(),tags:tags.value,activities:activities.value,headquarters_territory_id:headquartersId.value,image_id:imageId.value,introduction_delta:quill.getContents(),
     ...(editing.value||auth.isAdmin.value?{representative_account_id:representativeId.value}:{}),
