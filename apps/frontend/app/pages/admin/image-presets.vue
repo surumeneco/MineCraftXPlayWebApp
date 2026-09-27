@@ -14,7 +14,7 @@
         <UiSectionHeading title="適用中の設定" />
         <p class="mb-2"><strong>{{ activePreset?.name ?? '取得できません' }}</strong> <span v-if="activePreset?.is_default" class="badge text-bg-success">通常設定</span></p>
         <p class="small text-body-secondary">イベント用プリセットから通常設定に戻すと、通常設定で保存されている最新の構成になります。</p>
-        <button v-if="activePreset && !activePreset.is_default && normalPreset" type="button" class="btn btn-outline-primary" :disabled="busy" @click="askApply(normalPreset.id)">通常設定に戻す</button>
+        <div v-if="activePreset && !activePreset.is_default && normalPreset" class="text-end"><button type="button" class="btn btn-outline-primary" :disabled="busy" @click="askApply(normalPreset.id)">通常設定に戻す</button></div>
       </UiPanel>
       <UiPanel class="mb-4">
         <UiSectionHeading title="イベント用プリセットを新規作成" />

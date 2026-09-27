@@ -3,13 +3,13 @@
   <p v-if="route.query.ownerSaved === '1'" class="alert alert-success" role="status">所有者の変更を保存しました。</p>
   <p v-if="loading">読み込んでいます…</p><p v-else-if="error" class="alert alert-danger">{{ error }}</p>
   <template v-else-if="territory">
-    <div class="d-flex gap-2 flex-wrap justify-content-end mb-3"><NuxtLink v-if="territory.can_edit" :to="`/territories/${territory.id}/edit`" class="btn btn-primary"><i class="bi bi-pencil-square" aria-hidden="true" /><span class="visually-hidden">編集</span></NuxtLink><NuxtLink v-if="territory.can_reapply" :to="`/territories/apply?source=${territory.id}`" class="btn btn-primary">再申請</NuxtLink><button v-if="territory.can_withdraw" class="btn btn-outline-danger" :disabled="busy" @click="withdraw">取下</button></div>
+    <div class="d-flex gap-2 flex-wrap justify-content-end mb-3"><button v-if="territory.can_withdraw" class="btn btn-outline-danger" :disabled="busy" @click="withdraw">取下</button><NuxtLink v-if="territory.can_edit" :to="`/territories/${territory.id}/edit`" class="btn btn-primary"><i class="bi bi-pencil-square" aria-hidden="true" /><span class="visually-hidden">編集</span></NuxtLink><NuxtLink v-if="territory.can_reapply" :to="`/territories/apply?source=${territory.id}`" class="btn btn-primary">再申請</NuxtLink></div>
     <TerritoryInfoGrid :territory="territory" />
     <section class="mb-4">
       <h2 class="h4">開発構想</h2>
       <p class="territory-multiline">{{ territory.development_concept || '未記入' }}</p>
       <template v-if="territory.can_edit_concept">
-        <button v-if="!conceptEditing" class="btn btn-outline-secondary btn-sm" type="button" @click="conceptEditing=true">開発構想を編集</button>
+        <div v-if="!conceptEditing" class="text-end"><button class="btn btn-outline-secondary btn-sm" type="button" @click="conceptEditing=true">開発構想を編集</button></div>
         <form v-else @submit.prevent="saveConcept">
           <textarea v-model="conceptDraft" rows="5" maxlength="20000" class="form-control mb-2" aria-label="開発構想" />
           <p v-if="conceptError" class="alert alert-danger">{{ conceptError }}</p>
