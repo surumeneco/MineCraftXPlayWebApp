@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common'
+import { SpotService } from './spot.service.js'
+import { SpotImagesService } from './spot-images.service.js'
+import { PublicSpotsController, AdminSpotsController, PublicSpotImagesController, AdminSpotImagesController } from './spot.controller.js'
 import { AppController } from './app.controller.js'
 import { Database } from './database.js'
 import { AuthService } from './auth.service.js'
@@ -31,8 +34,9 @@ import { PublicOperatorPhotosController, SelfOperatorPhotosController } from './
     AdminNoticesController, AdminTagsController, AdminImagesController, AuthController, AccountsController, SelfAccountsController,
     PublicSiteImagesController, AdminSiteImagesController, AdminSiteImagePresetsController, RequestsController,
     SelfAccountColorController, AdminAccountColorController, TerritoryController, AdminTerritoryController, InternalTerritoryController, TerritoryImagesController,
-    PublicHomeLayoutController, AdminHomeLayoutController, PublicOperatorPhotosController, SelfOperatorPhotosController],
+    PublicHomeLayoutController, AdminHomeLayoutController, PublicOperatorPhotosController, SelfOperatorPhotosController,
+    PublicSpotsController, AdminSpotsController, PublicSpotImagesController, AdminSpotImagesController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, AccountRetirementService, NoticeService, NoticeNotificationService,
-    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService],
+    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService, SpotService, SpotImagesService],
 })
 export class AppModule {}
