@@ -20,6 +20,8 @@ export const initialHomeLayout: HomeLayoutResponse = {
   revision: 0,
   links: [
     { key:'info.notice',group:'info',title:'お知らせ',url:'/info/notice' },
+    { key:'info.public-spots',group:'info',title:'公営スポット案内',url:'/info/public-spots' },
+    { key:'info.tourist-spots',group:'info',title:'観光情報',url:'/info/tourist-spots' },
     { key:'info.about',group:'info',title:'コミュニティ概要',url:'/info/about' },
     { key:'info.operators',group:'info',title:'運営メンバー紹介',url:'/info/operators' },
     { key:'info.server',group:'info',title:'サーバー情報',url:'/info/server' },
@@ -41,6 +43,8 @@ export const initialHomeLayout: HomeLayoutResponse = {
     ],
     hubs: [
       { key:'info.notice',note:'',image:null },
+      { key:'info.public-spots',note:'',image:null },
+      { key:'info.tourist-spots',note:'',image:null },
       { key:'info.about',note:'',image:null },
       { key:'info.operators',note:'',image:null },
       { key:'info.server',note:'',image:null },
