@@ -74,6 +74,8 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
     expect(saved.pos_x).toBe(10)
     expect(saved.pos_y).toBeNull()
     expect(saved.pos_z).toBe(-20)
+    // Existing rows created before the X/Z-only change can still contain a Y value.
+    await sql`UPDATE spots SET pos_y=64 WHERE id=${draft.data.id}`
     const withLegacyY = await write('/admin/spots/public/' + draft.data.id, 'PATCH',
       { expected_version: 2, y: 64, x: 12 })
     expect(withLegacyY.response.status).toBe(200)
