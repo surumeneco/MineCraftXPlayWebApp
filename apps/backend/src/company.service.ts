@@ -225,7 +225,7 @@ export class CompanyService {
 
   async territoryOwners(accountId: string, admin: boolean) {
     return this.database.sql`SELECT id,current_name AS name,is_public FROM companies
-      WHERE approved_at IS NOT NULL AND (representative_account_id=${accountId}
+      WHERE approved_at IS NOT NULL AND ((representative_account_id=${accountId} AND (NOT is_public OR ${admin}))
         OR (${admin} AND is_public)) ORDER BY current_name,id`
   }
 
