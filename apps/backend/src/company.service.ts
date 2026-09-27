@@ -308,6 +308,8 @@ export class CompanyService {
       const publicFlag = admin && body?.is_public !== undefined ? body.is_public === true : company.is_public
       const image = body?.image_id === undefined ? company.current_image_id : await this.images.attach(tx,body.image_id,id,actor)
       if (body?.member_account_ids !== undefined) {
+        const mergedMember = await tx`SELECT 1 FROM company_members WHERE company_id=${id} AND merge_origin IS NOT NULL LIMIT 1`
+        if (mergedMember.length) throw new ConflictException('アカウント統合中の所属者がいるため、分離後に所属者を変更してください。')
         const members = membersOf(body.member_account_ids)
         for (const member of members) await this.activeAccount(tx,member)
         await tx`DELETE FROM company_members WHERE company_id=${id}`
@@ -340,6 +342,9 @@ export class CompanyService {
       const activities = activityOf(body?.activities ?? c.current_activities)
       const rep = body?.representative_account_id === undefined ? String(c.representative_account_id) :
         await this.activeAccount(tx,body.representative_account_id)
+      if (c.representative_merge_origin && rep !== String(c.representative_account_id)) {
+        throw new ConflictException('アカウント統合を分離してから代表者を変更してください。')
+      }
       const head = await this.checkHeadquarters(tx,body?.headquarters_territory_id ?? c.headquarters_territory_id,
         actor,rep,id,admin,'edit')
       if (!admin && body?.is_public !== undefined) throw new ForbiddenException('公営区分は管理者のみ設定できます。')
@@ -417,6 +422,10 @@ export class CompanyService {
       if (!apps.length) throw new ConflictException('審査対象の申請が見つかりません。')
       const app = apps[0]
       if (action === 'approve') {
+        if (company[0].representative_merge_origin
+          && String(app.representative_account_id) !== String(company[0].representative_account_id)) {
+          throw new ConflictException('代表者のアカウント統合を分離してから承認してください。')
+        }
         await this.activeAccount(tx,app.representative_account_id)
         await this.checkHeadquarters(tx,company[0].headquarters_territory_id,String(company[0].applicant_account_id),
           String(app.representative_account_id),id,true,app.application_type === 'new'?'apply':'edit')
