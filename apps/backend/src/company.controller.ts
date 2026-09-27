@@ -15,11 +15,12 @@ export class CompanyController {
   }
 
   @Get('headquarters') async headquarters(@Req() req: any,
-    @Query('mode') mode: string | undefined, @Query('company_id') companyId: string | undefined) {
+    @Query('mode') mode: string | undefined, @Query('company_id') companyId: string | undefined,
+    @Query('representative_account_id') representativeAccountId: string | undefined) {
     const accountId = await this.auth.requireUser(req)
     const session = await this.auth.info(req)
     if (mode !== 'apply' && mode !== 'edit') throw new BadRequestException('拠点の検索種別が不正です。')
-    return this.companies.headquarters(accountId,session.is_admin === true,mode,companyId)
+    return this.companies.headquarters(accountId,session.is_admin === true,mode,companyId,representativeAccountId)
   }
 
   @Get('territory-owners') async territoryOwners(@Req() req: any) {
