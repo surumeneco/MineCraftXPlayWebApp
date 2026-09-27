@@ -91,7 +91,7 @@ let unregisterRouteGuard: (() => void) | undefined
 const selected = ref<Spot | null>(null)
 const name = ref(''), dimension = ref(''), territoryId = ref('')
 const mainImageId = ref<string | null>(null), localPreview = ref('')
-const coordinates = reactive<{ x: string; z: string }>({ x: '', z: '' })
+const coordinates = reactive<{ x: string | number; z: string | number }>({ x: '', z: '' })
 const axisFields = [{ key: 'x' as const, label: 'X' }, { key: 'z' as const, label: 'Z' }]
 const allTags = ref<NoticeTag[]>([]), selectedTags = ref<string[]>([])
 const territories = ref<{ id: string; name: string; status: string }[]>([])
@@ -196,7 +196,7 @@ function payload() {
   const common = { name: name.value, body_delta: quill.getContents(), main_image_id: mainImageId.value,
     ...(selected.value ? { expected_version: selected.value.version } : {}) }
   if (props.kind === 'public') {
-    if (!dimension.value.trim() || Object.values(coordinates).some(value => value.trim() === '')) {
+    if (!dimension.value.trim() || Object.values(coordinates).some(value => String(value).trim() === '')) {
       throw new Error('ディメンションと座標を入力してください。')
     }
     return { ...common, dimension: dimension.value, x: Number(coordinates.x), z: Number(coordinates.z) }
