@@ -48,7 +48,7 @@ test('spot guide editor sends the X/Z form after numeric input', async ({ page, 
   const body = page.locator('.xplay-quill-editor.ql-container.ql-snow .ql-editor')
   const toolbar = page.locator('main .ql-toolbar.ql-snow')
   await expect(body).toBeVisible()
-  await body.fill(Array.from({ length: 100 }, (_, i) => '長い説明文 ' + i).join('\\n'))
+  await body.fill(Array.from({ length: 100 }, (_, i) => '長い説明文 ' + i).join('\n'))
   await expect.poll(() => body.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
   const before = await toolbar.boundingBox()
   await body.evaluate(element => { element.scrollTop = element.scrollHeight })
