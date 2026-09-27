@@ -203,13 +203,15 @@ export class CompanyService {
       ORDER BY a.name,a.id LIMIT 30`
   }
 
-  async headquarters(actor: string, admin: boolean, mode: 'apply'|'edit', companyRaw: unknown = null) {
+  async headquarters(actor: string, admin: boolean, mode: 'apply'|'edit', companyRaw: unknown = null,
+    proposedRepresentativeRaw: unknown = undefined) {
     let representative = actor, companyId: string | null = null
     if (mode === 'edit') {
       companyId = uuid(companyRaw)
       const row = (await this.rows(this.database.sql,companyId))[0]
       if (!row || (!admin && row.representative_account_id !== actor)) throw new ForbiddenException('拠点候補を閲覧できません。')
-      representative = row.representative_account_id
+      representative = proposedRepresentativeRaw === undefined ? row.representative_account_id : uuid(proposedRepresentativeRaw)
+      if (proposedRepresentativeRaw !== undefined) await this.activeAccount(this.database.sql,representative)
     }
     const rows = await this.database.sql`SELECT t.id,t.current_name AS name,t.owner_type,t.owner_company_id
       FROM territories t WHERE t.status='approved' AND (
