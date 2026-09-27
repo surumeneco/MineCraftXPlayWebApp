@@ -432,7 +432,7 @@ export class CompanyService {
         await tx`UPDATE company_applications SET status='approved',decided_at=clock_timestamp(),reason=NULL WHERE id=${app.id}`
         await tx`UPDATE companies SET current_name=${app.name},current_tags=${tx.array(app.tags)},
           current_activities=${app.activities},representative_account_id=${app.representative_account_id},
-          status='approved',approved_at=COALESCE(approved_at,clock_timestamp()),
+          status='approved',approved_at=clock_timestamp(),
           status_changed_at=clock_timestamp() WHERE id=${id}`
       } else {
         await tx`UPDATE company_applications SET status=${action==='return'?'returned':'rejected'},
