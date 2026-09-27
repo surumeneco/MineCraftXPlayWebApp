@@ -24,7 +24,7 @@ function change(event: Event) {
 
 <style scoped>
 .form-check-input { width: 2.75rem; height: 1.5rem; cursor: pointer; }
-.form-check-input:checked { background-color: var(--xplay-main); border-color: var(--xplay-main); }
-.form-check-input:focus-visible { outline: 2px solid var(--xplay-main-soft); outline-offset: 2px; }
+.form-check-input:checked { background-color: var(--xplay-concept-main); border-color: var(--xplay-concept-main); }
+.form-check-input:focus-visible { outline: 2px solid var(--xplay-focus-indicator-outer); outline-offset: 2px; }
 label { cursor: pointer; }
 </style>
