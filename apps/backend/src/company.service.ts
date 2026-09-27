@@ -309,13 +309,25 @@ export class CompanyService {
       if (!admin && body?.is_public !== undefined) throw new ForbiddenException('公営区分は管理者のみ設定できます。')
       const publicFlag = admin && body?.is_public !== undefined ? body.is_public === true : company.is_public
       const image = body?.image_id === undefined ? company.current_image_id : await this.images.attach(tx,body.image_id,id,actor)
+      const savedMembers = await tx`SELECT account_id FROM company_members WHERE company_id=${id}`
+      const previousMembers = savedMembers.map((row: any) => String(row.account_id)).sort()
+      const nextMembers = body?.member_account_ids === undefined ? previousMembers : membersOf(body.member_account_ids)
       if (body?.member_account_ids !== undefined) {
         const mergedMember = await tx`SELECT 1 FROM company_members WHERE company_id=${id} AND merge_origin IS NOT NULL LIMIT 1`
         if (mergedMember.length) throw new ConflictException('アカウント統合中の所属者がいるため、分離後に所属者を変更してください。')
-        const members = membersOf(body.member_account_ids)
-        for (const member of members) await this.activeAccount(tx,member)
+        for (const member of nextMembers) await this.activeAccount(tx,member)
+      }
+      if (name === last[0]?.name && compare(tags,last[0]?.tags) &&
+        activities === last[0]?.activities && rep === String(last[0]?.representative_account_id) &&
+        head === String(company.headquarters_territory_id) &&
+        publicFlag === company.is_public && String(image ?? '') === String(company.current_image_id ?? '') &&
+        compare(intro,company.introduction_delta) &&
+        compare([...nextMembers].sort(),previousMembers)) {
+        throw new BadRequestException('前回の申請から少なくとも1項目を変更してください。')
+      }
+      if (body?.member_account_ids !== undefined) {
         await tx`DELETE FROM company_members WHERE company_id=${id}`
-        for (const member of members) await tx`INSERT INTO company_members(company_id,account_id) VALUES (${id},${member})`
+        for (const member of nextMembers) await tx`INSERT INTO company_members(company_id,account_id) VALUES (${id},${member})`
       }
       await tx`UPDATE companies SET representative_account_id=${rep},is_public=${publicFlag},
         headquarters_territory_id=${head},introduction_delta=${tx.json(intro as any)},current_image_id=${image},
