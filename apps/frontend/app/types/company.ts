@@ -21,6 +21,8 @@ export type CompanyRecord = {
   changed_at: string
   application_type: 'new'|'edit'
   pending_changes: boolean
+  last_application_status?: CompanyStatus | null
+  reapply_draft?: { name: string; tags: CompanyTag[]; activities: string; representative: CompanyAccount } | null
   can_edit: boolean
   can_reapply: boolean
   can_withdraw: boolean

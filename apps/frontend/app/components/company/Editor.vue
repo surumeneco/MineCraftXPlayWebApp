@@ -21,8 +21,8 @@
       <p v-if="editing" class="form-text">代表者の変更には管理者の承認が必要です。</p>
     </div>
     <div v-else class="mb-3"><span class="form-label d-block">代表者</span><span>{{profile?.name}}</span></div>
-    <div v-if="!editing" class="mb-3">
-      <label for="company-member-search" class="form-label">所属者（1アカウント以上必須） *</label>
+    <div class="mb-3">
+      <label for="company-member-search" class="form-label">所属者（代表者以外1アカウント以上必須） *</label>
       <input id="company-member-search" v-model="memberSearch" class="form-control" type="search" maxlength="100" autocomplete="off" placeholder="アカウント名で検索" />
       <p v-if="accountError" class="small text-danger">{{accountError}}</p>
       <div v-if="memberCandidates.length" class="list-group mt-2" role="group" aria-label="所属者候補">
@@ -38,8 +38,7 @@
     <div class="mb-3"><label for="company-activities" class="form-label">活動内容 *</label><textarea id="company-activities" v-model="activities" required rows="5" maxlength="20000" class="form-control" /><p v-if="editing" class="form-text">変更には管理者の承認が必要です。</p></div>
     <CompanyImageField v-model="imageId" @uploading="imageUploading=$event" />
     <div class="mb-3"><label class="form-label">紹介文</label><ClientOnly><div ref="editor" aria-label="企業紹介文の編集" /></ClientOnly><p class="form-text">Quill形式で保存します。本文中の画像埋め込みには対応していません。</p></div>
-    <p v-if="sourceId && unchanged" class="small text-body-secondary">前回の申請から少なくとも1項目を変更してください。</p>
-    <div class="d-flex justify-content-end gap-2"><NuxtLink :to="companyId?`/companies/${companyId}`:'/companies'" class="btn btn-outline-secondary">戻る</NuxtLink><button type="submit" class="btn btn-primary" :disabled="busy||imageUploading||!quillReady||!name.trim()||!activities.trim()||!headquartersId||!representativeId||(!editing&&!members.length)||unchanged">{{busy?'保存しています…':editing?'保存・申請':'申請'}}</button></div>
+    <div class="d-flex justify-content-end gap-2"><NuxtLink :to="companyId?`/companies/${companyId}`:'/companies'" class="btn btn-outline-secondary">戻る</NuxtLink><button type="submit" class="btn btn-primary" :disabled="busy||imageUploading||!quillReady||!name.trim()||!activities.trim()||!headquartersId||!representativeId||!members.length">{{busy?'保存しています…':editing?'保存・申請':'申請'}}</button></div>
   </form>
 </section></template>
 <script setup lang="ts">
@@ -58,29 +57,20 @@ const name=ref(''),tags=ref<CompanyTag[]>([]),isPublic=ref(false),activities=ref
 const headquartersId=ref(''),headquarters=ref<Array<{id:string;name:string}>>([])
 const representativeId=ref(''),repSearch=ref(''),memberSearch=ref(''),accounts=ref<CompanyAccount[]>([]),members=ref<CompanyAccount[]>([]),accountError=ref('')
 const repCandidates=computed(()=>accounts.value.filter(a=>a.name.normalize('NFKC').toLocaleLowerCase('ja').includes(repSearch.value.normalize('NFKC').toLocaleLowerCase('ja'))))
-const memberCandidates=computed(()=>accounts.value.filter(a=>!members.value.some(m=>m.id===a.id)
+const memberCandidates=computed(()=>accounts.value.filter(a=>a.id!==representativeId.value && !members.value.some(m=>m.id===a.id)
   && a.name.normalize('NFKC').toLocaleLowerCase('ja').includes(memberSearch.value.normalize('NFKC').toLocaleLowerCase('ja'))))
 const selectedRepresentative=computed(()=>accounts.value.find(a=>a.id===representativeId.value)??(selected.value?.representative.id===representativeId.value?selected.value.representative:null))
 const showRepresentative=computed(()=>editing.value||auth.isAdmin.value)
 const editor=ref<HTMLDivElement|null>(null),quillReady=ref(false)
 let quill:InstanceType<Awaited<ReturnType<typeof $loadQuill>>>|null=null
 let sourceContents:CompanyRecord['introduction_delta']={ops:[{insert:'\n'}]}
-const initialSnapshot=ref(''),introRevision=ref(0)
-const snapshot=computed(()=>{void introRevision.value;return JSON.stringify({name:name.value.trim(),tags:[...tags.value].sort(),
-  is_public:isPublic.value,activities:activities.value,headquarters_territory_id:headquartersId.value,
-  representative_account_id:representativeId.value,member_account_ids:members.value.map(m=>m.id).sort(),
-  image_id:imageId.value,introduction_delta:quill?.getContents()??null})})
-const unchanged=computed(()=>!!props.sourceId && !!initialSnapshot.value && initialSnapshot.value===snapshot.value)
 const toolbar=[['bold','italic','underline','strike'],[{header:[1,2,3,false]}],[{list:'ordered'},{list:'bullet'}],['link'],['clean']]
-watch(editor,async element=>{if(!element||quill)return;const Quill=await $loadQuill();if(element!==editor.value||quill)return;quill=new Quill(element,{theme:'snow',modules:{toolbar}});quill.setContents(sourceContents as Parameters<typeof quill.setContents>[0]);quill.on('text-change',(_delta,_previous,source)=>{if(source==='user')introRevision.value++});quillReady.value=true},{flush:'post'})
-watch([ready,quillReady],([formReady,editorReady])=>{
-  if(props.sourceId&&formReady&&editorReady&&!initialSnapshot.value)initialSnapshot.value=snapshot.value
-},{flush:'post'})
+watch(editor,async element=>{if(!element||quill)return;const Quill=await $loadQuill();if(element!==editor.value||quill)return;quill=new Quill(element,{theme:'snow',modules:{toolbar}});quill.setContents(sourceContents as Parameters<typeof quill.setContents>[0]);quillReady.value=true},{flush:'post'})
 let accountVersion=0
 async function searchAccounts(term:string){if(!auth.authenticated.value)return;const version=++accountVersion;accountError.value='';try{const found=await get<CompanyAccount[]>(`/companies/accounts?name=${encodeURIComponent(term)}`);if(version===accountVersion){const combined=[...found,...members.value,...(selected.value?[selected.value.representative]:[]),...(profile.value?[{id:profile.value.id,name:profile.value.name}]:[])];accounts.value=Array.from(new Map(combined.map(a=>[a.id,a])).values())}}catch(e){if(version===accountVersion)accountError.value=userFacingError(e)}}
 watch(repSearch,value=>{void searchAccounts(value)})
 watch(memberSearch,value=>{void searchAccounts(value)})
-function addMember(member:CompanyAccount){if(!members.value.some(m=>m.id===member.id))members.value=[...members.value,member];memberSearch.value=''}
+function addMember(member:CompanyAccount){if(member.id!==representativeId.value && !members.value.some(m=>m.id===member.id))members.value=[...members.value,member];memberSearch.value=''}
 function removeMember(id:string){members.value=members.value.filter(m=>m.id!==id)}
 let headquartersVersion=0
 async function loadHeadquarters(){
@@ -94,12 +84,13 @@ async function loadHeadquarters(){
   if(headquartersId.value && !loaded.some(item=>item.id===headquartersId.value))headquartersId.value=''
 }
 watch(representativeId,()=>{
+  members.value=members.value.filter(member=>member.id!==representativeId.value)
   if(editing.value && ready.value)void loadHeadquarters().catch(e=>{error.value=userFacingError(e)})
 })
-async function submit(){if(!profile.value||!quill||!headquartersId.value||(!editing.value&&!members.value.length))return;busy.value=true;error.value='';try{
+async function submit(){if(!profile.value||!quill||!headquartersId.value||!members.value.length||members.value.some(member=>member.id===representativeId.value))return;busy.value=true;error.value='';try{
   const body={operation_id:operation(),name:name.value.trim(),tags:tags.value,activities:activities.value,headquarters_territory_id:headquartersId.value,image_id:imageId.value,introduction_delta:quill.getContents(),
     ...(editing.value||auth.isAdmin.value?{representative_account_id:representativeId.value}:{}),
-    ...(auth.isAdmin.value?{is_public:isPublic.value}:{}),...(!editing.value?{member_account_ids:members.value.map(a=>a.id)}:{})}
+    ...(auth.isAdmin.value?{is_public:isPublic.value}:{}),member_account_ids:members.value.map(a=>a.id)}
   const result=editing.value?await mutate<CompanyRecord>(`/companies/${companyId.value}/edit`,'POST',body):props.sourceId?await mutate<CompanyRecord>(`/companies/${companyId.value}/reapply`,'POST',body):await mutate<CompanyRecord>('/companies','POST',body)
   await navigateTo(`/companies/${result.id}`)
 }catch(e){error.value=userFacingError(e)}finally{busy.value=false}}
@@ -108,7 +99,8 @@ onMounted(async()=>{try{
   profile.value=await get<AccountRecord>('/accounts/me');representativeId.value=profile.value.id
   if(companyId.value){selected.value=await get<CompanyRecord>(`/companies/${companyId.value}`);if(editing.value&&!selected.value.can_edit)throw new Error('企業を編集できません。');if(!editing.value&&!selected.value.can_reapply)throw new Error('企業を再申請できません。')
     const c=selected.value;breadcrumbs.value={...breadcrumbs.value,[c.id]:c.name}
-    name.value=c.name;tags.value=[...c.tags];isPublic.value=c.is_public;activities.value=c.activities;imageId.value=c.image_id;headquartersId.value=c.headquarters.id??'';representativeId.value=c.representative.id;repSearch.value=c.representative.name;members.value=[...c.members];sourceContents=c.introduction_delta
+    const draft=!editing.value?c.reapply_draft:null
+    name.value=draft?.name??c.name;tags.value=[...(draft?.tags??c.tags)];isPublic.value=c.is_public;activities.value=draft?.activities??c.activities;imageId.value=c.image_id;headquartersId.value=c.headquarters.id??'';representativeId.value=draft?.representative.id??c.representative.id;repSearch.value=draft?.representative.name??c.representative.name;members.value=c.members.filter(member=>member.id!==representativeId.value);sourceContents=c.introduction_delta
   }
   await Promise.all([loadHeadquarters(),searchAccounts('')]);ready.value=true
 }catch(e){error.value=userFacingError(e)}finally{loading.value=false}})

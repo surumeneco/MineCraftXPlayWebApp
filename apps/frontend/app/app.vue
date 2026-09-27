@@ -65,6 +65,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
     children: [
       { label: "一覧トップ", to: "/lists" },
       { label: "領地一覧", to: "/territories" },
+      { label: "企業一覧", to: "/companies" },
     ],
   },
   {
@@ -72,6 +73,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
     children: [
       { label: "申請トップ", to: "/applications" },
       { label: "領地申請", to: "/territories/apply" },
+      { label: "企業申請", to: "/companies/apply" },
     ],
   },
   { label: "要望を送る", to: "/request" },
@@ -82,6 +84,7 @@ const navigationItems = computed<HeaderNavigationItem[]>(() => [
           children: [
             { label: "申請管理トップ", to: "/admin/applications" },
             { label: "領地承認", to: "/admin/territories" },
+            { label: "企業承認", to: "/admin/companies" },
           ],
         },
         {
