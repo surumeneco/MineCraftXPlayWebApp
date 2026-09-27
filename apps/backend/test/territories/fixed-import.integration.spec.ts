@@ -55,7 +55,7 @@ suite('fixed BlueMap territory import (PostgreSQL)', () => {
       expect(polygon).toHaveLength(item.vertices)
       expect(area(polygon)).toBe(item.area)
     }
-    expect(await sql`SELECT id FROM territory_operations WHERE territory_id IN (${SHARED_ID},${PROTECTED_ID})`).toHaveLength(0)
+    expect(await sql`SELECT operation_id FROM territory_operations WHERE territory_id IN (${SHARED_ID},${PROTECTED_ID})`).toHaveLength(0)
   })
 
   it('exposes imported records through the ordinary listing, detail and BlueMap paths', async () => {
@@ -66,7 +66,7 @@ suite('fixed BlueMap territory import (PostgreSQL)', () => {
       [PROTECTED_ID, 'おおぐま山', '保護区'],
     ]) {
       const item = list.find(record => record.id === id)
-      expect(item).toMatchObject({ name, owner: { name }, status: 'approved', applicant: { id: null, name: '運営' } })
+      expect(item).toMatchObject({ name, owner: { name: owner }, status: 'approved', applicant: { id: null, name: '運営' } })
       // The two seed records remain editable by an administrator, not by an unrelated member.
       expect(await service.get(id, { is_admin: true })).toMatchObject({ can_edit: true })
       expect(await service.get(id, {})).toMatchObject({ can_edit: false, can_reapply: false })
