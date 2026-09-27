@@ -172,4 +172,26 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
       coordinates:[{x:35000,z:35000},{x:35100,z:35000},{x:35100,z:35100}],
     },session.other)).status).toBe(403)
   })
+  it('requires changed data for reapplication and supports proposed representative HQ lookup',async()=>{
+    const id=randomUUID();companyIds.push(id)
+    const created=await req('/api/companies','POST',createBody(id,'再申請企業'))
+    expect(created.status).toBe(201)
+    expect((await req(`/api/admin/companies/${id}/review`,'POST',{
+      operation_id:randomUUID(),action:'return',reason:'内容を確認してください',
+    },session.admin)).status).toBe(201)
+    const unchanged=await req(`/api/companies/${id}/reapply`,'POST',createBody(randomUUID(),'再申請企業'))
+    expect(unchanged.status).toBe(400)
+    expect(JSON.stringify(unchanged.body)).toContain('少なくとも1項目')
+    const amended=await req(`/api/companies/${id}/reapply`,'POST',{
+      ...createBody(randomUUID(),'再申請企業'),activities:'道路と港を整備します',
+    })
+    expect(amended.status).toBe(201)
+    expect(amended.body).toMatchObject({name:'再申請企業',status:'pending'})
+    const otherHQ=await territory('account',other,'別代表者の作業領地')
+    const candidates=await req('/api/companies/headquarters?mode=edit&company_id='+companyIds[0]+'&representative_account_id='+other)
+    expect(candidates.status).toBe(200)
+    expect(candidates.body).toEqual(expect.arrayContaining([expect.objectContaining({id:otherHQ})]))
+    expect(candidates.body).not.toEqual(expect.arrayContaining([expect.objectContaining({id:ownHQ})]))
+  })
+
 })
