@@ -12,7 +12,9 @@ export const HUB_LINKS = [
   { key: 'info.server', group: 'info', title: 'サーバー情報', url: '/info/server' },
   { key: 'info.rules', group: 'info', title: '運営方針とルール', url: '/info/rules' },
   { key: 'lists.territories', group: 'lists', title: '領地一覧', url: '/territories' },
+  { key: 'lists.companies', group: 'lists', title: '企業一覧', url: '/companies' },
   { key: 'applications.territories', group: 'applications', title: '領地申請', url: '/territories/apply' },
+  { key: 'applications.companies', group: 'applications', title: '企業申請', url: '/companies/apply' },
 ] as const
 
 type CardImage = { image_id?: string; static_path?: string } | null
