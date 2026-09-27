@@ -275,18 +275,18 @@ export class TerritoryService {
   async create(accountId: string, isAdmin: boolean, body: any) {
     const operationId = uuid(body?.operation_id)
     const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
-    const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
     const concept = optionalText(body?.development_concept, '開発構想')
     const note = optionalText(body?.note, '備考')
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, operationId, 'create', accountId)
       if (completed) return completed
+      const owner = await this.resolveOwner(tx,body?.owner_type,body?.owner_company_id,accountId,isAdmin)
       await this.assertMinecraft(accountId, tx)
-      await this.assertPendingArea(tx, accountId, area(coordinates))
+      if (!owner.isPublic) await this.assertPendingArea(tx, accountId, area(coordinates))
       const imageId = body?.image_id === undefined ? null : await this.images.attach(tx, body.image_id, operationId, accountId)
-      const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,status,development_concept)
-        VALUES (${operationId},${accountId},${owner.type},${owner.accountId},'pending',${concept}) RETURNING id`
+      const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,owner_company_id,status,development_concept)
+        VALUES (${operationId},${accountId},${owner.type},${owner.accountId},${owner.companyId},'pending',${concept}) RETURNING id`
       const id = String(territories[0].id)
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
@@ -299,30 +299,31 @@ export class TerritoryService {
   async reapply(accountId: string, isAdmin: boolean, idRaw: unknown, body: any) {
     const id = uuid(idRaw), operationId = uuid(body?.operation_id)
     const name = territoryName(body?.name), coordinates = validateCoordinates(body?.coordinates)
-    const owner = this.resolveOwner(body?.owner_type, accountId, isAdmin)
     const conceptRaw = body?.development_concept
     const note = optionalText(body?.note, '備考')
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'reapply', accountId)
       if (completed) return completed
-      const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
+      const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id,owner_company_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can reapply')
       if (!['returned','withdrawn'].includes(String(locked[0].status))) throw new ConflictException('Territory is not available for reapplication')
       const concept = optionalText(conceptRaw, '開発構想', String(locked[0].development_concept))
+      const owner = await this.resolveOwner(tx,body?.owner_type,body?.owner_company_id,accountId,isAdmin)
       await this.assertMinecraft(accountId, tx)
-      await this.assertPendingArea(tx, accountId, area(coordinates))
+      if (!owner.isPublic) await this.assertPendingArea(tx, accountId, area(coordinates))
       const previous = await tx`SELECT name,coordinates,image_id,note FROM territory_applications WHERE territory_id=${id}
         ORDER BY submitted_at DESC,id DESC LIMIT 1`
       const imageId = body?.image_id === undefined ? (previous[0]?.image_id ?? null) : await this.images.attach(tx, body.image_id, id, accountId)
       if (previous.length && previous[0].name === name && samePoints(previous[0].coordinates as Point[], coordinates)
         && String(previous[0].image_id ?? '') === String(imageId ?? '')
         && String(previous[0].note ?? '') === note && locked[0].development_concept === concept
-        && String(locked[0].owner_type) === owner.type && String(locked[0].owner_account_id ?? '') === String(owner.accountId ?? '')) {
+        && String(locked[0].owner_type) === owner.type && String(locked[0].owner_account_id ?? '') === String(owner.accountId ?? '')
+        && String(locked[0].owner_company_id ?? '') === String(owner.companyId ?? '')) {
         throw new BadRequestException('Change at least one field before reapplying')
       }
-      await tx`UPDATE territories SET owner_type=${owner.type},owner_account_id=${owner.accountId},
+      await tx`UPDATE territories SET owner_type=${owner.type},owner_account_id=${owner.accountId},owner_company_id=${owner.companyId},
         status='pending',development_concept=${concept},status_changed_at=clock_timestamp() WHERE id=${id}`
       await tx`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,name,coordinates,image_id,status,note)
         VALUES (${id},'new',${accountId},${name},${tx.json(coordinates)},${imageId},'pending',${note})`
@@ -338,10 +339,11 @@ export class TerritoryService {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'edit', accountId)
       if (completed) return completed
-      const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,status,current_name,current_image_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
+      const locked = await tx`SELECT applicant_account_id,owner_type,owner_account_id,owner_company_id,status,current_name,current_image_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       const row = locked[0]
-      const selfOwned = row.owner_type === 'account' && String(row.owner_account_id) === accountId
+      const selfOwned = (row.owner_type === 'account' && String(row.owner_account_id) === accountId)
+        || (row.owner_type === 'company' && (await tx`SELECT 1 FROM companies WHERE id=${row.owner_company_id} AND representative_account_id=${accountId}`).length > 0)
       if (!isAdmin && !selfOwned) throw new ForbiddenException('Territory cannot be edited by this account')
       if (row.status !== 'approved') throw new ConflictException('Only approved territory can be edited')
       const approved = await tx`SELECT name,coordinates FROM territory_applications WHERE territory_id=${id} AND status='approved'
@@ -357,7 +359,9 @@ export class TerritoryService {
       const conceptChanged = concept !== row.development_concept
       const note = optionalText(body?.note, '備考')
       if (boundaryChanged) {
-        await this.assertPendingArea(tx, accountId, Math.max(0, area(coordinates) - area(approvedCoordinates)))
+        if (!(row.owner_type === 'company' && (await tx`SELECT 1 FROM companies WHERE id=${row.owner_company_id} AND is_public`).length)) {
+          await this.assertPendingArea(tx, accountId, Math.max(0, area(coordinates) - area(approvedCoordinates)))
+        }
       }
       const nameChanged = approvedName !== name
       const imageChanged = String(row.current_image_id ?? '') !== String(imageId ?? '')
@@ -391,10 +395,11 @@ export class TerritoryService {
     }
     const concept = optionalText(body.development_concept, '開発構想')
     return this.database.sql.begin(async tx => {
-      const rows = await tx`SELECT owner_type,owner_account_id FROM territories WHERE id=${id} FOR UPDATE`
+      const rows = await tx`SELECT owner_type,owner_account_id,owner_company_id FROM territories WHERE id=${id} FOR UPDATE`
       if (!rows.length) throw new NotFoundException('領地が見つかりません。')
       const owner = rows[0]
-      if (!isAdmin && !(owner.owner_type === 'account' && String(owner.owner_account_id) === accountId)) {
+      if (!isAdmin && !(owner.owner_type === 'account' && String(owner.owner_account_id) === accountId)
+        && !(owner.owner_type === 'company' && (await tx`SELECT 1 FROM companies WHERE id=${owner.owner_company_id} AND representative_account_id=${accountId}`).length)) {
         throw new ForbiddenException('開発構想を編集する権限がありません。')
       }
       await tx`UPDATE territories SET development_concept=${concept} WHERE id=${id}`
