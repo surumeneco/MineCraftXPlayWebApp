@@ -18,7 +18,7 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
   const hash=(s:string)=>createHash('sha256').update(s).digest('hex')
   const sent:Array<{path:string;body:any}>=[]
   const territoryIds:string[]=[],companyIds:string[]=[]
-  const req=async(path:string,method:'GET'|'POST'='GET',body?:any,token:string|null=session.member)=>{
+  const req=async(path:string,method:'GET'|'POST'|'PATCH'='GET',body?:any,token:string|null=session.member)=>{
     const resp=await fetch(root+path,{method,headers:{'Content-Type':'application/json',Origin:origin,'X-XPlay-CSRF':csrf,
       ...(token?{Cookie:`xplay_session=${token}; xplay_csrf=${csrf}`}:{})},
       ...(body===undefined?{}:{body:JSON.stringify(body)})})
