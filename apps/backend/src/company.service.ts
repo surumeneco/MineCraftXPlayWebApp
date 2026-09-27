@@ -138,7 +138,8 @@ export class CompanyService {
       pending_changes: canSeePending && !!row.pending_application && !!row.approved_at,
       can_edit: canManage && row.status === 'approved',
       can_reapply: (viewer.account_id === row.applicant_account_id && !row.approved_at && ['returned','withdrawn'].includes(row.status)) || canReapplyEdit,
-      last_application_status: canSeePending ? latest?.status ?? null : null,
+      last_application_status: viewer.is_admin === true || viewer.account_id === latest?.submitted_by_account_id
+        ? latest?.status ?? null : null,
       reapply_draft: canReapplyEdit ? {name:latest.name,tags:latest.tags,activities:latest.activities,
         representative:{id:String(latest.representative_account_id),name:''}} : null,
       can_withdraw: viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending',
