@@ -5,10 +5,12 @@
     <p v-else-if="!auth.isAdmin.value" role="alert" class="alert alert-warning">管理者権限が必要です。</p>
     <template v-else-if="draft">
       <p v-if="message" class="alert alert-success" role="status">{{ message }}</p>
-      <UiPanel class="mb-4">
+      <section class="mb-4">
         <UiSectionHeading title="ホームのカテゴリ・カード" />
         <p class="small text-body-secondary">「最近のお知らせ」より下の表示内容です。上から順に表示されます。</p>
-        <div v-for="(category, categoryIndex) in draft.categories" :key="category.id" class="border rounded p-3 mb-3">
+        <div class="accordion mb-3">
+          <UiAccordion v-for="(category, categoryIndex) in draft.categories" :key="category.id"
+            :title="category.title || '名称未設定のカテゴリ'" :default-open="categoryIndex === 0" :heading-level="3">
           <div class="row g-2 align-items-end mb-3">
             <div class="col-12 col-lg">
               <label class="form-label" :for="`category-${category.id}`">カテゴリ名</label>
@@ -22,7 +24,7 @@
               <button type="button" class="btn btn-outline-danger" :disabled="busy" @click="draft.categories.splice(categoryIndex,1)">カテゴリ削除</button>
             </div>
           </div>
-          <div v-for="(card, cardIndex) in category.cards" :key="card.id" class="border rounded p-3 mb-3">
+          <div v-for="(card, cardIndex) in category.cards" :key="card.id" class="border-bottom py-3">
             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
               <strong>{{ card.type === 'hub' ? 'トップカード参照' : 'カスタムカード' }} {{ cardIndex + 1 }}</strong>
               <div class="d-flex gap-2 justify-content-end">
@@ -79,16 +81,17 @@
               <button type="button" class="btn btn-outline-primary text-nowrap" :disabled="busy || !links.length" @click="addReference(category)">参照追加</button>
             </div>
           </div>
+          </UiAccordion>
         </div>
         <div class="text-end"><button type="button" class="btn btn-outline-primary" :disabled="busy" @click="addCategory">カテゴリを追加</button></div>
-      </UiPanel>
+      </section>
 
-      <UiPanel class="mb-4">
+      <section class="mb-4">
         <UiSectionHeading title="情報・一覧・申請トップのカード" />
         <p class="small text-body-secondary">カード名とリンク先は固定です。各ページ内の順序、補足文、画像を変更できます。ホームで参照しているカードにも同じ設定が反映されます。</p>
-        <section v-for="group in groups" :key="group.key" class="mb-4" :aria-label="`${group.title}トップ`">
-          <h3 class="h5 mb-3">{{ group.title }}トップ</h3>
-          <div v-for="(hub,index) in groupHubs(group.key)" :key="hub.key" class="border rounded p-3 mb-3">
+        <div class="accordion">
+          <UiAccordion v-for="group in groups" :key="group.key" :title="`${group.title}トップ`" :heading-level="3">
+          <div v-for="(hub,index) in groupHubs(group.key)" :key="hub.key" class="border-bottom py-3">
             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
               <strong>{{ linkFor(hub.key)?.title }}</strong>
               <div class="d-flex gap-2">
@@ -108,8 +111,9 @@
               <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="busy" @click="clearImage(hub,`hub:${hub.key}`)">画像を未設定にする</button>
             </div>
           </div>
-        </section>
-      </UiPanel>
+          </UiAccordion>
+        </div>
+      </section>
       <div class="d-flex justify-content-end mb-3">
         <button type="button" class="btn btn-primary" :disabled="busy" @click="save">{{ busy ? '保存中…' : 'すべての変更を保存' }}</button>
       </div>
