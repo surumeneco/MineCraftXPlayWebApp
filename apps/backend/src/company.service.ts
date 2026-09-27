@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Database } from './database.js'
 import { uuid, delta, type Delta } from './notice-validation.js'
 import { CompanyImagesService } from './company-images.service.js'
+import { CompanyColorService } from './company-color.service.js'
 import { CompanyNotificationService, type CompanyNotificationEvent } from './company-notification.service.js'
 
 export const COMPANY_TAGS = ['建築','資材','回路','冒険','インフラ'] as const
@@ -25,6 +26,7 @@ type CompanyRow = {
   current_tags: string[]
   current_activities: string
   current_image_id: string | null
+  map_color: { r: number; g: number; b: number } | null
   introduction_delta: Delta
   first_applied_at: string
   approved_at: string | null
@@ -78,11 +80,13 @@ const compare = (left: unknown, right: unknown) => JSON.stringify(left) === JSON
 @Injectable()
 export class CompanyService {
   constructor(private readonly database: Database, private readonly images: CompanyImagesService,
-    private readonly notifications: CompanyNotificationService) {}
+    private readonly notifications: CompanyNotificationService, private readonly colors: CompanyColorService) {}
 
   private async rows(sql: any = this.database.sql, id: string | null = null): Promise<CompanyRow[]> {
     return await sql`SELECT c.*, applicant.name AS applicant_name, representative.name AS representative_name,
       headquarters.current_name AS headquarters_name,
+      (SELECT json_build_object('r',cc.red,'g',cc.green,'b',cc.blue)
+        FROM company_bluemap_colors cc WHERE cc.company_id=c.id) AS map_color,
       COALESCE((SELECT json_agg(json_build_object('id',m.account_id,'name',a.name) ORDER BY a.name,a.id)
         FROM company_members m JOIN accounts a ON a.id=m.account_id
         WHERE m.company_id=c.id AND m.account_id<>c.representative_account_id),'[]'::json) AS members,
@@ -131,7 +135,7 @@ export class CompanyService {
       tags, representative, members: row.members,
       headquarters: { id: row.headquarters_territory_id, name: row.headquarters_name },
       activities: app?.activities ?? row.current_activities,
-      image_id: row.current_image_id, introduction_delta: row.introduction_delta,
+      image_id: row.current_image_id, introduction_delta: row.introduction_delta, map_color: row.map_color,
       applicant: { id: row.applicant_account_id, name: row.applicant_name },
       applied_at: row.first_applied_at, approved_at: row.approved_at, changed_at: row.status_changed_at,
       application_type: app?.application_type ?? row.pending_application?.application_type ?? 'new',
@@ -175,6 +179,10 @@ export class CompanyService {
     if (!row || (!row.approved_at && !viewer.is_admin && viewer.account_id !== row.applicant_account_id)) {
       throw new NotFoundException('企業が見つかりません。')
     }
+    if (!row.map_color) {
+      await this.colors.ensure(id)
+      row.map_color = await this.colors.ensure(id)
+    }
     const detail = this.dto(row,viewer)
     if (detail.reapply_draft) {
       const rep = detail.reapply_draft.representative
@@ -185,6 +193,24 @@ export class CompanyService {
       }
     }
     return detail
+  }
+
+  async getColor(rawId: unknown, viewer: Viewer) {
+    const detail = await this.get(rawId,viewer)
+    return detail.map_color
+  }
+
+  async setColor(rawId: unknown, actor: string, admin: boolean, body: unknown) {
+    const id = uuid(rawId)
+    return this.database.sql.begin(async tx => {
+      const rows = await tx`SELECT representative_account_id,status FROM companies WHERE id=${id} FOR UPDATE`
+      if (!rows.length) throw new NotFoundException('企業が見つかりません。')
+      if (!admin && String(rows[0].representative_account_id) !== actor) {
+        throw new ForbiddenException('代表者または管理者のみ編集できます。')
+      }
+      if (rows[0].status !== 'approved') throw new ConflictException('承認済みの企業のみ編集できます。')
+      return this.colors.set(id,body,tx)
+    })
   }
 
   private async activeAccount(tx: any, raw: unknown) {
@@ -292,6 +318,7 @@ export class CompanyService {
       await tx`INSERT INTO companies(id,applicant_account_id,representative_account_id,is_public,status,
         headquarters_territory_id,introduction_delta)
         VALUES (${id},${actor},${rep},${admin && body?.is_public === true},'pending',${headquarters},${tx.json(intro as any)})`
+      await this.colors.ensure(id,tx)
       const image = body?.image_id === undefined ? null : await this.images.attach(tx,body.image_id,id,actor)
       if (image) await tx`UPDATE companies SET current_image_id=${image} WHERE id=${id}`
       for (const member of members) await tx`INSERT INTO company_members(company_id,account_id) VALUES (${id},${member})`
