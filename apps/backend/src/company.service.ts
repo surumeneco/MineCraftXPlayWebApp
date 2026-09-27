@@ -312,7 +312,7 @@ export class CompanyService {
       const locked = await tx`SELECT * FROM companies WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('企業が見つかりません。')
       const company = locked[0]
-      if (String(company.applicant_account_id) !== actor) throw new ForbiddenException('申請者本人のみ再申請できます。')
+      if (!company.approved_at && String(company.applicant_account_id) !== actor) throw new ForbiddenException('申請者本人のみ再申請できます。')
       const last = await tx`SELECT * FROM company_applications WHERE company_id=${id} ORDER BY submitted_at DESC,id DESC LIMIT 1`
       if (company.approved_at) {
         const previousApp = last[0]
