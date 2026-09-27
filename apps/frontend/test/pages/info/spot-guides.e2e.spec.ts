@@ -56,7 +56,7 @@ test('spot guide public cards navigate to Quill detail with the location', async
   await expect(page).toHaveURL(new RegExp('/info/public-spots/' + alpha + '$'))
   await expect(page.getByRole('heading', { name: '案内一' })).toBeVisible()
   await expect(page.locator('main .ql-editor')).toContainText('案内一についての案内')
-  await expect(page.locator('main')).toContainText('minecraft:overworld / X:30 Z:-20')
+  await expect(page.locator('main')).toContainText('オーバーワールド / X:30 Z:-20')
   const breadcrumb = page.getByRole('navigation', { name: 'breadcrumb' })
   await expect(breadcrumb.locator('li').last()).toHaveText('案内一')
   await breadcrumb.locator('a[href="/info/public-spots"]').click()
