@@ -27,6 +27,22 @@ describe('BlueMap account color tracks', () => {
     wrapper.unmount()
   })
 
+  it('reuses the same editor for a company and saves through its own endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ r: 255, g: 0, b: 0 })
+    vi.stubGlobal('$fetch', fetchMock)
+    const companyId = 'b46b0875-5596-4521-99b7-89997d6d7c70'
+    const wrapper = await mountSuspended(MapColorEditor, { props: { companyId } })
+    await vi.waitFor(() => expect(wrapper.get('#map-color-hex').exists()).toBe(true))
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/companies/${companyId}/map-color`),
+      expect.objectContaining({ credentials: 'include' }))
+    await wrapper.get('#map-color-hex').setValue('#123456')
+    await wrapper.get('button').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('保存されました'))
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/companies/${companyId}/map-color`),
+      expect.objectContaining({ method: 'PATCH', body: { r: 18, g: 52, b: 86 } }))
+    wrapper.unmount()
+  })
+
   it('updates saturation and brightness gradients when HSV changes', async () => {
     vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({ r: 255, g: 0, b: 0 }))
     const wrapper = await mountSuspended(MapColorEditor)
