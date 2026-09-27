@@ -26,6 +26,25 @@ describe('App rendering', () => {
     wrapper.unmount()
   })
 
+  it('links company listings and applications in desktop and mobile navigation', async () => {
+    const wrapper = await mountSuspended(App, { route: '/' })
+    const desktop = wrapper.get('nav[aria-label="メインナビゲーション"]')
+    for (const [category,href,label] of [
+      ['一覧','/companies','企業一覧'],
+      ['申請','/companies/apply','企業申請'],
+    ]) {
+      const group = desktop.findAll('.dropdown').find(node => node.get('button').text().trim() === category)
+      expect(group).toBeDefined()
+      await group!.trigger('mouseenter')
+      expect(group!.get(`a[href="${href}"]`).text()).toBe(label)
+      await group!.trigger('mouseleave')
+    }
+    const mobile = wrapper.get('nav[aria-label="モバイルナビゲーション"]')
+    expect(mobile.get('a[href="/companies"]').text()).toBe('企業一覧')
+    expect(mobile.get('a[href="/companies/apply"]').text()).toBe('企業申請')
+    wrapper.unmount()
+  })
+
   it('renders the OFUSE card in a new tab with the requested destination and no note', async () => {
     const wrapper = await mountSuspended(App, { route: '/' })
     const card = wrapper.get('main a.xplay-card--link[href="https://ofuse.me/mofupark"]')

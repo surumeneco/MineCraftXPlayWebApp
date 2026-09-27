@@ -28,6 +28,9 @@ const info: Crumb = { label: '情報', to: '/info' }
 const lists: Crumb = { label: '一覧', to: '/lists' }
 const applications: Crumb = { label: '申請', to: '/applications' }
 const territories: Crumb = { label: '領地一覧', to: '/territories' }
+const companies: Crumb = {label:'企業一覧',to:'/companies'}
+const companyNames=useState<Record<string,string>>('xplay-company-breadcrumb-names',()=>({}))
+const companyName=(id:string)=>companyNames.value[id]||'企業詳細'
 const adminApplications: Crumb = { label: '申請管理', to: '/admin/applications' }
 const requests: Crumb = { label: '領地承認', to: '/admin/territories' }
 const notices: Crumb = { label: 'お知らせ管理', to: '/admin/notices' }
@@ -58,6 +61,12 @@ const items = computed<Crumb[]>(() => {
   }
   if (path === '/lists') return [home, { label: '一覧' }]
   if (path === '/territories') return [home, lists, { label: '領地一覧' }]
+  if (path === '/companies') return [home, lists, {label:'企業一覧'}]
+  if (path === '/companies/apply') return typeof route.query.source==='string'&&route.query.source
+    ?[home,lists,companies,{label:companyName(route.query.source),to:`/companies/${route.query.source}`},{label:'企業再申請'}]
+    :[home,applications,{label:'企業申請'}]
+  if (/^\/companies\/[^/]+\/edit$/.test(path)) return [home,lists,companies,{label:companyName(id),to:`/companies/${id}`},{label:'企業編集'}]
+  if (/^\/companies\/[^/]+$/.test(path)) return [home,lists,companies,{label:companyName(id)}]
   if (path === '/applications') return [home, { label: '申請' }]
   if (path === '/territories/apply') {
     if (typeof route.query.source === 'string' && route.query.source) {
@@ -77,6 +86,8 @@ const items = computed<Crumb[]>(() => {
   }
   if (path === '/admin/applications') return [home, { label: '申請管理' }]
   if (path === '/admin/territories') return [home, adminApplications, { label: '領地承認' }]
+  if (path === '/admin/companies') return [home,adminApplications,{label:'企業承認'}]
+  if (/^\/admin\/companies\/[^/]+\/review$/.test(path)) return [home,adminApplications,{label:'企業承認',to:'/admin/companies'},{label:companyName(id)}]
   if (/^\/admin\/territories\/[^/]+\/review$/.test(path)) {
     return [home, adminApplications, requests, { label: `領地承認詳細：${territoryName(id)}` }]
   }

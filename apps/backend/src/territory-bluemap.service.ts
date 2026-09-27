@@ -12,9 +12,11 @@ const special = {
 type AppData = { id: string; application_type: 'new' | 'edit'; name: string; coordinates: Point[] } | null
 type MarkerRow = {
   id: string
-  owner_type: 'account' | keyof typeof special
+  owner_type: 'account' | 'company' | keyof typeof special
   owner_account_id: string | null
   owner_account_name: string | null
+  owner_company_name: string | null
+  company_representative_account_id: string | null
   current_name: string | null
   approved_application: AppData
   pending_application: AppData
@@ -31,6 +33,7 @@ export class TerritoryBlueMapService {
   async render(): Promise<string> {
     const rows = await this.database.sql`
       SELECT t.id,t.owner_type,t.owner_account_id,t.current_name,oa.name AS owner_account_name,
+        co.current_name AS owner_company_name,co.representative_account_id AS company_representative_account_id,
         (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,'coordinates',a.coordinates)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
           ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1) AS approved_application,
@@ -38,6 +41,7 @@ export class TerritoryBlueMapService {
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='pending'
           ORDER BY a.submitted_at DESC,a.id DESC LIMIT 1) AS pending_application
       FROM territories t LEFT JOIN accounts oa ON oa.id=t.owner_account_id
+      LEFT JOIN companies co ON co.id=t.owner_company_id
       WHERE t.status IN ('pending','approved') ORDER BY t.first_applied_at,t.id`
     const groups = new Map<string, string[]>()
     for (const key of ['public-area', 'Reserve', 'Administration', 'Personal']) groups.set(key, [])
@@ -45,7 +49,9 @@ export class TerritoryBlueMapService {
     for (const row of rows as unknown as MarkerRow[]) {
       const owner = row.owner_type === 'account'
         ? { name: row.owner_account_name ?? '不明', color: await this.colors.ensure(row.owner_account_id) }
-        : special[row.owner_type]
+        : row.owner_type === 'company'
+          ? { name: row.owner_company_name ?? '企業', color: await this.colors.ensure(row.company_representative_account_id) }
+          : special[row.owner_type]
       const group = row.owner_type === 'shared_area' ? 'public-area'
         : row.owner_type === 'protected_area' ? 'Reserve'
         : row.owner_type === 'administration' ? 'Administration' : 'Personal'

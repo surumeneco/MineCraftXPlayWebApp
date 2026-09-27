@@ -5,7 +5,7 @@
     <form @submit.prevent="save">
       <label class="form-label" :for="kindId">所有者種別</label>
       <select :id="kindId" v-model="kind" class="form-select mb-3">
-        <option value="account">参加者アカウント</option>
+        <option value="account">参加者アカウント</option><option value="company">企業</option>
         <option value="shared_area">共同建築エリア</option>
         <option value="administration">運営</option>
         <option value="protected_area">保護区</option>
@@ -24,8 +24,9 @@
         <p v-else-if="!searchLoading" class="small text-body-secondary mt-2">該当する参加者はありません。</p>
         <p v-if="searchLoading" role="status" class="small mt-2">参加者を検索しています…</p>
       </div>
+      <div v-if="kind==='company'" class="mb-3"><label class="form-label" for="company-owner">企業</label><select id="company-owner" v-model="companyId" class="form-select"><option value="">企業を選択</option><option v-for="company in companies" :key="company.id" :value="company.id">{{company.name}}</option></select></div>
       <p v-if="error" class="alert alert-danger">{{ error }}</p>
-      <div class="text-end"><button type="submit" class="btn btn-primary" :disabled="busy || searchLoading || !changed || (kind === 'account' && !accountId)">
+      <div class="text-end"><button type="submit" class="btn btn-primary" :disabled="busy || searchLoading || !changed || (kind === 'account' && !accountId) || (kind === 'company' && !companyId)">
         {{ busy ? '保存しています…' : '所有者を変更' }}
       </button></div>
     </form>
@@ -39,12 +40,15 @@ const emit = defineEmits<{ updated: [] }>()
 const { get, mutate } = useAccountApi()
 const kind = ref<TerritoryOwnerType>(props.territory.owner.type)
 const accountId = ref<string | null>(props.territory.owner.account_id)
+const companyId=ref(props.territory.owner.company_id??'')
+const companies=ref<Array<{id:string;name:string}>>([])
 const search = ref(props.territory.owner.type === 'account' ? props.territory.owner.name : '')
 const accounts = ref<Array<{ id: string; name: string }>>([])
 const searchLoading = ref(false), busy = ref(false), error = ref('')
 const kindId = useId(), searchId = useId()
 const changed = computed(() => kind.value !== props.territory.owner.type ||
-  (kind.value === 'account' && accountId.value !== props.territory.owner.account_id))
+  (kind.value === 'account' && accountId.value !== props.territory.owner.account_id) ||
+  (kind.value === 'company' && companyId.value !== (props.territory.owner.company_id??'')))
 let searchVersion = 0
 async function loadAccounts() {
   const version = ++searchVersion
@@ -66,11 +70,12 @@ watch(search, () => {
 watch(() => props.territory.owner, owner => {
   kind.value = owner.type
   accountId.value = owner.account_id
+  companyId.value=owner.company_id??''
   search.value = owner.type === 'account' ? owner.name : ''
 }, { deep: true })
-onMounted(() => { void loadAccounts() })
+onMounted(async () => { void loadAccounts();try { companies.value=(await get<Array<{id:string;name:string}>>('/companies')).map(v=>({id:v.id,name:v.name})) } catch(cause){error.value=userFacingError(cause)} })
 async function save() {
-  if (!changed.value || (kind.value === 'account' && !accountId.value)) return
+  if (!changed.value || (kind.value === 'account' && !accountId.value) || (kind.value === 'company' && !companyId.value)) return
   busy.value = true
   error.value = ''
   try {
@@ -78,6 +83,7 @@ async function save() {
       operation_id: crypto.randomUUID(),
       owner_type: kind.value,
       owner_account_id: kind.value === 'account' ? accountId.value : null,
+      owner_company_id: kind.value === 'company' ? companyId.value : null,
     })
     emit('updated')
   } catch (cause) {
