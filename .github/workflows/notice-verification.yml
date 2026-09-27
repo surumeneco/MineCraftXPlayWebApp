@@ -77,7 +77,7 @@ jobs:
         shell: bash
         run: |
           npx playwright install --with-deps chromium
-          npm run test:e2e --workspace @xplay/frontend -- --project=chromium --grep='centered hover menu|centers the administrator menu'
+          npm run test:e2e --workspace @xplay/frontend -- --project=chromium --grep='centered hover menu|centers the administrator menu|spot guide|tourist guide'
       - name: Nuxt development SSR smoke for territory application
         shell: bash
         run: |
