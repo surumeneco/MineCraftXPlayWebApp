@@ -103,7 +103,8 @@ export class SpotService {
       : raw.main_image_id == null ? null : uuid(raw.main_image_id)
     const dimension = kind === 'public' ? dimensionOf(raw.dimension === undefined ? old?.dimension : raw.dimension) : null
     const x = kind === 'public' ? positionOf(raw.x === undefined ? old?.pos_x : raw.x, 'X') : null
-    const y = kind === 'public' ? positionOf(raw.y === undefined ? old?.pos_y : raw.y, 'Y') : null
+    // Legacy pos_y remains in the table, but public spot coordinates are X/Z only.
+    const y = null
     const z = kind === 'public' ? positionOf(raw.z === undefined ? old?.pos_z : raw.z, 'Z') : null
     const territory = kind === 'tourist'
       ? (raw.territory_id === undefined ? (old?.territory_id ?? null) : raw.territory_id == null ? null : uuid(raw.territory_id))
