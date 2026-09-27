@@ -247,7 +247,8 @@ export class TerritoryService {
       const companies = await sql`SELECT id,is_public,representative_account_id FROM companies
         WHERE id=${companyId} AND approved_at IS NOT NULL`
       if (!companies.length) throw new BadRequestException('承認済みの企業を選択してください。')
-      if (String(companies[0].representative_account_id) !== applicant && !(isAdmin && companies[0].is_public)) {
+      if ((companies[0].is_public && !isAdmin) ||
+        (String(companies[0].representative_account_id) !== applicant && !(isAdmin && companies[0].is_public))) {
         throw new ForbiddenException('代表者でない企業名義では申請できません。')
       }
       return { type, accountId: null, companyId, isPublic: companies[0].is_public === true }
