@@ -196,7 +196,7 @@ function payload() {
   const common = { name: name.value, body_delta: quill.getContents(), main_image_id: mainImageId.value,
     ...(selected.value ? { expected_version: selected.value.version } : {}) }
   if (props.kind === 'public') {
-    if (!dimension.value.trim() || Object.values(coordinates).some(value => value.trim() === '')) {
+    if (!dimension.value.trim() || Object.values(coordinates).some(value => String(value).trim() === '')) {
       throw new Error('ディメンションと座標を入力してください。')
     }
     return { ...common, dimension: dimension.value, x: Number(coordinates.x), z: Number(coordinates.z) }
