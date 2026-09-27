@@ -38,7 +38,8 @@
     <div class="mb-3"><label for="company-activities" class="form-label">活動内容 *</label><textarea id="company-activities" v-model="activities" required rows="5" maxlength="20000" class="form-control" /><p v-if="editing" class="form-text">変更には管理者の承認が必要です。</p></div>
     <CompanyImageField v-model="imageId" @uploading="imageUploading=$event" />
     <div class="mb-3"><label class="form-label">紹介文</label><ClientOnly><div ref="editor" aria-label="企業紹介文の編集" /></ClientOnly><p class="form-text">Quill形式で保存します。本文中の画像埋め込みには対応していません。</p></div>
-    <div class="d-flex justify-content-end gap-2"><NuxtLink :to="companyId?`/companies/${companyId}`:'/companies'" class="btn btn-outline-secondary">戻る</NuxtLink><button type="submit" class="btn btn-primary" :disabled="busy||imageUploading||!quillReady||!name.trim()||!activities.trim()||!headquartersId||!representativeId||(!editing&&!members.length)">{{busy?'保存しています…':editing?'保存・申請':'申請'}}</button></div>
+    <p v-if="sourceId && unchanged" class="small text-body-secondary">前回の申請から少なくとも1項目を変更してください。</p>
+    <div class="d-flex justify-content-end gap-2"><NuxtLink :to="companyId?`/companies/${companyId}`:'/companies'" class="btn btn-outline-secondary">戻る</NuxtLink><button type="submit" class="btn btn-primary" :disabled="busy||imageUploading||!quillReady||!name.trim()||!activities.trim()||!headquartersId||!representativeId||(!editing&&!members.length)||unchanged">{{busy?'保存しています…':editing?'保存・申請':'申請'}}</button></div>
   </form>
 </section></template>
 <script setup lang="ts">
@@ -50,7 +51,8 @@ const props=defineProps<{editId?:string;sourceId?:string}>()
 const editing=computed(()=>!!props.editId),companyId=computed(()=>props.editId||props.sourceId||'')
 const {get,mutate}=useAccountApi(),auth=useAccountSession(),{ $loadQuill }=useNuxtApp()
 const breadcrumbs=useState<Record<string,string>>('xplay-company-breadcrumb-names',()=>({}))
-const loading=ref(true),ready=ref(false),busy=ref(false),imageUploading=ref(false),error=ref('')
+const loading=ref(true),ready=ref(false),busy=ref(false),imageUploading=ref(false),error=ref(''),operationId=ref('')
+const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
 const profile=ref<AccountRecord|null>(null),selected=ref<CompanyRecord|null>(null)
 const name=ref(''),tags=ref<CompanyTag[]>([]),isPublic=ref(false),activities=ref(''),imageId=ref<string|null>(null)
 const headquartersId=ref(''),headquarters=ref<Array<{id:string;name:string}>>([])
@@ -63,8 +65,17 @@ const showRepresentative=computed(()=>editing.value||auth.isAdmin.value)
 const editor=ref<HTMLDivElement|null>(null),quillReady=ref(false)
 let quill:InstanceType<Awaited<ReturnType<typeof $loadQuill>>>|null=null
 let sourceContents:CompanyRecord['introduction_delta']={ops:[{insert:'\n'}]}
+const initialSnapshot=ref('')
+const snapshot=computed(()=>JSON.stringify({name:name.value.trim(),tags:[...tags.value].sort(),
+  is_public:isPublic.value,activities:activities.value,headquarters_territory_id:headquartersId.value,
+  representative_account_id:representativeId.value,member_account_ids:members.value.map(m=>m.id).sort(),
+  image_id:imageId.value,introduction_delta:quill?.getContents()??null}))
+const unchanged=computed(()=>!!props.sourceId && !!initialSnapshot.value && initialSnapshot.value===snapshot.value)
 const toolbar=[['bold','italic','underline','strike'],[{header:[1,2,3,false]}],[{list:'ordered'},{list:'bullet'}],['link'],['clean']]
 watch(editor,async element=>{if(!element||quill)return;const Quill=await $loadQuill();if(element!==editor.value||quill)return;quill=new Quill(element,{theme:'snow',modules:{toolbar}});quill.setContents(sourceContents as Parameters<typeof quill.setContents>[0]);quillReady.value=true},{flush:'post'})
+watch([ready,quillReady],([formReady,editorReady])=>{
+  if(props.sourceId&&formReady&&editorReady&&!initialSnapshot.value)initialSnapshot.value=snapshot.value
+},{flush:'post'})
 let accountVersion=0
 async function searchAccounts(term:string){if(!auth.authenticated.value)return;const version=++accountVersion;accountError.value='';try{const found=await get<CompanyAccount[]>(`/companies/accounts?name=${encodeURIComponent(term)}`);if(version===accountVersion){const combined=[...found,...members.value,...(selected.value?[selected.value.representative]:[]),...(profile.value?[{id:profile.value.id,name:profile.value.name}]:[])];accounts.value=Array.from(new Map(combined.map(a=>[a.id,a])).values())}}catch(e){if(version===accountVersion)accountError.value=userFacingError(e)}}
 watch(repSearch,value=>{void searchAccounts(value)})
@@ -86,7 +97,7 @@ watch(representativeId,()=>{
   if(editing.value && ready.value)void loadHeadquarters().catch(e=>{error.value=userFacingError(e)})
 })
 async function submit(){if(!profile.value||!quill||!headquartersId.value||(!editing.value&&!members.value.length))return;busy.value=true;error.value='';try{
-  const body={operation_id:crypto.randomUUID(),name:name.value.trim(),tags:tags.value,activities:activities.value,headquarters_territory_id:headquartersId.value,image_id:imageId.value,introduction_delta:quill.getContents(),
+  const body={operation_id:operation(),name:name.value.trim(),tags:tags.value,activities:activities.value,headquarters_territory_id:headquartersId.value,image_id:imageId.value,introduction_delta:quill.getContents(),
     ...(editing.value||auth.isAdmin.value?{representative_account_id:representativeId.value}:{}),
     ...(auth.isAdmin.value?{is_public:isPublic.value}:{}),...(!editing.value?{member_account_ids:members.value.map(a=>a.id)}:{})}
   const result=editing.value?await mutate<CompanyRecord>(`/companies/${companyId.value}/edit`,'POST',body):props.sourceId?await mutate<CompanyRecord>(`/companies/${companyId.value}/reapply`,'POST',body):await mutate<CompanyRecord>('/companies','POST',body)
