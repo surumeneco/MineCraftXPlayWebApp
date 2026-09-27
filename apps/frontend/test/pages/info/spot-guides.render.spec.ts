@@ -38,6 +38,13 @@ describe('spot guide pages and shared date-sort switch', () => {
     }
   })
 
+  it('accepts public spot coordinates as X/Z only in the editor', async () => {
+    const editor = await readFile('app/components/spot/AdminEditor.vue', 'utf8')
+    expect(editor).toContain("const axisFields = [{ key: 'x' as const, label: 'X' }, { key: 'z' as const, label: 'Z' }]")
+    expect(editor).not.toContain('coordinates.y')
+    expect(editor).not.toContain('y: Number(')
+  })
+
   it('uses the identical switch component for notices and tourist spots without sorting public spots', async () => {
     const notice = await readFile('app/pages/info/notice/index.vue', 'utf8')
     const spots = await readFile('app/components/spot/List.vue', 'utf8')
