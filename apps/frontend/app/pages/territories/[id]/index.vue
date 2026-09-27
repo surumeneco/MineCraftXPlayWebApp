@@ -9,7 +9,7 @@
       <h2 class="h4">開発構想</h2>
       <p class="territory-multiline">{{ territory.development_concept || '未記入' }}</p>
       <template v-if="territory.can_edit_concept">
-        <button v-if="!conceptEditing" class="btn btn-outline-secondary btn-sm" type="button" @click="conceptEditing=true">開発構想を編集</button>
+        <div v-if="!conceptEditing" class="text-end"><button class="btn btn-outline-secondary btn-sm" type="button" @click="conceptEditing=true">開発構想を編集</button></div>
         <form v-else @submit.prevent="saveConcept">
           <textarea v-model="conceptDraft" rows="5" maxlength="20000" class="form-control mb-2" aria-label="開発構想" />
           <p v-if="conceptError" class="alert alert-danger">{{ conceptError }}</p>
