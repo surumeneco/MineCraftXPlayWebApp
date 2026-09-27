@@ -33,7 +33,7 @@
 <script setup lang="ts">
 import { accountError } from '../../composables/useAccountApi'
 type Color={r:number;g:number;b:number};type Hsv={h:number;s:number;v:number}
-const props=defineProps<{accountId?:string}>()
+const props=defineProps<{accountId?:string;companyId?:string}>()
 const {get,mutate}=useAccountApi()
 const loading=ref(true),busy=ref(false),error=ref(''),saved=ref('')
 const color=reactive<Color>({r:255,g:0,b:0}),hsv=reactive<Hsv>({h:0,s:100,v:100})
@@ -44,7 +44,7 @@ const rgbGradients = {
   g: 'linear-gradient(to right, #000000, #00ff00)',
   b: 'linear-gradient(to right, #000000, #0000ff)',
 } as const
-const endpoint=computed(()=>props.accountId?`/admin/accounts/${props.accountId}/map-color`:'/accounts/me/map-color')
+const endpoint=computed(()=>props.companyId?`/companies/${props.companyId}/map-color`:props.accountId?`/admin/accounts/${props.accountId}/map-color`:'/accounts/me/map-color')
 const hex=computed(()=>`#${[color.r,color.g,color.b].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('')}`)
 function rgbToHsv(c:Color):Hsv{const r=c.r/255,g=c.g/255,b=c.b/255,max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;let h=0;if(d){if(max===r)h=60*(((g-b)/d)%6);else if(max===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4)}if(h<0)h+=360;return{h:Math.round(h)%360,s:Math.round(max?d/max*100:0),v:Math.round(max*100)}}
 function hsvToRgb(v:Hsv):Color{const h=((v.h%360)+360)%360,s=v.s/100,val=v.v/100,c=val*s,x=c*(1-Math.abs((h/60)%2-1)),m=val-c;let r=0,g=0,b=0;if(h<60)[r,g]=[c,x];else if(h<120)[r,g]=[x,c];else if(h<180)[g,b]=[c,x];else if(h<240)[g,b]=[x,c];else if(h<300)[r,b]=[x,c];else[r,b]=[c,x];return{r:Math.round((r+m)*255),g:Math.round((g+m)*255),b:Math.round((b+m)*255)}}
