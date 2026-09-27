@@ -65,14 +65,14 @@ const showRepresentative=computed(()=>editing.value||auth.isAdmin.value)
 const editor=ref<HTMLDivElement|null>(null),quillReady=ref(false)
 let quill:InstanceType<Awaited<ReturnType<typeof $loadQuill>>>|null=null
 let sourceContents:CompanyRecord['introduction_delta']={ops:[{insert:'\n'}]}
-const initialSnapshot=ref('')
-const snapshot=computed(()=>JSON.stringify({name:name.value.trim(),tags:[...tags.value].sort(),
+const initialSnapshot=ref(''),introRevision=ref(0)
+const snapshot=computed(()=>{void introRevision.value;return JSON.stringify({name:name.value.trim(),tags:[...tags.value].sort(),
   is_public:isPublic.value,activities:activities.value,headquarters_territory_id:headquartersId.value,
   representative_account_id:representativeId.value,member_account_ids:members.value.map(m=>m.id).sort(),
-  image_id:imageId.value,introduction_delta:quill?.getContents()??null}))
+  image_id:imageId.value,introduction_delta:quill?.getContents()??null})})
 const unchanged=computed(()=>!!props.sourceId && !!initialSnapshot.value && initialSnapshot.value===snapshot.value)
 const toolbar=[['bold','italic','underline','strike'],[{header:[1,2,3,false]}],[{list:'ordered'},{list:'bullet'}],['link'],['clean']]
-watch(editor,async element=>{if(!element||quill)return;const Quill=await $loadQuill();if(element!==editor.value||quill)return;quill=new Quill(element,{theme:'snow',modules:{toolbar}});quill.setContents(sourceContents as Parameters<typeof quill.setContents>[0]);quillReady.value=true},{flush:'post'})
+watch(editor,async element=>{if(!element||quill)return;const Quill=await $loadQuill();if(element!==editor.value||quill)return;quill=new Quill(element,{theme:'snow',modules:{toolbar}});quill.setContents(sourceContents as Parameters<typeof quill.setContents>[0]);quill.on('text-change',(_delta,_previous,source)=>{if(source==='user')introRevision.value++});quillReady.value=true},{flush:'post'})
 watch([ready,quillReady],([formReady,editorReady])=>{
   if(props.sourceId&&formReady&&editorReady&&!initialSnapshot.value)initialSnapshot.value=snapshot.value
 },{flush:'post'})
