@@ -56,7 +56,9 @@
       </div>
     </form>
     <UiConfirmDialog :open="decision !== null" :title="decision === 'remove' ? '削除の確認' : '公開取り消しの確認'"
-      :message="decision === 'remove' ? 'スポットと画像を完全に削除します。よろしいですか？' : 'スポットの公開を取り消しますか？'"
+      :message="decision === 'remove'
+        ? 'スポットと画像を完全に削除します。よろしいですか？'
+        : (dirty ? '未保存の変更は破棄されます。公開を取り消しますか？' : 'スポットの公開を取り消しますか？')"
       :confirm-label="decision === 'remove' ? '削除する' : '公開を取り消す'"
       :danger="true" :busy="busy" @cancel="decision = null" @confirm="confirmDecision" />
     <UiDialog :open="leavePrompt" kind="confirmation" title="未保存の変更があります"
