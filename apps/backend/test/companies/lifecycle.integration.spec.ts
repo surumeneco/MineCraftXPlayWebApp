@@ -172,6 +172,26 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
       coordinates:[{x:35000,z:35000},{x:35100,z:35000},{x:35100,z:35100}],
     },session.other)).status).toBe(403)
   })
+  it('does not allow a non-admin to apply on behalf of a public company even if its representative',async()=>{
+    const publicId=randomUUID();companyIds.push(publicId)
+    const created=await req('/api/companies','POST',{
+      ...createBody(publicId,'代表者が参加者の公営企業'),
+      headquarters_territory_id:sharedHQ,representative_account_id:member,
+      is_public:true,
+    },session.admin)
+    expect(created.status).toBe(201)
+    const approved=await req(`/api/admin/companies/${publicId}/review`,'POST',
+      {operation_id:randomUUID(),action:'approve'},session.admin)
+    expect(approved.status).toBe(201)
+    const memberChoices=await req('/api/companies/territory-owners','GET',undefined,session.member)
+    expect(memberChoices.body).not.toEqual(expect.arrayContaining([expect.objectContaining({id:publicId})]))
+    const attempt=await req('/api/territories','POST',{
+      operation_id:randomUUID(),name:'申請禁止対象の公営領地',
+      owner_type:'company',owner_company_id:publicId,
+      coordinates:[{x:60000,z:60000},{x:60100,z:60000},{x:60100,z:60100}],
+    })
+    expect(attempt.status).toBe(403)
+  })
   it('requires changed data for reapplication and supports proposed representative HQ lookup',async()=>{
     const id=randomUUID();companyIds.push(id)
     const created=await req('/api/companies','POST',createBody(id,'再申請企業'))
