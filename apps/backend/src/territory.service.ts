@@ -224,8 +224,10 @@ export class TerritoryService {
     const canEdit = row.status === 'approved' && (viewer.is_admin === true
       || (row.owner_type === 'account' && viewer.account_id === row.owner_account_id)
       || (row.owner_type === 'company' && viewer.account_id === row.company_representative_account_id))
-    const canReapply = viewer.account_id === row.applicant_account_id && ['returned','withdrawn'].includes(row.status)
-    const canWithdraw = viewer.account_id === row.pending_application?.submitted_by_account_id && row.status === 'pending'
+    const canReapply = ['returned','withdrawn'].includes(row.status) && (viewer.account_id === row.applicant_account_id ||
+      (row.owner_type === 'company' && (viewer.is_admin === true || viewer.account_id === row.company_representative_account_id)))
+    const canWithdraw = row.status === 'pending' && (viewer.account_id === row.pending_application?.submitted_by_account_id ||
+      (row.owner_type === 'company' && (viewer.is_admin === true || viewer.account_id === row.company_representative_account_id)))
     const canConcept = viewer.is_admin === true ||
       (row.owner_type === 'account' && viewer.account_id === row.owner_account_id) ||
       (row.owner_type === 'company' && viewer.account_id === row.company_representative_account_id)
@@ -308,7 +310,11 @@ export class TerritoryService {
       if (completed) return completed
       const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_account_id,owner_company_id,development_concept FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
-      if (String(locked[0].applicant_account_id) !== accountId) throw new ForbiddenException('Only the applicant can reapply')
+      if (String(locked[0].applicant_account_id) !== accountId &&
+        !(locked[0].owner_type === 'company' && (isAdmin ||
+          (await tx`SELECT 1 FROM companies WHERE id=${locked[0].owner_company_id} AND representative_account_id=${accountId}`).length))) {
+        throw new ForbiddenException('Only the applicant or current enterprise representative can reapply')
+      }
       if (!['returned','withdrawn'].includes(String(locked[0].status))) throw new ConflictException('Territory is not available for reapplication')
       const concept = optionalText(conceptRaw, '開発構想', String(locked[0].development_concept))
       const owner = await this.resolveOwner(tx,body?.owner_type,body?.owner_company_id,accountId,isAdmin)
@@ -360,8 +366,11 @@ export class TerritoryService {
       const conceptChanged = concept !== row.development_concept
       const note = optionalText(body?.note, '備考')
       if (boundaryChanged) {
-        if (!(row.owner_type === 'company' && (await tx`SELECT 1 FROM companies WHERE id=${row.owner_company_id} AND is_public`).length)) {
-          await this.assertPendingArea(tx, accountId, Math.max(0, area(coordinates) - area(approvedCoordinates)))
+        const company = row.owner_type === 'company'
+          ? (await tx`SELECT representative_account_id,is_public FROM companies WHERE id=${row.owner_company_id}`)[0] : null
+        if (!company?.is_public) {
+          await this.assertPendingArea(tx, company ? String(company.representative_account_id) : accountId,
+            Math.max(0, area(coordinates) - area(approvedCoordinates)))
         }
       }
       const nameChanged = approvedName !== name
@@ -479,20 +488,24 @@ export class TerritoryService {
     })
   }
 
-  async withdraw(accountId: string, idRaw: unknown, operationRaw: unknown) {
+  async withdraw(accountId: string, idRaw: unknown, operationRaw: unknown, isAdmin = false) {
     const id = uuid(idRaw), operationId = uuid(operationRaw)
     return this.database.sql.begin(async tx => {
       await tx`SELECT pg_advisory_xact_lock(79412503)`
       const completed = await this.completedOperation(tx, operationId, id, 'withdraw', accountId)
       if (completed) return completed
-      const locked = await tx`SELECT applicant_account_id,status FROM territories WHERE id=${id} FOR UPDATE`
+      const locked = await tx`SELECT applicant_account_id,status,owner_type,owner_company_id FROM territories WHERE id=${id} FOR UPDATE`
       if (!locked.length) throw new NotFoundException('Territory not found')
       if (locked[0].status !== 'pending') throw new ConflictException('Only pending territory can be withdrawn')
       const apps = await tx`SELECT id,submitted_by_account_id,application_type,name,coordinates,image_id FROM territory_applications
         WHERE territory_id=${id} AND status='pending' ORDER BY submitted_at DESC,id DESC LIMIT 1 FOR UPDATE`
       if (!apps.length) throw new ConflictException('Pending application not found')
       const app = apps[0]
-      if (String(app.submitted_by_account_id) !== accountId) throw new ForbiddenException('Only the pending application submitter can withdraw')
+      if (String(app.submitted_by_account_id) !== accountId &&
+        !(locked[0].owner_type === 'company' && (isAdmin ||
+          (await tx`SELECT 1 FROM companies WHERE id=${locked[0].owner_company_id} AND representative_account_id=${accountId}`).length))) {
+        throw new ForbiddenException('Only the pending submitter or current enterprise representative can withdraw')
+      }
       const previousApproved = await tx`SELECT 1 FROM territory_applications WHERE territory_id=${id} AND status='approved' LIMIT 1`
       await tx`UPDATE territory_applications SET status='withdrawn',decided_at=clock_timestamp() WHERE id=${app.id}`
       const nextStatus = previousApproved.length ? 'approved' : 'withdrawn'
