@@ -23,7 +23,11 @@
       </div>
       <div v-if="kind === 'public'" class="mb-3">
         <label for="spot-dimension" class="form-label">ディメンション</label>
-        <input id="spot-dimension" v-model="dimension" class="form-control" maxlength="100" placeholder="例：minecraft:overworld" required @input="dirty = true" />
+        <select id="spot-dimension" v-model="dimension" class="form-select" required @change="dirty = true">
+          <option value="" disabled>ディメンションを選択</option>
+          <option v-if="legacyDimension" :value="legacyDimension" disabled>旧値：{{ legacyDimension }}（選び直してください）</option>
+          <option v-for="option in dimensionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </select>
         <div class="row g-2 mt-1">
           <div v-for="axis in axisFields" :key="axis.key" class="col-6">
             <label class="form-label" :for="'spot-' + axis.key">{{ axis.label }}座標</label>
@@ -90,6 +94,13 @@ let allowLeaving = false
 let unregisterRouteGuard: (() => void) | undefined
 const selected = ref<Spot | null>(null)
 const name = ref(''), dimension = ref(''), territoryId = ref('')
+const dimensionOptions = [
+  { label: 'オーバーワールド', value: 'minecraft:overworld' },
+  { label: 'ネザー', value: 'minecraft:the_nether' },
+  { label: 'エンド', value: 'minecraft:the_end' },
+] as const
+const legacyDimension = computed(() => dimension.value && !dimensionOptions.some(option => option.value === dimension.value)
+  ? dimension.value : '')
 const mainImageId = ref<string | null>(null), localPreview = ref('')
 const coordinates = reactive<{ x: string | number; z: string | number }>({ x: '', z: '' })
 const axisFields = [{ key: 'x' as const, label: 'X' }, { key: 'z' as const, label: 'Z' }]
@@ -196,8 +207,11 @@ function payload() {
   const common = { name: name.value, body_delta: quill.getContents(), main_image_id: mainImageId.value,
     ...(selected.value ? { expected_version: selected.value.version } : {}) }
   if (props.kind === 'public') {
-    if (!dimension.value.trim() || Object.values(coordinates).some(value => String(value).trim() === '')) {
-      throw new Error('ディメンションと座標を入力してください。')
+    if (!dimensionOptions.some(option => option.value === dimension.value)) {
+      throw new Error('ディメンションを選択してください。')
+    }
+    if (Object.values(coordinates).some(value => String(value).trim() === '')) {
+      throw new Error('座標を入力してください。')
     }
     return { ...common, dimension: dimension.value, x: Number(coordinates.x), z: Number(coordinates.z) }
   }
