@@ -441,7 +441,16 @@ onBeforeUnmount(() => {
   transform: translate(-50%, -50%);
   z-index: 2;
 }
-.xplay-desktop-navigation--hidden { visibility: hidden; pointer-events: none; }
+/* Keep the nav measurable without contributing off-screen width to mobile scroll. */
+.xplay-desktop-navigation--hidden {
+  position: fixed;
+  left: 0;
+  top: 0;
+  transform: none;
+  contain: paint;
+  visibility: hidden;
+  pointer-events: none;
+}
 .xplay-desktop-navigation .navbar-nav { flex-wrap: nowrap; }
 .xplay-desktop-navigation .nav-item,
 .xplay-desktop-navigation .nav-link { white-space: nowrap; }
