@@ -13,7 +13,7 @@
         <NoticeTagPicker :model-value="selectedTags" :tags="allTags" :disabled="busy" @update:model-value="updateTags" />
         <p v-if="!selectedTags.length" class="form-text text-warning" role="status">公開するにはタグを1件以上設定してください。下書き保存はタグなしでも可能です。</p>
         <label class="form-label mt-3">本文</label>
-        <ClientOnly><div ref="editor" class="mb-3" aria-label="お知らせ本文" /></ClientOnly>
+        <ClientOnly><div ref="editor" class="xplay-quill-editor mb-3" aria-label="お知らせ本文" /></ClientOnly>
         <p class="form-text">本文中の任意位置に画像を挿入できます。画像の変更は保存時に確定します。</p>
         <div class="d-flex flex-wrap gap-2 justify-content-end">
           <button type="button" class="btn btn-outline-secondary" :disabled="busy" @click="backToList">一覧に戻る</button>
