@@ -180,7 +180,6 @@ export class CompanyService {
       throw new NotFoundException('企業が見つかりません。')
     }
     if (!row.map_color) {
-      await this.colors.ensure(id)
       row.map_color = await this.colors.ensure(id)
     }
     const detail = this.dto(row,viewer)
