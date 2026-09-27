@@ -37,7 +37,8 @@ async function installSpotApi(page: import('@playwright/test').Page) {
     await route.fulfill({
       status: body ? 200 : 404,
       contentType: 'application/json',
-      headers: { 'access-control-allow-origin': 'http://localhost:3000' },
+      headers: { 'access-control-allow-origin': new URL(route.request().headers()['origin'] ?? 'http://localhost:3000').origin,
+        'access-control-allow-credentials': 'true' },
       body: JSON.stringify(body ?? { statusCode: 404, message: 'Not found' }),
     })
   })
