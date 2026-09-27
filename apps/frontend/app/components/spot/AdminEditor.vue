@@ -91,7 +91,7 @@ let unregisterRouteGuard: (() => void) | undefined
 const selected = ref<Spot | null>(null)
 const name = ref(''), dimension = ref(''), territoryId = ref('')
 const mainImageId = ref<string | null>(null), localPreview = ref('')
-const coordinates = reactive<{ x: string; z: string }>({ x: '', z: '' })
+const coordinates = reactive<{ x: string | number; z: string | number }>({ x: '', z: '' })
 const axisFields = [{ key: 'x' as const, label: 'X' }, { key: 'z' as const, label: 'Z' }]
 const allTags = ref<NoticeTag[]>([]), selectedTags = ref<string[]>([])
 const territories = ref<{ id: string; name: string; status: string }[]>([])
