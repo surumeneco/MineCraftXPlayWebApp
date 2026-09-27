@@ -35,7 +35,7 @@ test('spot guide editor sends the X/Z form after numeric input', async ({ page, 
     throw new Error('Spot editor unavailable: ' + await page.locator('main').innerText())
   })
   await page.getByLabel('名前', { exact: true }).fill('案内テスト')
-  await page.getByLabel('ディメンション').fill('minecraft:overworld')
+  await page.getByLabel('ディメンション').selectOption('minecraft:overworld')
   await page.getByLabel('X座標').fill('30')
   await page.getByLabel('Z座標').fill('-20')
   await page.getByRole('button', { name: '保存', exact: true }).click()
