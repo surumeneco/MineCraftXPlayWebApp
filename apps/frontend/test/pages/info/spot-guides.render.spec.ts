@@ -4,8 +4,20 @@ import { describe, expect, it } from 'vitest'
 import SortSwitch from '../../../app/components/ui/SortSwitch.vue'
 import Breadcrumb from '../../../app/components/layout/Breadcrumb.vue'
 import { initialHomeLayout } from '../../../app/composables/useHomeLayout'
+import { spotLocation, type Spot } from '../../../app/types/spot'
 
 describe('spot guide pages and shared date-sort switch', () => {
+  it('translates recognized dimensions for display but preserves unknown IDs', () => {
+    const publicSpot = (dimension: string | null) => ({
+      kind: 'public', dimension, pos_x: 12, pos_z: -7,
+    }) as Spot
+    expect(spotLocation(publicSpot('minecraft:overworld'))).toBe('オーバーワールド / X:12 Z:-7')
+    expect(spotLocation(publicSpot('minecraft:the_nether'))).toBe('ネザー / X:12 Z:-7')
+    expect(spotLocation(publicSpot('minecraft:the_end'))).toBe('エンド / X:12 Z:-7')
+    expect(spotLocation(publicSpot('legacy:custom'))).toBe('legacy:custom / X:12 Z:-7')
+    expect(spotLocation(publicSpot(null))).toBe('未設定 / X:12 Z:-7')
+  })
+
   it('uses a native accessible switch and emits a date field on change', async () => {
     const wrapper = await mountSuspended(SortSwitch, { props: { modelValue: 'published_at' } })
     const input = wrapper.get('input[role="switch"][type="checkbox"]')
