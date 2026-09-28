@@ -36,6 +36,7 @@
     </div>
     <div class="mb-3"><label for="company-headquarters" class="form-label">主要活動拠点 *</label><select id="company-headquarters" v-model="headquartersId" class="form-select" required><option value="" disabled>領地を選択してください</option><option v-for="territory in headquarters" :key="territory.id" :value="territory.id">{{territory.name}}</option></select></div>
     <div class="mb-3"><label for="company-activities" class="form-label">活動内容 *</label><textarea id="company-activities" v-model="activities" required rows="5" maxlength="20000" class="form-control" /><p v-if="editing" class="form-text">変更には管理者の承認が必要です。</p></div>
+    <AccountMapColorEditor v-if="editing" :company-id="companyId" />
     <CompanyImageField v-model="imageId" @uploading="imageUploading=$event" />
     <div class="mb-3"><label class="form-label">紹介文</label><ClientOnly><div ref="editor" class="xplay-quill-editor" aria-label="企業紹介文の編集" /></ClientOnly><p class="form-text">Quill形式で保存します。本文中の画像埋め込みには対応していません。</p></div>
     <div class="d-flex justify-content-end gap-2"><NuxtLink :to="companyId?`/companies/${companyId}`:'/companies'" class="btn btn-outline-secondary">戻る</NuxtLink><button type="submit" class="btn btn-primary" :disabled="busy||imageUploading||!quillReady||!name.trim()||!activities.trim()||!headquartersId||!representativeId||!members.length">{{busy?'保存しています…':editing?'保存・申請':'申請'}}</button></div>

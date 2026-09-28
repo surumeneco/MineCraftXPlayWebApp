@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, Res } from '@nestjs/common'
 import { AuthService } from './auth.service.js'
 import { CompanyService, COMPANY_TAGS } from './company.service.js'
 import { CompanyImagesService } from './company-images.service.js'
@@ -30,6 +30,15 @@ export class CompanyController {
 
   @Get() async list(@Req() req: any, @Query() query: Record<string,unknown>) {
     return this.companies.list(await this.auth.info(req),query)
+  }
+
+  @Get(':id/map-color') async mapColor(@Req() req: any, @Param('id') id: string) {
+    return this.companies.getColor(id,await this.auth.info(req))
+  }
+
+  @Patch(':id/map-color') async setMapColor(@Req() req: any, @Param('id') id: string, @Body() body: unknown) {
+    const actor = await this.auth.requireUser(req,true)
+    return this.companies.setColor(id,actor,(await this.auth.info(req)).is_admin === true,body)
   }
 
   @Get(':id') async detail(@Req() req: any, @Param('id') id: string) {

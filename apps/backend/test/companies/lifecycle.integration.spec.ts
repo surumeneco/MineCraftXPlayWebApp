@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core'
 import type { INestApplication } from '@nestjs/common'
 import postgres from 'postgres'
 import { AppModule } from '../../src/app.module.js'
+import { TerritoryBlueMapService } from '../../src/territory-bluemap.service.js'
 
 const suite=process.env.DATABASE_URL?describe:describe.skip
 suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
@@ -17,7 +18,7 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
   const hash=(s:string)=>createHash('sha256').update(s).digest('hex')
   const sent:Array<{path:string;body:any}>=[]
   const territoryIds:string[]=[],companyIds:string[]=[]
-  const req=async(path:string,method:'GET'|'POST'='GET',body?:any,token:string|null=session.member)=>{
+  const req=async(path:string,method:'GET'|'POST'|'PATCH'='GET',body?:any,token:string|null=session.member)=>{
     const resp=await fetch(root+path,{method,headers:{'Content-Type':'application/json',Origin:origin,'X-XPlay-CSRF':csrf,
       ...(token?{Cookie:`xplay_session=${token}; xplay_csrf=${csrf}`}:{})},
       ...(body===undefined?{}:{body:JSON.stringify(body)})})
@@ -173,6 +174,42 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
       coordinates:[{x:35000,z:35000},{x:35100,z:35000},{x:35100,z:35100}],
     },session.other)).status).toBe(403)
   })
+  it('persists enterprise colors independently and renders approved company territory markers',async()=>{
+    const companyId=companyIds[0]
+    const initial=await req(`/api/companies/${companyId}/map-color`,'GET',undefined,null)
+    expect(initial.status).toBe(200)
+    expect(initial.body).toEqual({r:expect.any(Number),g:expect.any(Number),b:expect.any(Number)})
+    const otherEdit=await req(`/api/companies/${companyId}/map-color`,'PATCH',{r:12,g:34,b:56},session.other)
+    expect(otherEdit.status).toBe(403)
+    expect((await req(`/api/companies/${companyId}/map-color`,'PATCH',
+      {r:256,g:34,b:56})).status).toBe(400)
+    expect((await req(`/api/companies/${companyId}/map-color`,'PATCH',
+      {r:12,g:34,b:56})).body).toEqual({r:12,g:34,b:56})
+    expect((await req(`/api/companies/${companyId}`,'GET',undefined,null)).body.map_color)
+      .toEqual({r:12,g:34,b:56})
+    const territoryId=randomUUID();territoryIds.push(territoryId)
+    await sql`INSERT INTO territories(id,applicant_account_id,owner_type,owner_company_id,status,current_name,approved_at)
+      VALUES (${territoryId},${member},'company',${companyId},'approved','色テスト領地',now())`
+    await sql`INSERT INTO territory_applications(territory_id,application_type,submitted_by_account_id,
+      name,coordinates,status,decided_at)
+      VALUES (${territoryId},'new',${member},'色テスト領地',
+        ${sql.json([{x:91000,z:91000},{x:91010,z:91000},{x:91010,z:91010}])},'approved',now())`
+    const render=()=>app.get(TerritoryBlueMapService).render()
+    expect(await render()).toContain('label: "承認後企業 - 色テスト領地"')
+    expect(await render()).toContain('line-color: { r: 12, g: 34, b: 56, a: 1 }')
+    await sql`UPDATE companies SET representative_account_id=${other} WHERE id=${companyId}`
+    expect((await req(`/api/companies/${companyId}`,'GET',undefined,null)).body.map_color)
+      .toEqual({r:12,g:34,b:56})
+    expect(await render()).toContain('line-color: { r: 12, g: 34, b: 56, a: 1 }')
+    expect((await req(`/api/companies/${companyId}/map-color`,'PATCH',
+      {r:1,g:2,b:3},session.member)).status).toBe(403)
+    expect((await req(`/api/companies/${companyId}/map-color`,'PATCH',
+      {r:45,g:67,b:89},session.admin)).body).toEqual({r:45,g:67,b:89})
+    await sql`UPDATE companies SET representative_account_id=${member} WHERE id=${companyId}`
+    expect((await req(`/api/companies/${companyId}`,'GET',undefined,null)).body.map_color)
+      .toEqual({r:45,g:67,b:89})
+  })
+
   it('does not allow a non-admin to apply on behalf of a public company even if its representative',async()=>{
     const publicId=randomUUID();companyIds.push(publicId)
     const created=await req('/api/companies','POST',{

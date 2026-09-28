@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { AccountColorService, type MapColor } from './account-color.service.js'
 import { Database } from './database.js'
+import { CompanyColorService } from './company-color.service.js'
 import { centroid, type Point } from './territory-geometry.js'
 
 const special = {
@@ -14,9 +15,9 @@ type MarkerRow = {
   id: string
   owner_type: 'account' | 'company' | keyof typeof special
   owner_account_id: string | null
+  owner_company_id: string | null
   owner_account_name: string | null
   owner_company_name: string | null
-  company_representative_account_id: string | null
   current_name: string | null
   approved_application: AppData
   pending_application: AppData
@@ -28,12 +29,13 @@ const color = (value: MapColor, alpha: number) =>
 
 @Injectable()
 export class TerritoryBlueMapService {
-  constructor(private readonly database: Database, private readonly colors: AccountColorService) {}
+  constructor(private readonly database: Database, private readonly colors: AccountColorService,
+    private readonly companyColors: CompanyColorService) {}
 
   async render(): Promise<string> {
     const rows = await this.database.sql`
-      SELECT t.id,t.owner_type,t.owner_account_id,t.current_name,oa.name AS owner_account_name,
-        co.current_name AS owner_company_name,co.representative_account_id AS company_representative_account_id,
+      SELECT t.id,t.owner_type,t.owner_account_id,t.owner_company_id,t.current_name,oa.name AS owner_account_name,
+        co.current_name AS owner_company_name,
         (SELECT json_build_object('id',a.id,'application_type',a.application_type,'name',a.name,'coordinates',a.coordinates)
           FROM territory_applications a WHERE a.territory_id=t.id AND a.status='approved'
           ORDER BY a.decided_at DESC NULLS LAST,a.submitted_at DESC,a.id DESC LIMIT 1) AS approved_application,
@@ -50,7 +52,7 @@ export class TerritoryBlueMapService {
       const owner = row.owner_type === 'account'
         ? { name: row.owner_account_name ?? '不明', color: await this.colors.ensure(row.owner_account_id) }
         : row.owner_type === 'company'
-          ? { name: row.owner_company_name ?? '企業', color: await this.colors.ensure(row.company_representative_account_id) }
+          ? { name: row.owner_company_name ?? '企業', color: await this.companyColors.ensure(row.owner_company_id) }
           : special[row.owner_type]
       const group = row.owner_type === 'shared_area' ? 'public-area'
         : row.owner_type === 'protected_area' ? 'Reserve'

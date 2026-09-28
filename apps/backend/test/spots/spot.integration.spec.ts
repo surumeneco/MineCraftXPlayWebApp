@@ -106,6 +106,7 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
   })
 
   it('binds a tourist spot to an approved territory and requires tags to publish', async () => {
+    const touristTag = '観光案内' + randomUUID().slice(0, 8)
     const territory = (await sql`SELECT id,current_name FROM territories WHERE status='approved' LIMIT 1`)[0]
     expect(territory?.id).toBeTruthy()
     const draft = await write('/admin/spots/tourist', 'POST',
@@ -116,7 +117,7 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
     expect((await write('/admin/spots/tourist/' + draft.data.id + '/publish', 'POST',
       { expected_version: 1 })).response.status).toBe(400)
     const tagged = await write('/admin/spots/tourist/' + draft.data.id, 'PATCH',
-      { expected_version: 1, tags: ['観光案内'] })
+      { expected_version: 1, tags: [touristTag] })
     expect(tagged.response.status).toBe(200)
     const published = await write('/admin/spots/tourist/' + draft.data.id + '/publish', 'POST',
       { expected_version: 2 })
@@ -124,8 +125,23 @@ suite('spot guide publication and ordering (PostgreSQL)', () => {
     const visible = await request('/spots/tourist/' + draft.data.id)
     expect(visible.response.status).toBe(200)
     expect(visible.data.territory_name).toBe(territory.current_name)
-    expect(visible.data.tags[0].name).toBe('観光案内')
-    expect((await request('/spots/tags')).data.some((tag: any) => tag.name === '観光案内')).toBe(true)
+    expect(visible.data.tags[0].name).toBe(touristTag)
+    expect((await request('/spots/tags')).data.some((tag: any) => tag.name === touristTag)).toBe(true)
+    expect((await request('/admin/spots/tags', { headers: privateHeaders })).data.some((tag: any) => tag.name === touristTag)).toBe(true)
+    expect((await request('/admin/tags', { headers: privateHeaders })).data.some((tag: any) => tag.name === touristTag)).toBe(false)
+    const notice = await write('/admin/notices', 'POST', {
+      title: 'tag-' + randomUUID(), body_delta: body, tags: [touristTag],
+    })
+    expect(notice.response.status).toBe(201)
+    const noticeTag = notice.data.tags.find((tag: any) => tag.name === touristTag)
+    expect(noticeTag?.id).toBeTruthy()
+    expect(noticeTag.id).not.toBe(visible.data.tags[0].id)
+    const scopes = await sql`SELECT scope FROM tags WHERE normalized_name=${touristTag.toLowerCase()} ORDER BY scope`
+    expect(scopes.map(row => row.scope)).toEqual(['notice', 'tourist'])
+    expect((await request('/admin/tags', { headers: privateHeaders })).data.some((tag: any) => tag.id === noticeTag.id)).toBe(true)
+    const removedNotice = await write('/admin/notices/' + notice.data.id, 'DELETE', { expected_version: 1 })
+    expect(removedNotice.response.status).toBe(204)
+    expect((await request('/admin/tags', { headers: privateHeaders })).data.some((tag: any) => tag.name === touristTag)).toBe(false)
     expect((await write('/admin/spots/tourist/' + draft.data.id, 'PATCH',
       { expected_version: 3, territory_id: randomUUID() })).response.status).toBe(400)
   })

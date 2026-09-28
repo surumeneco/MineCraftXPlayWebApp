@@ -34,10 +34,12 @@ export class NoticeService {
   async publicTags() {
     return this.database.sql`
       SELECT DISTINCT t.id, t.name FROM tags t JOIN notice_tags nt ON nt.tag_id = t.id
-      JOIN notices n ON n.id = nt.notice_id WHERE n.status = 'published' ORDER BY t.name`
+      JOIN notices n ON n.id = nt.notice_id WHERE t.scope = 'notice' AND n.status = 'published' ORDER BY t.name`
   }
 
-  async adminTags() { return this.database.sql`SELECT id, name FROM tags ORDER BY name` }
+  async adminTags() { return this.database.sql`
+    SELECT DISTINCT t.id, t.name FROM tags t JOIN notice_tags nt ON nt.tag_id = t.id
+    WHERE t.scope = 'notice' ORDER BY t.name` }
 
   async adminList() {
     return this.database.sql`
@@ -68,8 +70,8 @@ export class NoticeService {
     await tx`DELETE FROM notice_tags WHERE notice_id = ${id}`
     for (const tag of selected) {
       const rows = await tx`
-        INSERT INTO tags (name, normalized_name) VALUES (${tag.name}, ${tag.key})
-        ON CONFLICT (normalized_name) DO UPDATE SET normalized_name = EXCLUDED.normalized_name RETURNING id`
+        INSERT INTO tags (name, normalized_name, scope) VALUES (${tag.name}, ${tag.key}, 'notice')
+        ON CONFLICT (scope, normalized_name) DO UPDATE SET normalized_name = EXCLUDED.normalized_name RETURNING id`
       await tx`INSERT INTO notice_tags (notice_id, tag_id) VALUES (${id}, ${rows[0].id})`
     }
   }
