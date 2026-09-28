@@ -84,12 +84,12 @@ export class SpotService {
   async publicTags() {
     return this.database.sql`SELECT DISTINCT t.id,t.name FROM tags t
       JOIN spot_tags st ON st.tag_id=t.id JOIN spots s ON s.id=st.spot_id
-      WHERE s.kind='tourist' AND s.status='published' ORDER BY t.name`
+      WHERE t.scope='tourist' AND s.kind='tourist' AND s.status='published' ORDER BY t.name`
   }
   async adminTags() {
     return this.database.sql`SELECT DISTINCT t.id,t.name FROM tags t
       JOIN spot_tags st ON st.tag_id=t.id JOIN spots s ON s.id=st.spot_id
-      WHERE s.kind='tourist' ORDER BY t.name`
+      WHERE t.scope='tourist' AND s.kind='tourist' ORDER BY t.name`
   }
 
   private input(kind: Kind, raw: any, old?: any) {
@@ -120,8 +120,8 @@ export class SpotService {
   private async saveTags(tx: any, spotId: string, selected: Array<{ name: string; key: string }>) {
     await tx`DELETE FROM spot_tags WHERE spot_id=${spotId}`
     for (const tag of selected) {
-      const rows = await tx`INSERT INTO tags(name,normalized_name) VALUES(${tag.name},${tag.key})
-        ON CONFLICT(normalized_name) DO UPDATE SET normalized_name=EXCLUDED.normalized_name RETURNING id`
+      const rows = await tx`INSERT INTO tags(name,normalized_name,scope) VALUES(${tag.name},${tag.key},'tourist')
+        ON CONFLICT(scope,normalized_name) DO UPDATE SET normalized_name=EXCLUDED.normalized_name RETURNING id`
       await tx`INSERT INTO spot_tags(spot_id,tag_id) VALUES(${spotId},${rows[0].id})`
     }
   }
