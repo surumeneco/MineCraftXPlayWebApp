@@ -109,6 +109,69 @@ suite('company lifecycle and company-owned territory (PostgreSQL)',()=>{
     const hqs=await req('/api/companies/headquarters?mode=edit&company_id='+id)
     expect(hqs.body).toEqual(expect.arrayContaining([expect.objectContaining({id:ownHQ})]))
   })
+  it('keeps optional abbreviations separate from published names until approval, including resubmission and removal',async()=>{
+    expect((await req('/api/companies','POST',{...createBody(randomUUID()),abbreviation:7})).status).toBe(400)
+    expect((await req('/api/companies','POST',{...createBody(randomUUID()),abbreviation:'X'.repeat(101)})).status).toBe(400)
+    const id=randomUUID();companyIds.push(id)
+    const created=await req('/api/companies','POST',{...createBody(id,'インフラ企業'),abbreviation:'  PIE  '})
+    expect(created.status).toBe(201)
+    expect(created.body).toMatchObject({name:'インフラ企業',abbreviation:'PIE',status:'pending'})
+    expect((await req('/api/admin/companies','GET',undefined,session.admin)).body)
+      .toEqual(expect.arrayContaining([expect.objectContaining({id,abbreviation:'PIE'})]))
+    expect((await req('/api/admin/companies/'+id,'GET',undefined,session.admin)).body)
+      .toMatchObject({name:'インフラ企業',abbreviation:'PIE',current:null})
+    const first=await req('/api/admin/companies/'+id+'/review','POST',
+      {operation_id:randomUUID(),action:'approve'},session.admin)
+    expect(first.status).toBe(201)
+    expect(first.body.abbreviation).toBe('PIE')
+    expect((await req('/api/companies/'+id,'GET',undefined,null)).body.abbreviation).toBe('PIE')
+    expect((await req('/api/companies','GET',undefined,null)).body)
+      .toEqual(expect.arrayContaining([expect.objectContaining({id,abbreviation:'PIE'})]))
+
+    const edited=await req('/api/companies/'+id+'/edit','POST',{operation_id:randomUUID(),abbreviation:'PIE改'})
+    expect(edited.status).toBe(201)
+    expect(edited.body).toMatchObject({name:'インフラ企業',abbreviation:'PIE改',status:'pending'})
+    expect((await req('/api/companies/'+id,'GET',undefined,null)).body)
+      .toMatchObject({name:'インフラ企業',abbreviation:'PIE',status:'approved',reapply_draft:null})
+    expect((await req('/api/companies','GET',undefined,null)).body)
+      .toEqual(expect.arrayContaining([expect.objectContaining({id,abbreviation:'PIE'})]))
+    const reviewing=await req('/api/admin/companies/'+id,'GET',undefined,session.admin)
+    expect(reviewing.body).toMatchObject({abbreviation:'PIE改',current:{abbreviation:'PIE'}})
+    expect((await req('/api/admin/companies','GET',undefined,session.admin)).body)
+      .toEqual(expect.arrayContaining([expect.objectContaining({id,abbreviation:'PIE改'})]))
+
+    expect((await req('/api/admin/companies/'+id+'/review','POST',
+      {operation_id:randomUUID(),action:'return',reason:'略称を確認してください'},session.admin)).status).toBe(201)
+    expect((await req('/api/companies/'+id)).body).toMatchObject({
+      abbreviation:'PIE',reapply_draft:{abbreviation:'PIE改'},can_reapply:true,
+    })
+    expect((await req('/api/companies/'+id,'GET',undefined,null)).body)
+      .toMatchObject({abbreviation:'PIE',reapply_draft:null})
+    const resubmitted=await req('/api/companies/'+id+'/reapply','POST',{operation_id:randomUUID()})
+    expect(resubmitted.status).toBe(201)
+    expect(resubmitted.body).toMatchObject({status:'pending',abbreviation:'PIE改'})
+    expect((await req('/api/admin/companies/'+id+'/review','POST',
+      {operation_id:randomUUID(),action:'approve'},session.admin)).status).toBe(201)
+    expect((await req('/api/companies/'+id,'GET',undefined,null)).body.abbreviation).toBe('PIE改')
+    expect((await req('/api/companies?name=PIE改','GET',undefined,null)).body)
+      .not.toEqual(expect.arrayContaining([expect.objectContaining({id})]))
+
+    const cleared=await req('/api/companies/'+id+'/edit','POST',
+      {operation_id:randomUUID(),abbreviation:'   '})
+    expect(cleared.status).toBe(201)
+    expect(cleared.body).toMatchObject({status:'pending',abbreviation:null})
+    expect((await req('/api/admin/companies/'+id,'GET',undefined,session.admin)).body)
+      .toMatchObject({abbreviation:null,current:{abbreviation:'PIE改'}})
+    expect((await req('/api/companies/'+id,'GET',undefined,null)).body.abbreviation).toBe('PIE改')
+    expect((await req('/api/admin/companies/'+id+'/review','POST',
+      {operation_id:randomUUID(),action:'approve'},session.admin)).status).toBe(201)
+    expect((await req('/api/companies/'+id,'GET',undefined,null)).body.abbreviation).toBeNull()
+    expect((await req('/api/companies/'+id+'/edit','POST',
+      {operation_id:randomUUID()})).status).toBe(400)
+    const persisted=await sql`SELECT current_abbreviation FROM companies WHERE id=${id}`
+    expect(persisted[0].current_abbreviation).toBeNull()
+  })
+
   it('isolates reviewed edits from public current values, including returned changes',async()=>{
     const id=companyIds[0]
     const edit=await req(`/api/companies/${id}/edit`,'POST',{
