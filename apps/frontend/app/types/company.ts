@@ -31,4 +31,5 @@ export type CompanyRecord = {
   reason?: string
 }
 export type CompanyReview = CompanyRecord & { current: CompanyRecord | null; submitted_at: string }
+export const companyDisplayName=(name:string,abbreviation:string|null|undefined)=>abbreviation ? `${name} (${abbreviation})` : name
 export const companyDate=(value:string|null|undefined)=>value?new Date(value).toLocaleString('ja-JP'):'—'
