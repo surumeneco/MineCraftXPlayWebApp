@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { CompanyService } from './company.service.js'
+import { PendingReminderService } from './pending-reminder.service.js'
 import { CompanyColorService } from './company-color.service.js'
 import { CompanyImagesService } from './company-images.service.js'
 import { CompanyNotificationService } from './company-notification.service.js'
@@ -43,6 +44,6 @@ import { PublicOperatorPhotosController, SelfOperatorPhotosController } from './
     PublicSpotsController, AdminSpotsController, PublicSpotImagesController, AdminSpotImagesController,
     CompanyController, AdminCompanyController, CompanyImagesController],
   providers: [Database, AuthService, AccountsService, AccountMergeService, AccountRetirementService, NoticeService, NoticeNotificationService,
-    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService, SpotService, SpotImagesService, CompanyService, CompanyImagesService, CompanyNotificationService, CompanyColorService],
+    ImagesService, SiteImagesService, AccountColorService, TerritoryImagesService, TerritoryService, TerritoryNotificationService, TerritoryBlueMapService, HomeLayoutService, OperatorPhotosService, SpotService, SpotImagesService, CompanyService, CompanyImagesService, CompanyNotificationService, CompanyColorService, PendingReminderService],
 })
 export class AppModule {}
