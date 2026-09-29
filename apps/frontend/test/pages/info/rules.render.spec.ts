@@ -20,6 +20,20 @@ describe('Rules page', () => {
     const wrapper = await mountSuspended(Rules)
     const text = wrapper.text()
     expect(wrapper.findAll('h5').length).toBe(35)
+    expect(wrapper.findAll('h4').filter(heading => heading.text().startsWith('第')).map(heading => heading.text())).toEqual([
+      '第1節: 迷惑行為の防止に関する条項',
+      '第2節: ゲームバランスへの影響に関する条項',
+      '第3節: 建築及び景観に関する条項',
+      '第4節: 企業制度について',
+      '第5節: 領地',
+    ])
+    const articleTitles = wrapper.findAll('h5').map(heading => heading.text())
+    expect(articleTitles.every(title => /^第\\d+条 \\([^)]+\\)$/.test(title))).toBe(true)
+    expect(articleTitles).toContain('第1条 (横断的活動の制限)')
+    expect(articleTitles).toContain('第4条 (インフラ事業の制限)')
+    expect(articleTitles).toContain('第9条 (企業領地の申請等に関する規程)')
+    expect(text).toContain('これら全てを合算する。')
+    expect(text).toContain('本節第1条から第7条の規程を準用する。')
     expect(wrapper.findAll('h5').every(heading => /^第\d+条/.test(heading.text()))).toBe(true)
     expect(text).toContain('第1条の建築物及び人工地形')
     expect(text).toContain('建築に着手した時点')
