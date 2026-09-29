@@ -6,6 +6,7 @@
   <form v-else-if="ready" @submit.prevent="submit">
     <p v-if="error" class="alert alert-danger">{{error}}</p>
     <div class="mb-3"><label for="company-name" class="form-label">企業名 *</label><input id="company-name" v-model="name" class="form-control" maxlength="100" required /><div v-if="editing" class="form-text">変更には管理者の承認が必要です。</div></div>
+    <div class="mb-3"><label for="company-abbreviation" class="form-label">企業略称（任意）</label><input id="company-abbreviation" v-model="abbreviation" class="form-control" maxlength="100" /><div v-if="editing" class="form-text">略称の変更・削除には管理者の承認が必要です。</div></div>
     <div v-if="auth.isAdmin.value" class="form-check mb-3"><input id="company-public" v-model="isPublic" type="checkbox" class="form-check-input" /><label class="form-check-label" for="company-public">公営企業</label></div>
     <fieldset class="mb-3"><legend class="form-label">タグ</legend><div class="d-flex flex-wrap gap-3"><label v-for="tag in companyTags" :key="tag" class="form-check"><input v-model="tags" class="form-check-input" type="checkbox" :value="tag" /><span class="form-check-label">{{tag}}</span></label></div><p v-if="editing" class="form-text">タグの変更には管理者の承認が必要です。</p></fieldset>
     <div v-if="showRepresentative" class="mb-3">
@@ -54,7 +55,7 @@ const breadcrumbs=useState<Record<string,string>>('xplay-company-breadcrumb-name
 const loading=ref(true),ready=ref(false),busy=ref(false),imageUploading=ref(false),error=ref(''),operationId=ref('')
 const operation=()=>operationId.value||(operationId.value=crypto.randomUUID())
 const profile=ref<AccountRecord|null>(null),selected=ref<CompanyRecord|null>(null)
-const name=ref(''),tags=ref<CompanyTag[]>([]),isPublic=ref(false),activities=ref(''),imageId=ref<string|null>(null)
+const name=ref(''),abbreviation=ref(''),tags=ref<CompanyTag[]>([]),isPublic=ref(false),activities=ref(''),imageId=ref<string|null>(null)
 const headquartersId=ref(''),headquarters=ref<Array<{id:string;name:string}>>([])
 const representativeId=ref(''),repSearch=ref(''),memberSearch=ref(''),accounts=ref<CompanyAccount[]>([]),members=ref<CompanyAccount[]>([]),accountError=ref('')
 const repCandidates=computed(()=>accounts.value.filter(a=>a.name.normalize('NFKC').toLocaleLowerCase('ja').includes(repSearch.value.normalize('NFKC').toLocaleLowerCase('ja'))))
@@ -89,7 +90,7 @@ watch(representativeId,()=>{
   if(editing.value && ready.value)void loadHeadquarters().catch(e=>{error.value=userFacingError(e)})
 })
 async function submit(){if(!profile.value||!quill||!headquartersId.value||!members.value.length||members.value.some(member=>member.id===representativeId.value))return;busy.value=true;error.value='';try{
-  const body={operation_id:operation(),name:name.value.trim(),tags:tags.value,activities:activities.value,headquarters_territory_id:headquartersId.value,image_id:imageId.value,introduction_delta:quill.getContents(),
+  const body={operation_id:operation(),name:name.value.trim(),abbreviation:abbreviation.value.trim(),tags:tags.value,activities:activities.value,headquarters_territory_id:headquartersId.value,image_id:imageId.value,introduction_delta:quill.getContents(),
     ...(editing.value||auth.isAdmin.value?{representative_account_id:representativeId.value}:{}),
     ...(auth.isAdmin.value?{is_public:isPublic.value}:{}),member_account_ids:members.value.map(a=>a.id)}
   const result=editing.value?await mutate<CompanyRecord>(`/companies/${companyId.value}/edit`,'POST',body):props.sourceId?await mutate<CompanyRecord>(`/companies/${companyId.value}/reapply`,'POST',body):await mutate<CompanyRecord>('/companies','POST',body)
@@ -101,7 +102,7 @@ onMounted(async()=>{try{
   if(companyId.value){selected.value=await get<CompanyRecord>(`/companies/${companyId.value}`);if(editing.value&&!selected.value.can_edit)throw new Error('企業を編集できません。');if(!editing.value&&!selected.value.can_reapply)throw new Error('企業を再申請できません。')
     const c=selected.value;breadcrumbs.value={...breadcrumbs.value,[c.id]:c.name}
     const draft=!editing.value?c.reapply_draft:null
-    name.value=draft?.name??c.name;tags.value=[...(draft?.tags??c.tags)];isPublic.value=c.is_public;activities.value=draft?.activities??c.activities;imageId.value=c.image_id;headquartersId.value=c.headquarters.id??'';representativeId.value=draft?.representative.id??c.representative.id;repSearch.value=draft?.representative.name??c.representative.name;members.value=c.members.filter(member=>member.id!==representativeId.value);sourceContents=c.introduction_delta
+    name.value=draft?.name??c.name;abbreviation.value=draft ? draft.abbreviation??'' : c.abbreviation??'';tags.value=[...(draft?.tags??c.tags)];isPublic.value=c.is_public;activities.value=draft?.activities??c.activities;imageId.value=c.image_id;headquartersId.value=c.headquarters.id??'';representativeId.value=draft?.representative.id??c.representative.id;repSearch.value=draft?.representative.name??c.representative.name;members.value=c.members.filter(member=>member.id!==representativeId.value);sourceContents=c.introduction_delta
   }
   await Promise.all([loadHeadquarters(),searchAccounts('')]);ready.value=true
 }catch(e){error.value=userFacingError(e)}finally{loading.value=false}})

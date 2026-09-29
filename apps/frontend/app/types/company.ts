@@ -6,6 +6,7 @@ export type CompanyAccount = { id: string; name: string }
 export type CompanyRecord = {
   id: string
   name: string
+  abbreviation: string | null
   is_public: boolean
   status: CompanyStatus
   tags: CompanyTag[]
@@ -23,11 +24,12 @@ export type CompanyRecord = {
   application_type: 'new'|'edit'
   pending_changes: boolean
   last_application_status?: CompanyStatus | null
-  reapply_draft?: { name: string; tags: CompanyTag[]; activities: string; representative: CompanyAccount } | null
+  reapply_draft?: { name: string; abbreviation: string | null; tags: CompanyTag[]; activities: string; representative: CompanyAccount } | null
   can_edit: boolean
   can_reapply: boolean
   can_withdraw: boolean
   reason?: string
 }
 export type CompanyReview = CompanyRecord & { current: CompanyRecord | null; submitted_at: string }
+export const companyDisplayName=(name:string,abbreviation:string|null|undefined)=>abbreviation ? `${name} (${abbreviation})` : name
 export const companyDate=(value:string|null|undefined)=>value?new Date(value).toLocaleString('ja-JP'):'—'

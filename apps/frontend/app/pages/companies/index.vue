@@ -15,7 +15,7 @@
       <NuxtLink :to="`/companies/${company.id}`" class="card h-100 overflow-hidden text-decoration-none text-body">
         <img v-if="company.image_id" :src="`${apiBase}/company-images/${company.image_id}`" :alt="company.name" class="company-list-image" />
         <div class="card-body">
-          <div class="d-flex justify-content-between gap-2"><h2 class="h5 card-title">{{company.name}}</h2><TerritoryStatusBadge v-if="company.status!=='approved'" :status="company.status" /></div>
+          <div class="d-flex justify-content-between gap-2"><h2 class="h5 card-title">{{companyDisplayName(company.name,company.abbreviation)}}</h2><div class="d-flex flex-wrap align-items-start gap-1"><span v-if="company.is_public" class="badge text-bg-info">公営</span><TerritoryStatusBadge v-if="company.status!=='approved'" :status="company.status" /></div></div>
           <p class="card-text text-body-secondary mb-0">{{company.tags.join(' / ')||'タグなし'}}</p>
         </div>
       </NuxtLink>
@@ -25,7 +25,7 @@
 </section></template>
 <script setup lang="ts">
 import type {CompanyRecord} from '../../types/company'
-import {companyTags} from '../../types/company'
+import {companyDisplayName,companyTags} from '../../types/company'
 import {userFacingError} from '../../utils/user-error'
 const {get}=useAccountApi(),auth=useAccountSession()
 const {public:{apiBase}}=useRuntimeConfig()
