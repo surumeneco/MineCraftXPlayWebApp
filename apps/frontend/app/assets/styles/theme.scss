@@ -109,8 +109,8 @@ body {
   line-height: 1.4;
 }
 .xplay-section-heading,
-.xplay-shell main h2:not(.xplay-page-title):not(.ql-editor h2),
-.xplay-shell main h3:not(.ql-editor h3) {
+.xplay-shell main h2:not(.xplay-page-title),
+.xplay-shell main h3 {
   margin-bottom: var(--xplay-section-heading-bottom);
   padding: .3rem .5rem .3rem .75rem;
   border-left: 5px solid var(--xplay-concept-main);
@@ -118,12 +118,12 @@ body {
   font-size: var(--xplay-font-lg);
   font-weight: 700;
 }
-.xplay-shell main h4:not(.ql-editor h4) {
+.xplay-shell main h4 {
   color: var(--xplay-text-heading-accent);
   font-size: var(--xplay-font-lg);
   margin-top: 1.6rem;
 }
-.xplay-shell main h5:not(.ql-editor h5) {
+.xplay-shell main h5 {
   font-size: var(--xplay-font-md);
   font-weight: 700;
   margin-top: 1.1rem;
