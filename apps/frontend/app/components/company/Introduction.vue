@@ -1,6 +1,6 @@
 <template>
   <ClientOnly>
-    <div ref="target" class="xplay-notice-readonly" aria-label="企業紹介文" />
+    <div ref="target" class="xplay-quill-readonly" aria-label="企業紹介文" />
     <template #fallback><p>紹介文を読み込んでいます…</p></template>
   </ClientOnly>
 </template>
