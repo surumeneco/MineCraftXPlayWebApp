@@ -19,7 +19,7 @@ describe('Rules page', () => {
   it('reflects review items No.20–24 without changing unrelated provisions', async () => {
     const wrapper = await mountSuspended(Rules)
     const text = wrapper.text()
-    expect(wrapper.findAll('h5').length).toBe(26)
+    expect(wrapper.findAll('h5').length).toBe(35)
     expect(wrapper.findAll('h5').every(heading => /^第\d+条/.test(heading.text()))).toBe(true)
     expect(text).toContain('第1条の建築物及び人工地形')
     expect(text).toContain('建築に着手した時点')
