@@ -54,18 +54,19 @@ export class TerritoryBlueMapService {
         : row.owner_type === 'company'
           ? { name: row.owner_company_name ?? '企業', color: await this.companyColors.ensure(row.owner_company_id) }
           : special[row.owner_type]
+      const displayOwnerName = row.owner_type === 'account' ? `${owner.name}領` : owner.name
       const group = row.owner_type === 'shared_area' ? 'public-area'
         : row.owner_type === 'protected_area' ? 'Reserve'
         : row.owner_type === 'administration' ? 'Administration' : 'Personal'
       const approved = row.approved_application ? { ...row.approved_application, name: row.current_name ?? row.approved_application.name } : null
       if (approved) {
-        groups.get(group)!.push(this.marker(`${row.id}-approved`, owner.name, approved, owner.color, false))
+        groups.get(group)!.push(this.marker(`${row.id}-approved`, displayOwnerName, approved, owner.color, false))
       }
       if (row.pending_application) {
         if (row.pending_application.application_type === 'edit' && approved) {
-          groups.get(group)!.push(...this.changedBoundaryMarkers(row.id, owner.name, approved, row.pending_application))
+          groups.get(group)!.push(...this.changedBoundaryMarkers(row.id, displayOwnerName, approved, row.pending_application))
         } else {
-          groups.get(group)!.push(this.marker(`${row.id}-pending`, owner.name, row.pending_application, { r: 0, g: 0, b: 0 }, true))
+          groups.get(group)!.push(this.marker(`${row.id}-pending`, displayOwnerName, row.pending_application, { r: 0, g: 0, b: 0 }, true))
         }
       }
     }

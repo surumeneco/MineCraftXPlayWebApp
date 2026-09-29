@@ -7,6 +7,7 @@
       <dt class="col-sm-3">申請種別</dt><dd class="col-sm-9">{{company.application_type==='edit'?'変更申請':'新規申請'}}</dd>
       <dt class="col-sm-3">申請者</dt><dd class="col-sm-9">{{company.applicant.name}}</dd>
       <dt class="col-sm-3">企業名</dt><dd class="col-sm-9">{{company.name}}</dd>
+      <template v-if="company.abbreviation"><dt class="col-sm-3">略称</dt><dd class="col-sm-9">{{company.abbreviation}}</dd></template>
       <dt class="col-sm-3">公営</dt><dd class="col-sm-9">{{company.is_public?'公営':'非公営'}}</dd>
       <dt class="col-sm-3">タグ</dt><dd class="col-sm-9">{{company.tags.join('、')||'なし'}}</dd>
       <dt class="col-sm-3">代表者</dt><dd class="col-sm-9">{{company.representative.name}}</dd>
@@ -19,7 +20,7 @@
     <p v-else class="text-body-secondary">画像が設定されていません</p>
     <UiSectionHeading as="h2" title="紹介文" /><CompanyIntroduction :value="company.introduction_delta" />
     <section v-if="company.current" class="border rounded p-3 my-4">
-      <h2 class="h5">現在の承認済み内容</h2><p>名称: {{company.current.name}}</p><p>タグ: {{company.current.tags.join('、')}}</p><p>代表者: {{company.current.representative.name}}</p><p class="company-wrap mb-0">活動内容: {{company.current.activities}}</p>
+      <h2 class="h5">現在の承認済み内容</h2><p>名称: {{company.current.name}}</p><p v-if="company.current.abbreviation">略称: {{company.current.abbreviation}}</p><p>タグ: {{company.current.tags.join('、')}}</p><p>代表者: {{company.current.representative.name}}</p><p class="company-wrap mb-0">活動内容: {{company.current.activities}}</p>
     </section>
     <div class="mb-3"><label for="company-reason" class="form-label">差戻・却下理由</label><textarea id="company-reason" v-model="reason" class="form-control" rows="3" /></div>
     <div class="d-flex flex-wrap justify-content-end gap-2"><NuxtLink to="/admin/companies" class="btn btn-outline-secondary">一覧に戻る</NuxtLink><button :disabled="busy||!reason.trim()" class="btn btn-warning" @click="review('return')">差戻</button><button :disabled="busy||!reason.trim()" class="btn btn-danger" @click="review('reject')">却下</button><button :disabled="busy" class="btn btn-success" @click="review('approve')">承認</button></div>

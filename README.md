@@ -309,3 +309,13 @@ curl -I http://127.0.0.1:3000/
 PostgreSQL の実データは Docker named volume `postgres_data` に保存され Git 管理対象外です。VPS 更新時は DB データ・`.env` を別途バックアップしてください。バックエンド起動時のマイグレーションにも注意してください。
 
 関連資料: [Web アプリ設計](https://drive.google.com/file/d/1HFYg_JLSUB-F2fNNKXEhitfDAc0xPHJy/view)、[サーバー構成](https://drive.google.com/file/d/1SndNSbyQX5HUEEE-ueQAofPO0bZ6jvto/view)。
+
+## 承認待ち申請の日次Discord通知（BOT-005）
+
+既存の領地通知と同じプライベート接続を利用し、WebAppが日本時間03:00に領地・企業の審査待ち申請を集計してDiscordBotへ通知します。申請0件でも「承認待ちの申請はありません。」と投稿します。通知先は既存の運営向け領地通知チャンネルです。
+
+- 本番の `compose.notice.yaml` では `PENDING_REMINDER_ENABLED` は既定で `true`。必要なときは `.env` で `false` に変更できます。
+- `PENDING_REMINDER_TIME=03:00` は `Asia/Tokyo` の24時間表記で、ホストのタイムゾーンには依存しません。
+- DB migration `017_pending_application_reminders.sql` が送信済み日付を保持します。起動時に自動マイグレーションされるため、手動のタイマー有効化やcron設定は不要です。
+- 同じ日本時間の日付への重複投稿を回避し、3時を過ぎて再起動した場合にはその日未送信なら追送します。Discord側へ送信後にDB記録だけ失敗した場合の厳密な一度限りの送信は保証されません。
+- Bot側に先に `POST /internal/pending-applications` の受信機能を配備してからWebApp側を有効化してください。

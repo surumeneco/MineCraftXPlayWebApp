@@ -28,7 +28,7 @@
       ]" />
       <UiSectionHeading as="h2">案内・説明</UiSectionHeading>
       <ClientOnly>
-        <div ref="editor" class="xplay-notice-readonly" aria-label="スポットの説明文" />
+        <div ref="editor" class="xplay-quill-readonly" aria-label="スポットの説明文" />
         <template #fallback><p>説明文を表示しています…</p></template>
       </ClientOnly>
     </template>

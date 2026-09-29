@@ -9,6 +9,7 @@
     </div>
     <dl class="row mb-4">
       <dt class="col-sm-3">名称</dt><dd class="col-sm-9">{{company.name}} <span v-if="company.is_public" class="badge text-bg-info ms-2">公営</span></dd>
+      <template v-if="company.abbreviation"><dt class="col-sm-3">略称</dt><dd class="col-sm-9">{{company.abbreviation}}</dd></template>
       <dt class="col-sm-3">承認状況</dt><dd class="col-sm-9"><TerritoryStatusBadge :status="company.status" /><span v-if="company.pending_changes" class="small ms-2">変更申請中</span><span v-if="company.approved_at && ['returned','withdrawn'].includes(company.last_application_status??'')" class="small ms-2">直近の変更申請: {{company.last_application_status==='returned'?'差戻':'取下'}}</span></dd>
       <dt class="col-sm-3">タグ</dt><dd class="col-sm-9">{{company.tags.join('、')||'なし'}}</dd>
       <dt class="col-sm-3">BlueMap表示色</dt><dd class="col-sm-9"><span v-if="colorHex" class="d-inline-flex align-items-center gap-2"><span class="company-color-preview border rounded" :style="{ backgroundColor: colorHex }" aria-hidden="true" /><code>{{colorHex}}</code></span><span v-else>未設定</span></dd>
