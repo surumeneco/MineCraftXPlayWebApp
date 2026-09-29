@@ -22,6 +22,14 @@
       .ql-picker-item::before { font-size: 1em; }
     }
 
+    // Preview sizes in Quill's dropdown match the same tokens as rendered text.
+    .ql-picker.ql-size {
+      .ql-picker-item:not([data-value])::before { font-size: var(--xplay-font-md); }
+      .ql-picker-item[data-value='small']::before { font-size: var(--xplay-font-sm); }
+      .ql-picker-item[data-value='large']::before { font-size: var(--xplay-font-lg); }
+      .ql-picker-item[data-value='huge']::before { font-size: var(--xplay-font-xl); }
+    }
+
     .ql-picker.ql-list {
       width: 116px;
       .ql-picker-label::before { content: 'リスト'; }
@@ -78,4 +86,36 @@
   overflow-y: auto;
   overflow-x: hidden;
   overflow-wrap: anywhere;
+}
+
+// A single typography scale for every Quill editor and read-only viewer.
+.xplay-shell {
+  .xplay-quill-editor.ql-container.ql-snow,
+  .xplay-quill-readonly.ql-container.ql-bubble {
+    font-family: inherit;
+    font-size: var(--xplay-font-md);
+
+    .ql-editor {
+      .ql-size-small { font-size: var(--xplay-font-sm); }
+      .ql-size-large { font-size: var(--xplay-font-lg); }
+      .ql-size-huge { font-size: var(--xplay-font-xl); }
+
+      h1 { font-size: var(--xplay-font-xxl); }
+      h2 { font-size: var(--xplay-font-xl); }
+      h3 { font-size: var(--xplay-font-lg); }
+      h4 { font-size: var(--xplay-font-md); }
+      h5 { font-size: var(--xplay-font-sm); }
+      h6 { font-size: var(--xplay-font-xs); }
+    }
+  }
+
+  // Read-only Bubble content never inherits the editor's padded, scrolling box.
+  .xplay-quill-readonly.ql-container.ql-bubble {
+    height: auto;
+    .ql-editor {
+      height: auto;
+      padding: 0;
+      overflow-y: visible;
+    }
+  }
 }
