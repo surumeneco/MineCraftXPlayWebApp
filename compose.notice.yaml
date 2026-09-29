@@ -12,6 +12,8 @@ services:
       TERRITORY_BOT_URL: ${TERRITORY_BOT_URL:-http://xplay-notice-bot:3103}
       TERRITORY_NOTIFY_SECRET: ${TERRITORY_NOTIFY_SECRET:?Configure the shared territory notification secret}
       TERRITORY_PUBLIC_BASE_URL: ${TERRITORY_PUBLIC_BASE_URL:?Configure the public frontend origin}
+      PENDING_REMINDER_ENABLED: ${PENDING_REMINDER_ENABLED:-true}
+      PENDING_REMINDER_TIME: "${PENDING_REMINDER_TIME:-03:00}"
     networks:
       default: {}
       xplay_notices: {}
