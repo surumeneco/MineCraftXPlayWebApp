@@ -28,7 +28,7 @@ describe('Rules page', () => {
       '第5節: 領地',
     ])
     const articleTitles = wrapper.findAll('h5').map(heading => heading.text())
-    expect(articleTitles.every(title => /^第\\d+条 \\([^)]+\\)$/.test(title))).toBe(true)
+    expect(articleTitles.every(title => /^第\d+条 \([^)]+\)$/.test(title))).toBe(true)
     expect(articleTitles).toContain('第1条 (横断的活動の制限)')
     expect(articleTitles).toContain('第4条 (インフラ事業の制限)')
     expect(articleTitles).toContain('第9条 (企業領地の申請等に関する規程)')
