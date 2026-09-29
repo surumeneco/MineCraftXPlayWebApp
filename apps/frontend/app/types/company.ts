@@ -6,6 +6,7 @@ export type CompanyAccount = { id: string; name: string }
 export type CompanyRecord = {
   id: string
   name: string
+  abbreviation: string | null
   is_public: boolean
   status: CompanyStatus
   tags: CompanyTag[]
@@ -23,7 +24,7 @@ export type CompanyRecord = {
   application_type: 'new'|'edit'
   pending_changes: boolean
   last_application_status?: CompanyStatus | null
-  reapply_draft?: { name: string; tags: CompanyTag[]; activities: string; representative: CompanyAccount } | null
+  reapply_draft?: { name: string; abbreviation: string | null; tags: CompanyTag[]; activities: string; representative: CompanyAccount } | null
   can_edit: boolean
   can_reapply: boolean
   can_withdraw: boolean
