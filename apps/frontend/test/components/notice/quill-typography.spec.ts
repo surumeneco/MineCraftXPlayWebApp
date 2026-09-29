@@ -32,10 +32,12 @@ describe('Quill shared typography and read-only layout', () => {
     expect(css).toContain('.ql-picker-item[data-value=small]::before')
   })
 
-  it('excludes Quill h2-h5 from page heading borders and margins', () => {
+  it('applies the site heading decoration to Quill h2-h5 as well', () => {
     const css = compile('app/assets/styles/theme.scss').css
-    for (const heading of ['h2','h3','h4','h5']) {
-      expect(css).toContain(`:not(.ql-editor ${heading})`)
+    expect(css).toContain('.xplay-shell main h2:not(.xplay-page-title)')
+    for (const heading of ['h3','h4','h5']) {
+      expect(css).toContain(`.xplay-shell main ${heading} {`)
     }
+    expect(css).not.toContain(':not(.ql-editor')
   })
 })
