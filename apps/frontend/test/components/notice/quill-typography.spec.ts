@@ -11,7 +11,7 @@ describe('Quill shared typography and read-only layout', () => {
     ]) {
       const source = await readFile(path,'utf8')
       expect(source).toContain('class="xplay-quill-readonly"')
-      expect(source).toContain("theme: 'bubble'".replaceAll(' ', '').slice(0,0) || 'bubble')
+      expect(source).toMatch(/theme:\\s*['"]bubble['"]/)
       expect(source).not.toContain('xplay-notice-readonly')
     }
     const notice = await readFile('app/pages/info/notice/[title].vue','utf8')
@@ -29,7 +29,7 @@ describe('Quill shared typography and read-only layout', () => {
     expect(css).toContain('.ql-size-small')
     expect(css).toContain('.ql-size-large')
     expect(css).toContain('.ql-size-huge')
-    expect(css).toContain('.ql-picker-item[data-value=small]::before')
+    expect(css).toMatch(/\\.ql-picker-item\\[data-value=['"]?small['"]?\\]::before/)
   })
 
   it('excludes Quill h2-h5 from page heading borders and margins', () => {
