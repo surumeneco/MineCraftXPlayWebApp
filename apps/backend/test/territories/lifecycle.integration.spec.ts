@@ -454,4 +454,54 @@ suite('territory lifecycle (PostgreSQL)', () => {
       .some((v: any) => v.id === large)).toBe(true)
   })
 
+  it('exempts special owner applications and extensions without adding them to the applicant quota', async () => {
+    await sql`INSERT INTO account_minecraft_identities(account_id,edition,username)
+      VALUES (${adminId},'je',${'territory_' + adminId.slice(0, 6)}) ON CONFLICT DO NOTHING`
+    const rect = (x: number, z: number, w: number, h: number) => [
+      { x, z }, { x: x + w, z }, { x: x + w, z: z + h }, { x, z: z + h },
+    ]
+    const ownerTypes = ['shared_area', 'administration', 'protected_area'] as const
+    const ids: string[] = []
+    for (const [index, owner_type] of ownerTypes.entries()) {
+      const id = randomUUID()
+      const created = await request('/api/territories', 'POST', {
+        operation_id: id, name: `上限対象外 ${owner_type}`, owner_type,
+        coordinates: rect(50000 + index * 2000, 50000, 500, 300),
+      }, adminSession)
+      expect(created.status).toBe(201)
+      expect(created.data.area).toBe(150000)
+      expect(created.data.owner.type).toBe(owner_type)
+      ids.push(id)
+    }
+
+    const personal = await request('/api/territories', 'POST', {
+      operation_id: randomUUID(), name: '特殊領地の面積を合算しない',
+      owner_type: 'account', coordinates: rect(58000, 50000, 1, 1),
+    }, adminSession)
+    expect(personal.status).toBe(201)
+    expect(personal.data.area).toBe(1)
+
+    const withdrawn = await request(`/api/territories/${ids[0]}/withdraw`, 'POST', {
+      operation_id: randomUUID(),
+    }, adminSession)
+    expect(withdrawn.status).toBe(201)
+    const reapplied = await request(`/api/territories/${ids[0]}/reapply`, 'POST', {
+      operation_id: randomUUID(), name: '共同建築エリア 再申請',
+      owner_type: 'shared_area', coordinates: rect(50000, 50000, 500, 300),
+    }, adminSession)
+    expect(reapplied.status).toBe(201)
+    expect(reapplied.data.area).toBe(150000)
+
+    const approved = await request(`/api/admin/territories/${ids[1]}/review`, 'POST', {
+      operation_id: randomUUID(), action: 'approve',
+    }, adminSession)
+    expect(approved.status).toBe(201)
+    const expanded = await request(`/api/territories/${ids[1]}/edit`, 'POST', {
+      operation_id: randomUUID(), name: '運営領地を拡張',
+      replacement: { start: 0, end: 1, intermediate: [{ x: 52400, z: 49000 }] },
+    }, adminSession)
+    expect(expanded.status).toBe(201)
+    expect(expanded.data.area).toBe(400000)
+    expect(expanded.data.status).toBe('pending')
+  })
 })

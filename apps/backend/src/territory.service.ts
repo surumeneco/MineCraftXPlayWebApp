@@ -73,6 +73,9 @@ function optionalText(value: unknown, label: string, fallback = ''): string {
   }
   return value
 }
+function appliesPendingAreaLimit(type: OwnerType, isPublicCompany: boolean): boolean {
+  return type === 'account' || (type === 'company' && !isPublicCompany)
+}
 function applicationArea(row: TerritoryRow): number {
   const pending = row.pending_application
   if (!pending) return 0
@@ -206,7 +209,7 @@ export class TerritoryService {
     const rows = await this.rows(sql)
     const pending = rows.reduce((sum, row) => row.pending_application && (row.owner_type === 'company'
       ? !row.company_is_public && row.company_representative_account_id === accountId
-      : row.pending_application.submitted_by_account_id === accountId)
+      : row.owner_type === 'account' && row.pending_application.submitted_by_account_id === accountId)
       ? sum + applicationArea(row) : sum, 0)
     if (pending + requested > 100000) {
       throw new BadRequestException(`申請中の領地面積が上限の100,000を超えています（現在 ${pending.toLocaleString('ja-JP')}、今回 ${requested.toLocaleString('ja-JP')}）。`)
@@ -288,7 +291,7 @@ export class TerritoryService {
       if (completed) return completed
       const owner = await this.resolveOwner(tx,body?.owner_type,body?.owner_company_id,accountId,isAdmin)
       await this.assertMinecraft(accountId, tx)
-      if (!owner.isPublic) await this.assertPendingArea(tx, accountId, area(coordinates))
+      if (appliesPendingAreaLimit(owner.type, owner.isPublic)) await this.assertPendingArea(tx, accountId, area(coordinates))
       const imageId = body?.image_id === undefined ? null : await this.images.attach(tx, body.image_id, operationId, accountId)
       const territories = await tx`INSERT INTO territories(id,applicant_account_id,owner_type,owner_account_id,owner_company_id,status,development_concept)
         VALUES (${operationId},${accountId},${owner.type},${owner.accountId},${owner.companyId},'pending',${concept}) RETURNING id`
@@ -322,7 +325,7 @@ export class TerritoryService {
       const concept = optionalText(conceptRaw, '開発構想', String(locked[0].development_concept))
       const owner = await this.resolveOwner(tx,body?.owner_type,body?.owner_company_id,accountId,isAdmin)
       await this.assertMinecraft(accountId, tx)
-      if (!owner.isPublic) await this.assertPendingArea(tx, accountId, area(coordinates))
+      if (appliesPendingAreaLimit(owner.type, owner.isPublic)) await this.assertPendingArea(tx, accountId, area(coordinates))
       const previous = await tx`SELECT name,coordinates,image_id,note FROM territory_applications WHERE territory_id=${id}
         ORDER BY submitted_at DESC,id DESC LIMIT 1`
       const imageId = body?.image_id === undefined ? (previous[0]?.image_id ?? null) : await this.images.attach(tx, body.image_id, id, accountId)
@@ -371,7 +374,7 @@ export class TerritoryService {
       if (boundaryChanged) {
         const company = row.owner_type === 'company'
           ? (await tx`SELECT representative_account_id,is_public FROM companies WHERE id=${row.owner_company_id}`)[0] : null
-        if (!company?.is_public) {
+        if (appliesPendingAreaLimit(row.owner_type, company?.is_public === true)) {
           await this.assertPendingArea(tx, company ? String(company.representative_account_id) : accountId,
             Math.max(0, area(coordinates) - area(approvedCoordinates)))
         }
