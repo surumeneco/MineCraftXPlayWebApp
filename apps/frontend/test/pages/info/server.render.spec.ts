@@ -10,5 +10,6 @@ describe('Server information page', () => {
     expect(items).toContain('What a Wonderful Chicken：騎乗・育成できる特殊なニワトリを追加')
     expect(items).toContain('BlueMap：Webマップの生成')
     expect(items).toContain('ClickMobs：Mobの運搬を補助')
+    expect(items).toContain('WorldGuard：ワールド・領域の保護')
   })
 })

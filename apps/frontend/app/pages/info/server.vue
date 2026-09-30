@@ -75,6 +75,7 @@
     <h4>運営補助</h4>
     <ul>
       <li>WorldEdit：建築作業の補助</li>
+      <li>WorldGuard：ワールド・領域の保護</li>
       <li>InvSee++：プレイヤーのインベントリ管理</li>
       <li>LuckPerms：権限グループ・アクセス権の管理</li>
     </ul>

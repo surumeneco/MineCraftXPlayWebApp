@@ -90,7 +90,7 @@ export function blueMapTerritoryUrl(points: TerritoryPoint[], base = '/bluemap/'
   const span=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs))
   const distance=Math.max(200,Math.min(4000,Math.ceil(span*2.2)))
   const prefix = base.endsWith('/') ? base : `${base}/`
-  return `${prefix}#world:${Math.round(center.x)}:250:${Math.round(center.z)}:${distance}:0.1:0.19:0:0:perspective`
+  return `${prefix}#world:${Math.round(center.x)}:250:${Math.round(center.z)}:${distance}:0:0.19:0:0:perspective`
 }
 export const formatCentroid=(p:TerritoryPoint)=>`x: ${Math.round(p.x)}, z: ${Math.round(p.z)}`
 export const formatArea=(value:number)=>Number(value.toFixed(1)).toLocaleString('ja-JP',{maximumFractionDigits:1})
