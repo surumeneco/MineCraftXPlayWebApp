@@ -23,7 +23,7 @@ describe('territory coordinate drafts and local BlueMap', () => {
     expect(blueMapTerritoryUrl(points)).toMatch(/^\/bluemap\/#world:/)
     expect(blueMapTerritoryUrl(points, 'http://localhost:8100'))
       .toMatch(/^http:\/\/localhost:8100\/#world:/)
-    expect(blueMapTerritoryUrl(points)).toContain(':200:0:0.19:0:0:perspective')
+    expect(blueMapTerritoryUrl(points)).toContain(':200:0:0:0:0:0:perspective')
   })
   it('formats area with thousands separators while keeping half-block precision', () => {
     expect(formatArea(100000)).toBe('100,000')
