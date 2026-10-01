@@ -23,7 +23,9 @@ describe('territory coordinate drafts and local BlueMap', () => {
     expect(blueMapTerritoryUrl(points)).toMatch(/^\/bluemap\/#world:/)
     expect(blueMapTerritoryUrl(points, 'http://localhost:8100'))
       .toMatch(/^http:\/\/localhost:8100\/#world:/)
-    const publicUrl = blueMapTerritoryUrl(points)\n    expect(publicUrl).toBe('/bluemap/#world:3:250:3:200:0:0:0:0:perspective')\n    expect(publicUrl.split('#')[1]?.split(':')).toHaveLength(10)
+    const publicUrl = blueMapTerritoryUrl(points)
+    expect(publicUrl).toBe('/bluemap/#world:3:250:3:200:0:0:0:0:perspective')
+    expect(publicUrl.split('#')[1]?.split(':')).toHaveLength(10)
   })
   it('formats area with thousands separators while keeping half-block precision', () => {
     expect(formatArea(100000)).toBe('100,000')
