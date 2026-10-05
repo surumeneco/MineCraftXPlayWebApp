@@ -45,7 +45,7 @@ export class NoticeService {
     return this.database.sql`
       SELECT n.*, COALESCE((SELECT json_agg(json_build_object('id', t.id, 'name', t.name) ORDER BY t.name)
         FROM notice_tags nt JOIN tags t ON t.id = nt.tag_id WHERE nt.notice_id = n.id), '[]'::json) AS tags
-      FROM notices n ORDER BY n.created_at DESC, n.id`
+      FROM notices n ORDER BY n.updated_at DESC, n.id`
   }
 
   async adminDetail(id: string) {
