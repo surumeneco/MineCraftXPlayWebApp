@@ -135,6 +135,35 @@ suite('notice integration (PostgreSQL)', () => {
     expect(republish.response.status).toBe(400)
   })
 
+  it('orders the administrative list by latest update time', async () => {
+    const firstTitle = `更新順1${randomUUID()}`
+    const secondTitle = `更新順2${randomUUID()}`
+    const first = await write('/api/admin/notices', 'POST', {
+      title: firstTitle, body_delta: { ops: [] }, tags: [],
+    })
+    const second = await write('/api/admin/notices', 'POST', {
+      title: secondTitle, body_delta: { ops: [] }, tags: [],
+    })
+    expect(first.response.status).toBe(201)
+    expect(second.response.status).toBe(201)
+    created.push(first.data.id, second.data.id)
+
+    const updated = await write(`/api/admin/notices/${first.data.id}`, 'PATCH', {
+      expected_version: 1,
+    })
+    expect(updated.response.status).toBe(200)
+    expect(new Date(updated.data.updated_at).getTime()).toBeGreaterThanOrEqual(
+      new Date(second.data.updated_at).getTime(),
+    )
+
+    const list = await request('/api/admin/notices', { headers: privateHeaders })
+    expect(list.response.status).toBe(200)
+    const relevantIds = list.data
+      .filter((notice: any) => notice.id === first.data.id || notice.id === second.data.id)
+      .map((notice: any) => notice.id)
+    expect(relevantIds).toEqual([first.data.id, second.data.id])
+  })
+
   it('uploads a temporary image and promotes it through edit and publication', async () => {
     const id = created[0]
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jJ4kAAAAASUVORK5CYII=', 'base64')
