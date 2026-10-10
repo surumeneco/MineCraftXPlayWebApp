@@ -12,7 +12,7 @@
       type="button"
       class="nav-link dropdown-toggle"
       :aria-expanded="open"
-      :aria-controls="menuId"
+      :aria-controls="open ? menuId : undefined"
       @click="open = !open"
     >
       {{ label }}
