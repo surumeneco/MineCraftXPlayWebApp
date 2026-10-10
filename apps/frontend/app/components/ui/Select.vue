@@ -9,12 +9,11 @@
       :disabled="disabled"
       :required="required"
       :aria-invalid="error ? 'true' : undefined"
-      :aria-describedby="error ? errorId : undefined"
       @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
     >
       <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
     </select>
-    <div v-if="error" :id="errorId" class="invalid-feedback" role="alert">{{ error }}</div>
+    <div v-if="error" class="invalid-feedback">{{ error }}</div>
   </div>
 </template>
 
@@ -35,5 +34,4 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const generatedId = useId()
 const selectId = computed(() => props.id ?? generatedId)
-const errorId = computed(() => `${selectId.value}-error`)
 </script>
