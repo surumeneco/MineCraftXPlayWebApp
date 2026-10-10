@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   app: {
     head: {
-      htmlAttrs: { lang: "ja", "data-bs-theme": "dark" },
+      htmlAttrs: { "data-bs-theme": "dark" },
       titleTemplate: "もふもふ広場 - %s",
       // Put the favicon file at apps/frontend/public/favicon.ico.
       link: [
