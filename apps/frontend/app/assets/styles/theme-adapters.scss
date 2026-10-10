@@ -13,21 +13,6 @@
   --bs-warning-rgb: var(--xplay-feedback-warning-icon-rgb);
   --bs-info-rgb: var(--xplay-feedback-info-icon-rgb);
 
-  // Bootstrap text-bg-* utilities otherwise retain fixed white/black foreground colors,
-  // which do not meet text contrast requirements for some themed status backgrounds.
-  $status-roles: ('success': 'success', 'danger': 'error', 'warning': 'warning', 'info': 'info');
-  @each $status, $role in $status-roles {
-    .text-bg-#{$status} {
-      color: var(--xplay-feedback-#{$role}-text) !important;
-      background-color: var(--xplay-feedback-#{$role}-background) !important;
-    }
-  }
-
-  // A fixed saturated Bootstrap danger utility is insufficient against dark panels.
-  .text-danger {
-    color: var(--xplay-feedback-error-text) !important;
-  }
-
   .btn-success {
     --bs-btn-bg: var(--xplay-background-button-success-base);
     --bs-btn-border-color: var(--xplay-background-button-success-base);
