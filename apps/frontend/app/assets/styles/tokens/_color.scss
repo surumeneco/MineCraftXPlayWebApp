@@ -18,7 +18,7 @@ $dark: (
     'surface': ('base': map.get(palette.$palette, 'void', '30'), 'emphasis': map.get(palette.$palette, 'void', '20'), 'subtle': map.get(palette.$palette, 'void', '40')),
     'input': ('base': map.get(palette.$palette, 'void', '50'), 'focus': map.get(palette.$palette, 'flow', 'moss', '50')),
     'button': (
-      'primary': ('base': map.get(palette.$palette, 'sky', 'dark', '120'), 'hover': map.get(palette.$palette, 'sky', 'dark', '100'), 'active': map.get(palette.$palette, 'sky', 'dark', '100')),
+      'primary': ('base': map.get(palette.$palette, 'sky', 'dark', '150'), 'hover': map.get(palette.$palette, 'sky', 'dark', '100'), 'active': map.get(palette.$palette, 'sky', 'dark', '100')),
       'secondary': ('base': map.get(palette.$palette, 'void', '40'), 'hover': map.get(palette.$palette, 'void', '80')),
       'success': ('base': map.get(palette.$palette, 'grass', 'dark', '100'), 'hover': map.get(palette.$palette, 'grass', 'dark', '80')),
       'danger': ('base': map.get(palette.$palette, 'flame', 'dark', '130'), 'hover': map.get(palette.$palette, 'flame', 'dark', '110')),
