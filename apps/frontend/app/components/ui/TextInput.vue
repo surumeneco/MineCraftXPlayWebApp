@@ -12,9 +12,10 @@
       :required="required"
       :maxlength="maxlength"
       :aria-invalid="error ? 'true' : undefined"
+      :aria-describedby="error ? errorId : undefined"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     >
-    <div v-if="error" class="invalid-feedback">{{ error }}</div>
+    <div v-if="error" :id="errorId" class="invalid-feedback" role="alert">{{ error }}</div>
   </div>
 </template>
 
@@ -33,4 +34,5 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const generatedId = useId()
 const inputId = computed(() => props.id ?? generatedId)
+const errorId = computed(() => `${inputId.value}-error`)
 </script>
