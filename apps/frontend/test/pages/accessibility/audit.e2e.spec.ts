@@ -36,7 +36,7 @@ function describeViolations(violations: Awaited<ReturnType<AxeBuilder['analyze']
 
 async function audit(page: Page) {
   const result = await new AxeBuilder({ page }).withTags(wcagTags).analyze()
-  expect(result.violations, describeViolations(result.violations)).toEqual([])
+  expect(result.violations.length, describeViolations(result.violations)).toBe(0)
 }
 
 test.describe('public page accessibility @a11y', () => {
