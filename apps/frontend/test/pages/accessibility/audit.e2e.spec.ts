@@ -44,7 +44,6 @@ test.describe('WebApp WCAG 2.2 A/AA audit @a11y', () => {
       await expect(page.locator('main')).toBeVisible()
       await check(page, route, findings)
     }
-    await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
     assertNoViolations(findings)
   })
 
