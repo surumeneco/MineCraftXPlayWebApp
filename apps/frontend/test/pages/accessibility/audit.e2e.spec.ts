@@ -45,8 +45,8 @@ test.describe('public page accessibility @a11y', () => {
       await page.setViewportSize({ width: 1440, height: 900 })
       await goto(route, { waitUntil: 'hydration' })
       await expect(page.locator('main')).toBeVisible()
-      await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
       await audit(page)
+      await expect(page.locator('html')).toHaveAttribute('lang', 'ja')
     })
   }
 
