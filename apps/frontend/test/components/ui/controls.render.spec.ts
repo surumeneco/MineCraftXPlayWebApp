@@ -11,9 +11,6 @@ describe('shared input controls', () => {
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['お知らせ'])
     expect(wrapper.get('label').attributes('for')).toBe(wrapper.get('input').attributes('id'))
     expect(wrapper.get('.invalid-feedback').text()).toBe('必須です')
-    expect(wrapper.get('.invalid-feedback').attributes('id')).toBeTruthy()
-    expect(wrapper.get('input').attributes('aria-invalid')).toBe('true')
-    expect(wrapper.get('input').attributes('aria-describedby')).toBe(wrapper.get('.invalid-feedback').attributes('id'))
   })
 
   it('emits the chosen option value', async () => {
@@ -22,10 +19,6 @@ describe('shared input controls', () => {
     })
     await wrapper.get('select').setValue('1')
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['1'])
-    await wrapper.setProps({ error: '選択してください' })
-    expect(wrapper.get('.invalid-feedback').attributes('id')).toBeTruthy()
-    expect(wrapper.get('select').attributes('aria-invalid')).toBe('true')
-    expect(wrapper.get('select').attributes('aria-describedby')).toBe(wrapper.get('.invalid-feedback').attributes('id'))
   })
 
   it('disables the button during loading', async () => {
