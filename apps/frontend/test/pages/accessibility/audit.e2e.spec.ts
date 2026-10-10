@@ -1,5 +1,6 @@
 import { expect, test } from '@nuxt/test-utils/playwright'
 import AxeBuilder from '@axe-core/playwright'
+import type { Page } from '@playwright/test'
 
 /**
  * Automated baseline: WCAG 2.2 A/AA detectable rules in Chromium.
@@ -33,7 +34,7 @@ function describeViolations(violations: Awaited<ReturnType<AxeBuilder['analyze']
   }).join('\n\n')
 }
 
-async function audit(page: Parameters<ConstructorParameters<typeof AxeBuilder>[0]>[0]['page']) {
+async function audit(page: Page) {
   const result = await new AxeBuilder({ page }).withTags(wcagTags).analyze()
   expect(result.violations, describeViolations(result.violations)).toEqual([])
 }
